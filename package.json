@@ -1,0 +1,16 @@
+{
+  "name": "",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/db": "^0.14.8",
+    "@libsql/client": "^0.14.0",
+    "astro": "^5.4.2"
+  }
+}

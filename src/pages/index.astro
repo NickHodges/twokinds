@@ -1,0 +1,50 @@
+---
+import Layout from '../layouts/Layout.astro';
+// Uncomment to use Turso client directly
+// import { executeQuery } from '../lib/db';
+
+// Uncomment to use astro:db
+// import { db, ExampleTable } from 'astro:db';
+
+// Example Turso query (uncomment when ready to use)
+/*
+let tursoResult;
+try {
+  tursoResult = await executeQuery('SELECT 1 as test');
+  console.log('Turso connection successful');
+} catch (error) {
+  console.error('Turso connection error:', error);
+}
+*/
+
+// Example astro:db query (uncomment when ready to use)
+/*
+let astroDbResult;
+try {
+  astroDbResult = await db.select().from(ExampleTable);
+  console.log('astro:db query successful');
+} catch (error) {
+  console.error('astro:db query error:', error);
+}
+*/
+---
+
+<Layout>
+	<main>
+		<h1>Two Kinds of People</h1>
+	</main>
+</Layout>
+
+<style>
+	main {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 100vh;
+	}
+
+	h1 {
+		font-size: 3rem;
+		color: #333;
+	}
+</style>
