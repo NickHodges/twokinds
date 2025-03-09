@@ -1,10 +1,12 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import '../styles/index.css';
+
 // Uncomment to use Turso client directly
 // import { executeQuery } from '../lib/db';
 
 // Uncomment to use astro:db
-// import { db, ExampleTable } from 'astro:db';
+// import { db, Intros, Leads, Sayings } from 'astro:db';
 
 // Example Turso query (uncomment when ready to use)
 /*
@@ -17,12 +19,27 @@ try {
 }
 */
 
-// Example astro:db query (uncomment when ready to use)
+// Example astro:db query for getting sayings with all related data (uncomment when ready to use)
 /*
-let astroDbResult;
+let sayingsWithRelations = [];
 try {
-  astroDbResult = await db.select().from(ExampleTable);
-  console.log('astro:db query successful');
+  const sayings = await db.select().from(Sayings);
+  
+  // For each saying, get the related intro and lead texts
+  for (const saying of sayings) {
+    const intro = await db.select().from(Intros).where(Intros.id.eq(saying.intro)).get();
+    const firstLeadObj = await db.select().from(Leads).where(Leads.id.eq(saying.firstLead)).get();
+    const secondLeadObj = await db.select().from(Leads).where(Leads.id.eq(saying.secondLead)).get();
+    
+    sayingsWithRelations.push({
+      ...saying,
+      introText: intro.text,
+      firstLeadText: firstLeadObj.text,
+      secondLeadText: secondLeadObj.text
+    });
+  }
+  
+  console.log('astro:db queries successful');
 } catch (error) {
   console.error('astro:db query error:', error);
 }
@@ -30,21 +47,7 @@ try {
 ---
 
 <Layout>
-	<main>
-		<h1>Two Kinds of People</h1>
-	</main>
+  <main>
+    <h1>Two Kinds of People</h1>
+  </main>
 </Layout>
-
-<style>
-	main {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		height: 100vh;
-	}
-
-	h1 {
-		font-size: 3rem;
-		color: #333;
-	}
-</style>

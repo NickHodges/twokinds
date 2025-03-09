@@ -37,6 +37,12 @@
 - Mobile-first responsive design with media queries
 - Never delete anything from the .env.* files, only add new variables
 - Always prefer Astro's built-in components over custom solutions
+- Always use Astro's built-in routing and data fetching
+- Always use Astro's built-in layout system
+- Always use Astro's built-in form handling
+- Always use Astro's built-in data fetching
+- Always place CSS into CSS files, not in the HTML
+-
 
 ## Project Structure
 
