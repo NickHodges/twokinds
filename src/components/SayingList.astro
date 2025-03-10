@@ -14,9 +14,21 @@ interface Saying {
 
 interface Props {
   sayings: Saying[];
+  emptyStateText?: string;
+  emptyStateCallToAction?: {
+    text: string;
+    href: string;
+  };
 }
 
-const { sayings } = Astro.props;
+const { 
+  sayings, 
+  emptyStateText = "No sayings found.", 
+  emptyStateCallToAction = {
+    text: "Create New Saying",
+    href: "/create"
+  }
+} = Astro.props;
 ---
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -35,11 +47,8 @@ const { sayings } = Astro.props;
       ))
     ) : (
       <EmptyState 
-        message="No sayings found." 
-        callToAction={{
-          text: "Create New Saying",
-          href: "/create"
-        }} 
+        message={emptyStateText} 
+        callToAction={emptyStateCallToAction} 
       />
     )
   }

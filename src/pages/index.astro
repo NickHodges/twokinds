@@ -5,40 +5,9 @@ import '../styles/index.css';
 import Header from '../components/Header.astro';
 import SayingList from '../components/SayingList.astro';
 
-// Get all sayings with joins to get intro and lead texts
-const sayingsData = await db.select().from(Sayings);
-console.log('Found sayings:', sayingsData);
-
-// Fetch related data
-const intros = await db.select().from(Intros);
-console.log('Found intros:', intros);
-
-const leads = await db.select().from(Leads);
-console.log('Found leads:', leads);
-
-// Combine the data
-const sayings = sayingsData.map(saying => {
-  const intro = intros.find(i => i.id === saying.intro);
-  const firstLead = leads.find(l => l.id === saying.firstLead);
-  const secondLead = leads.find(l => l.id === saying.secondLead);
-
-  return {
-    ...saying,
-    introText: intro?.introText || "Unknown intro",
-    firstLeadText: firstLead?.leadText || "Unknown lead",
-    secondLeadText: secondLead?.leadText || "Unknown lead"
-  };
-});
-
-// Don't prerender so we always get fresh data
+// Redirect to the paginated sayings page
 export const prerender = false;
 
+// Server-side redirect
+return Astro.redirect('/sayings');
 ---
-
-<Layout>
-  <div class="container mx-auto px-4 py-8">
-    <Header />
-
-    <SayingList sayings={sayings} />
-  </div>
-</Layout>

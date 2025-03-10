@@ -1,0 +1,87 @@
+---
+import { db, Sayings, Intros, Leads } from 'astro:db';
+import Layout from '../../layouts/Layout.astro';
+import '../../styles/index.css';
+import Header from '../../components/Header.astro';
+import SayingList from '../../components/SayingList.astro';
+import Pagination from '../../components/Pagination.astro';
+import { config } from '../../lib/config';
+
+// Get page number from URL
+const { page: pageParam } = Astro.params;
+const currentPage = parseInt(pageParam || "1");
+
+// Validate page number
+if (isNaN(currentPage) || currentPage < 1) {
+  return Astro.redirect('/sayings');
+}
+
+// Get all sayings with joins to get intro and lead texts
+const sayingsData = await db.select().from(Sayings);
+
+// Fetch related data
+const intros = await db.select().from(Intros);
+const leads = await db.select().from(Leads);
+
+// Combine the data
+const allSayings = sayingsData.map(saying => {
+  const intro = intros.find(i => i.id === saying.intro);
+  const firstLead = leads.find(l => l.id === saying.firstLead);
+  const secondLead = leads.find(l => l.id === saying.secondLead);
+  
+  return {
+    ...saying,
+    introText: intro?.introText || "Unknown intro",
+    firstLeadText: firstLead?.leadText || "Unknown lead",
+    secondLeadText: secondLead?.leadText || "Unknown lead"
+  };
+});
+
+// Pagination
+const pageSize = config.pagination.sayingsPerPage;
+const totalPages = Math.ceil(allSayings.length / pageSize);
+
+// Redirect if page number is too high
+if (currentPage > totalPages) {
+  return Astro.redirect(totalPages > 0 ? `/sayings/${totalPages}` : '/sayings');
+}
+
+// Calculate current page data
+const startIndex = (currentPage - 1) * pageSize;
+const endIndex = Math.min(startIndex + pageSize, allSayings.length);
+const sayingsForCurrentPage = allSayings.slice(startIndex, endIndex);
+
+// Create page object
+const page = {
+  data: sayingsForCurrentPage,
+  start: startIndex,
+  end: endIndex - 1,
+  size: pageSize,
+  total: allSayings.length,
+  currentPage: currentPage,
+  lastPage: totalPages,
+  url: {
+    prev: currentPage > 1 
+      ? (currentPage === 2 ? "/sayings" : `/sayings/${currentPage - 1}`)
+      : null,
+    next: currentPage < totalPages 
+      ? `/sayings/${currentPage + 1}` 
+      : null
+  }
+};
+
+// Don't prerender so we always get fresh data
+export const prerender = false;
+---
+
+<Layout>
+  <div class="container mx-auto px-4 py-8">
+    <Header />
+    
+    <SayingList sayings={page.data} />
+    
+    {page.lastPage > 1 && (
+      <Pagination page={page} basePath="/sayings" />
+    )}
+  </div>
+</Layout>
