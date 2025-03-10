@@ -3,6 +3,8 @@ import db from '@astrojs/db';
 import node from '@astrojs/node';
 import dotenv from 'dotenv';
 
+import vercel from '@astrojs/vercel';
+
 // Force load .env
 dotenv.config();
 
@@ -20,15 +22,15 @@ export default defineConfig({
   // Disable pre-rendering to ensure server-side rendering works properly
   output: 'server',
   // Add Node.js adapter for server-side rendering
-  adapter: node({
-    mode: 'standalone',
-  }),
+  adapter: vercel(),
 
   env: {
        schema: {
            ASTRO_DATABASE_FILE: envField.string({context: "server", access: "secret", optional: true}),
            TURSO_DB_URL: envField.string({context: "server", access: "secret", optional: false}),
            TURSO_DB_AUTH_TOKEN: envField.string({context: "server", access: "secret", optional: false}),
+           ASTRO_DB_REMOTE_URL: envField.string({context: "server", access: "secret", optional: false}),
+           ASTRO_DB_APP_TOKEN: envField.string({context: "server", access: "secret", optional: false}),
   }
 },
 
@@ -54,5 +56,3 @@ export default defineConfig({
     },
   },
 });
-
-console.log("ASTRO_DATABASE_FILE:", process.env.ASTRO_DATABASE_FILE);
