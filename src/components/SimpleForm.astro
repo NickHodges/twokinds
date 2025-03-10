@@ -1,0 +1,36 @@
+---
+let message = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const name = formData.get('name');
+    message = `Hello, ${name}!`;
+  } catch (error) {
+    message = `Error: ${error.message}`;
+  }
+}
+---
+
+<div class="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+  <h2 class="text-2xl font-bold mb-4">Simple Test Form</h2>
+
+  {message && <p class="my-4 p-3 bg-gray-100 rounded">{message}</p>}
+
+  <form method="POST" enctype="application/x-www-form-urlencoded">
+    <div class="mb-4">
+      <label for="name" class="block text-gray-700 mb-2">Name:</label>
+      <input
+        type="text"
+        id="name"
+        name="name"
+        class="w-full p-2 border border-gray-300 rounded"
+        required
+      />
+    </div>
+
+    <button type="submit" class="w-full py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-600">
+      Submit
+    </button>
+  </form>
+</div>

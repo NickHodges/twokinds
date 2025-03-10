@@ -2,6 +2,7 @@ import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettierConfig from 'eslint-config-prettier';
 import astroPlugin from 'eslint-plugin-astro';
+import type { Linter } from 'eslint';
 
 export default [
   eslint.configs.recommended,
@@ -38,4 +39,4 @@ export default [
     files: ['**/*.astro'],
     ...astroPlugin.configs.recommended,
   },
-];
+] as Linter.FlatConfig[];

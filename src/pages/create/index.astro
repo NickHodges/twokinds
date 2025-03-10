@@ -1,0 +1,145 @@
+---
+import { db, Intros, Leads } from 'astro:db';
+import "../../styles/index.css";
+import { actions } from 'astro:actions';
+import Layout from '../../layouts/Layout.astro';
+
+// Fetch data from database
+const intros = await db.select().from(Intros);
+const leads = await db.select().from(Leads);
+
+// Don't prerender so we always get fresh data
+export const prerender = false;
+
+const result = Astro.getActionResult(actions.submitSaying)?.data;
+const success = result?.success;
+---
+
+<Layout>
+  <div class="container mx-auto px-4">
+    <header class="text-center my-8">
+      <h1 class="text-4xl font-bold mb-3">Create with Astro Actions</h1>
+      <a href="/" class="text-blue-600 hover:text-blue-800">Back to Home</a>
+    </header>
+
+    <div class="max-w-4xl mx-auto my-8 p-8 bg-white rounded-xl shadow-md">
+      <h2 class="text-2xl font-bold mb-6">Create a New Saying</h2>
+
+      {
+        success && (
+          <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-md">
+            <p class="mb-2">Your saying was successfully created!</p>
+            <a
+              href={`/saying/${result?.data?.id}`}
+              class="text-indigo-600 underline hover:text-indigo-800">
+              View your new saying
+            </a>
+          </div>
+        )
+      }
+
+      {
+        result?.error && (
+          <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-md">
+            <p>{result.error}</p>
+          </div>
+        )
+      }
+
+      <form method="POST" action={actions.submitSaying} class="space-y-6">
+        <div class="space-y-4">
+          <label class="block font-medium text-gray-700">
+            Choose an Introduction:
+            <select
+              name="intro"
+              class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+              required>
+              <option value="">-- Select an Introduction --</option>
+              {intros.map((intro) => <option value={intro.id}>{intro.introText}</option>)}
+            </select>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <label class="block font-medium text-gray-700">
+              First Lead:
+              <select
+                name="firstLead"
+                class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                required>
+                <option value="">-- Select a Lead --</option>
+                {leads.map((lead) => <option value={lead.id}>{lead.leadText}</option>)}
+              </select>
+            </label>
+
+            <label class="block font-medium text-gray-700">
+              First Kind of People:
+              <input
+                type="text"
+                name="firstKind"
+                placeholder="e.g., put their shopping cart back"
+                class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                required
+                minlength="3"
+                maxlength="100"
+              />
+            </label>
+          </div>
+
+          <div class="space-y-4">
+            <label class="block font-medium text-gray-700">
+              Second Lead:
+              <select
+                name="secondLead"
+                class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                required>
+                <option value="">-- Select a Lead --</option>
+                {leads.map((lead) => <option value={lead.id}>{lead.leadText}</option>)}
+              </select>
+            </label>
+
+            <label class="block font-medium text-gray-700">
+              Second Kind of People:
+              <input
+                type="text"
+                name="secondKind"
+                placeholder="e.g., leave it in the parking lot"
+                class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                required
+                minlength="3"
+                maxlength="100"
+              />
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            Create Saying
+          </button>
+        </div>
+      </form>
+
+      {
+        result?.success && result.data && (
+          <div class="mt-8 pt-6 border-t border-gray-200">
+            <h3 class="text-lg font-medium mb-3">Created Successfully:</h3>
+            <div class="bg-gray-50 p-5 rounded-lg">
+              <p class="mb-3">
+                Your saying has been created!{' '}
+                <a
+                  href={`/saying/${result.data.id}`}
+                  class="text-indigo-600 underline hover:text-indigo-800">
+                  View it here
+                </a>
+              </p>
+            </div>
+          </div>
+        )
+      }
+    </div>
+  </div>
+</Layout>

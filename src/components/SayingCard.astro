@@ -1,0 +1,51 @@
+---
+interface Props {
+  id?: number;
+  introText: string;
+  firstLeadText: string;
+  secondLeadText: string;
+  firstKind: string;
+  secondKind: string;
+  createdAt: Date;
+}
+
+const { id, introText, firstLeadText, secondLeadText, firstKind, secondKind, createdAt } =
+  Astro.props;
+---
+
+<article
+  class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+>
+  <div class="p-6">
+    <h3 class="text-lg font-medium text-gray-900 mb-3">{introText}</h3>
+
+    <div class="space-y-2 mb-4">
+      <p class="text-gray-700">
+        <span class="text-indigo-600 font-medium">{firstLeadText}</span>
+        {firstKind}
+      </p>
+      <p class="text-gray-700">
+        <span class="text-indigo-600 font-medium">{secondLeadText}</span>
+        {secondKind}
+      </p>
+    </div>
+  </div>
+
+  <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+    <div>
+      {
+        id && (
+          <a
+            href={`/saying/${id}`}
+            class="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+          >
+            View as quote →
+          </a>
+        )
+      }
+    </div>
+    <time datetime={createdAt.toISOString()} class="text-xs text-gray-500">
+      {createdAt.toLocaleDateString()}
+    </time>
+  </div>
+</article>

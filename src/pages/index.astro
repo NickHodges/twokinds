@@ -1,53 +1,102 @@
 ---
+import { db, Sayings, Intros, Leads } from 'astro:db';
+import { eq } from 'astro:db';
 import Layout from '../layouts/Layout.astro';
 import '../styles/index.css';
 
-// Uncomment to use Turso client directly
-// import { executeQuery } from '../lib/db';
+// Get all sayings with joins to get intro and lead texts
+const sayingsData = await db.select().from(Sayings);
+console.log('Found sayings:', sayingsData);
 
-// Uncomment to use astro:db
-// import { db, Intros, Leads, Sayings } from 'astro:db';
+// Fetch related data
+const intros = await db.select().from(Intros);
+console.log('Found intros:', intros);
 
-// Example Turso query (uncomment when ready to use)
-/*
-let tursoResult;
-try {
-  tursoResult = await executeQuery('SELECT 1 as test');
-  console.log('Turso connection successful');
-} catch (error) {
-  console.error('Turso connection error:', error);
-}
-*/
+const leads = await db.select().from(Leads);
+console.log('Found leads:', leads);
 
-// Example astro:db query for getting sayings with all related data (uncomment when ready to use)
-/*
-let sayingsWithRelations = [];
-try {
-  const sayings = await db.select().from(Sayings);
-  
-  // For each saying, get the related intro and lead texts
-  for (const saying of sayings) {
-    const intro = await db.select().from(Intros).where(Intros.id.eq(saying.intro)).get();
-    const firstLeadObj = await db.select().from(Leads).where(Leads.id.eq(saying.firstLead)).get();
-    const secondLeadObj = await db.select().from(Leads).where(Leads.id.eq(saying.secondLead)).get();
-    
-    sayingsWithRelations.push({
-      ...saying,
-      introText: intro.text,
-      firstLeadText: firstLeadObj.text,
-      secondLeadText: secondLeadObj.text
-    });
-  }
-  
-  console.log('astro:db queries successful');
-} catch (error) {
-  console.error('astro:db query error:', error);
-}
-*/
+// Combine the data
+const sayings = sayingsData.map(saying => {
+  const intro = intros.find(i => i.id === saying.intro);
+  const firstLead = leads.find(l => l.id === saying.firstLead);
+  const secondLead = leads.find(l => l.id === saying.secondLead);
+
+  return {
+    ...saying,
+    introText: intro?.introText || "Unknown intro",
+    firstLeadText: firstLead?.leadText || "Unknown lead",
+    secondLeadText: secondLead?.leadText || "Unknown lead"
+  };
+});
+
+// Don't prerender so we always get fresh data
+export const prerender = false;
+
 ---
 
 <Layout>
-  <main>
-    <h1>Two Kinds of People</h1>
-  </main>
+  <div class="container mx-auto px-4 py-8">
+    <header class="text-center mb-12">
+      <h1
+        class="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 inline-block text-transparent bg-clip-text mb-3">
+        Two Kinds of People
+      </h1>
+      <p class="text-xl text-gray-600 mb-8">
+        Exploring humanity's endless dualities, one saying at a time
+      </p>
+      <a
+        href="/create"
+        class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 mr-2">
+        Create New Saying
+      </a>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {
+        sayings.length > 0 ? (
+          sayings.map((saying) => (
+            <article class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+              <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-3">{saying.introText}</h3>
+
+                <div class="space-y-2 mb-4">
+                  <p class="text-gray-700">
+                    <span class="text-indigo-600 font-medium">{saying.firstLeadText}</span>
+                    {saying.firstKind}
+                  </p>
+                  <p class="text-gray-700">
+                    <span class="text-indigo-600 font-medium">{saying.secondLeadText}</span>
+                    {saying.secondKind}
+                  </p>
+                </div>
+              </div>
+
+              <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+                <div>
+                  <a
+                    href={`/saying/${saying.id}`}
+                    class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                    View as quote →
+                  </a>
+                </div>
+                <time datetime={saying.createdAt.toISOString()} class="text-xs text-gray-500">
+                  {saying.createdAt.toLocaleDateString()}
+                </time>
+              </div>
+            </article>
+          ))
+        ) : (
+          <div class="col-span-full text-center p-12 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900 mb-3">No sayings found.</h3>
+            <p class="text-gray-600 mb-6">Be the first to create one!</p>
+            <a
+              href="/create"
+              class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+              Create New Saying
+            </a>
+          </div>
+        )
+      }
+    </div>
+  </div>
 </Layout>

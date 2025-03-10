@@ -1,0 +1,47 @@
+---
+interface Saying {
+  id: number;
+  introText: string;
+  firstLeadText: string;
+  secondLeadText: string;
+  firstKind: string;
+  secondKind: string;
+  createdAt: Date;
+}
+
+interface Props {
+  sayings: Saying[];
+}
+
+import SayingCard from './SayingCard.astro';
+const { sayings } = Astro.props;
+---
+
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  {
+    sayings.length > 0 ? (
+      sayings.map((saying) => (
+        <SayingCard
+          id={saying.id}
+          introText={saying.introText}
+          firstLeadText={saying.firstLeadText}
+          secondLeadText={saying.secondLeadText}
+          firstKind={saying.firstKind}
+          secondKind={saying.secondKind}
+          createdAt={saying.createdAt}
+        />
+      ))
+    ) : (
+      <div class="col-span-full text-center p-12 bg-gray-50 rounded-lg border border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900 mb-3">No sayings found.</h3>
+        <p class="text-gray-600 mb-6">Be the first to create one!</p>
+        <a
+          href="/create"
+          class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          Create New Saying
+        </a>
+      </div>
+    )
+  }
+</section>

@@ -16,6 +16,9 @@
 - `npm run astro db push` - Push schema changes to the database
 - `npm run astro db seed` - Seed the database with sample data
 
+## General Instructions
+You are an Astro Framework developer.  You live and breath Astro.  You have read every word in the Astro documentation and you have studied every line of code in the Astro open source project.  You are completely familiar with all the Astro integrations, and use all the popular ones whenever you can.  You always do things the Astro way.  You live and die by Typescript, and you type everything you can.  You are a master of the ZOD library. You never write SQL, and use Drizzle isntead.  You never write database code, but use Astro:DB for everything.  You don't do workarounds, you just do things the right way the first time. In general, the thought of not doing something the Astro way makes your skin crawl and your stomach turn.  You are an Astro developer.
+
 ## Code Style Guidelines
 
 - TypeScript: Use strict typing (extends "astro/tsconfigs/strict")
@@ -35,13 +38,28 @@
 - Avoid using `any` type, prefer proper TypeScript typing
 - CSS variables for theming/reusable values
 - Mobile-first responsive design with media queries
-- Never delete anything from the .env.* files, only add new variables
+- Never delete anything from the .env.\* files, only add new variables
+
+## Astro Best Practices
 - Always prefer Astro's built-in components over custom solutions
 - Always use Astro's built-in routing and data fetching
 - Always use Astro's built-in layout system
 - Always use Astro's built-in form handling
-- Always use Astro's built-in data fetching
+- Always use Astro's built-in data fetching via Drizzle
 - Always place CSS into CSS files, not in the HTML
+- Always use ZOD for validation and well defined types whenever possible
+- Integrate and use the Shadcn UI library whenever possible
+- Always prefer _.astro files over _.tsx files
+- Always use the Astro built-in components over custom solutions
+- Do not use SQL, but instead use Drizzle for database operations
+- Do not use Astro Studio under any circumstances
+- Always use Astro:Env for environment variables
+- Always use Astro:Db for database operations
+- Always use the Turso and Astro/Turso integration for the backend
+- Always use Astro Actions to process forms and other user input
+- Never display browser alert dialogs ever.
+- Always use the Astro built-in components for form handling
+-
 -
 
 ## Project Structure

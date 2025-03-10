@@ -4,4 +4,5 @@
 interface ImportMetaEnv {
   readonly TURSO_DB_URL: string;
   readonly TURSO_DB_AUTH_TOKEN: string;
+  readonly ASTRO_DATABASE_FILE: string;
 }
