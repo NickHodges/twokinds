@@ -9,7 +9,7 @@ dotenv.config();
 // https://astro.build/config
 export default defineConfig({
   integrations: [
-    db(),
+    db()
   ],
 
   server: {
@@ -26,7 +26,9 @@ export default defineConfig({
 
   env: {
        schema: {
-           ASTRO_DATABASE_FILE : envField.string({context: "server", access: "secret", optional: false}),
+           ASTRO_DATABASE_FILE: envField.string({context: "server", access: "secret", optional: true}),
+           TURSO_DB_URL: envField.string({context: "server", access: "secret", optional: false}),
+           TURSO_DB_AUTH_TOKEN: envField.string({context: "server", access: "secret", optional: false}),
   }
 },
 
