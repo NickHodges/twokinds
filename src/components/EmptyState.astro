@@ -1,0 +1,22 @@
+---
+interface Props {
+  message: string;
+  callToAction?: {
+    text: string;
+    href: string;
+  };
+}
+
+const { message, callToAction } = Astro.props;
+---
+
+<div class="col-span-full text-center p-12 bg-gray-50 rounded-lg border border-gray-200">
+  <h3 class="text-lg font-medium text-gray-900 mb-3">{message}</h3>
+  {callToAction && (
+    <a
+      href={callToAction.href}
+      class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+      {callToAction.text}
+    </a>
+  )}
+</div>

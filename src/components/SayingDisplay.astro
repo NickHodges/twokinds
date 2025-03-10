@@ -1,0 +1,40 @@
+---
+interface Saying {
+  id: number;
+  introText: string;
+  firstLeadText: string;
+  secondLeadText: string;
+  firstKind: string;
+  secondKind: string;
+  createdAt: Date;
+}
+
+interface Props {
+  saying: Saying;
+}
+
+const { saying } = Astro.props;
+---
+
+<div class="bg-white p-8 rounded-xl shadow-md">
+  <div class="mb-8 text-center">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">{saying.introText}</h1>
+  </div>
+
+  <div class="space-y-6 text-xl text-center">
+    <p>
+      <span class="text-indigo-600 font-medium">{saying.firstLeadText}</span>{' '}
+      {saying.firstKind}
+    </p>
+    <p>
+      <span class="text-indigo-600 font-medium">{saying.secondLeadText}</span>{' '}
+      {saying.secondKind}
+    </p>
+  </div>
+
+  <div class="mt-8 pt-4 border-t border-gray-200 text-center">
+    <time datetime={saying.createdAt.toISOString()} class="text-sm text-gray-500">
+      Added on {saying.createdAt.toLocaleDateString()}
+    </time>
+  </div>
+</div>

@@ -4,6 +4,9 @@ import "../../styles/index.css";
 import { actions } from 'astro:actions';
 import Layout from '../../layouts/Layout.astro';
 import NewSayingForm from '../../components/NewSayingForm.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import NotificationBanner from '../../components/NotificationBanner.astro';
+import ActionButtons from '../../components/ActionButtons.astro';
 
 // Fetch data from database
 const intros = await db.select().from(Intros);
@@ -18,32 +21,34 @@ const success = result?.success;
 
 <Layout>
   <div class="container mx-auto px-4">
-    <header class="text-center my-8">
-      <h1 class="text-4xl font-bold mb-3">Create with Astro Actions</h1>
-      <a href="/" class="text-blue-600 hover:text-blue-800">Back to Home</a>
-    </header>
+    <PageHeader
+      title="Create a New Saying"
+      backLink="/"
+      backText="Back to Home"
+    />
 
     <div class="max-w-4xl mx-auto my-8 p-8 bg-white rounded-xl shadow-md">
       <h2 class="text-2xl font-bold mb-6">Create a New Saying</h2>
 
       {
         success && (
-          <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-md">
-            <p class="mb-2">Your saying was successfully created!</p>
-            <a
-              href={`/saying/${result?.data?.id}`}
-              class="text-indigo-600 underline hover:text-indigo-800">
-              View your new saying
-            </a>
-          </div>
+          <NotificationBanner
+            type="success"
+            message="Your saying was successfully created!"
+            link={{
+              url: `/saying/${result?.data?.id}`,
+              text: "View your new saying"
+            }}
+          />
         )
       }
 
       {
         result?.error && (
-          <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-md">
-            <p>{result.error}</p>
-          </div>
+          <NotificationBanner
+            type="error"
+            message={result.error}
+          />
         )
       }
 
@@ -52,16 +57,15 @@ const success = result?.success;
         result?.success && result.data && (
           <div class="mt-8 pt-6 border-t border-gray-200">
             <h3 class="text-lg font-medium mb-3">Created Successfully:</h3>
-            <div class="bg-gray-50 p-5 rounded-lg">
-              <p class="mb-3">
-                Your saying has been created!{' '}
-                <a
-                  href={`/saying/${result.data.id}`}
-                  class="text-indigo-600 underline hover:text-indigo-800">
-                  View it here
-                </a>
-              </p>
-            </div>
+            <ActionButtons
+              buttons={[
+                {
+                  text: "View your new saying",
+                  href: `/saying/${result.data.id}`,
+                  primary: true
+                }
+              ]}
+            />
           </div>
         )
       }

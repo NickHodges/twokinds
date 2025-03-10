@@ -1,0 +1,14 @@
+---
+interface Props {
+  title: string;
+  backLink?: string;
+  backText?: string;
+}
+
+const { title, backLink = "/", backText = "Back to Home" } = Astro.props;
+---
+
+<header class="text-center my-8">
+  <h1 class="text-4xl font-bold mb-3">{title}</h1>
+  {backLink && <a href={backLink} class="text-blue-600 hover:text-blue-800">{backText}</a>}
+</header>

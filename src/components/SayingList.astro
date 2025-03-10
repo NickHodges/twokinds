@@ -1,0 +1,46 @@
+---
+import SayingCard from './SayingCard.astro';
+import EmptyState from './EmptyState.astro';
+
+interface Saying {
+  id: number;
+  introText: string;
+  firstLeadText: string;
+  secondLeadText: string;
+  firstKind: string;
+  secondKind: string;
+  createdAt: Date;
+}
+
+interface Props {
+  sayings: Saying[];
+}
+
+const { sayings } = Astro.props;
+---
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  {
+    sayings.length > 0 ? (
+      sayings.map((saying) => (
+        <SayingCard 
+          id={saying.id}
+          introText={saying.introText}
+          firstLeadText={saying.firstLeadText}
+          secondLeadText={saying.secondLeadText}
+          firstKind={saying.firstKind}
+          secondKind={saying.secondKind}
+          createdAt={saying.createdAt}
+        />
+      ))
+    ) : (
+      <EmptyState 
+        message="No sayings found." 
+        callToAction={{
+          text: "Create New Saying",
+          href: "/create"
+        }} 
+      />
+    )
+  }
+</div>

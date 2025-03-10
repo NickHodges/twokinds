@@ -1,9 +1,11 @@
 ---
-import { db, eq, Sayings } from 'astro:db';
 import Layout from '../../layouts/Layout.astro';
-
 import '../../styles/index.css';
 import { getSayingById } from '../../lib/db-service';
+import PageHeader from '../../components/PageHeader.astro';
+import SayingDisplay from '../../components/SayingDisplay.astro';
+import ActionButtons from '../../components/ActionButtons.astro';
+import NotificationBanner from '../../components/NotificationBanner.astro';
 
 // Get the saying ID from the URL
 const { id } = Astro.params;
@@ -23,56 +25,29 @@ export const prerender = false;
 
 <Layout title={saying ? `${saying.intro}` : 'Saying Not Found'}>
   <div class="container mx-auto px-4 py-8">
-    <header class="mb-8">
-      <a href="/" class="text-indigo-600 hover:text-indigo-800">← Back to all sayings</a>
-    </header>
+    <PageHeader 
+      title="Saying Details" 
+      backLink="/" 
+      backText="← Back to all sayings"
+    />
 
     {
       notFound ? (
-        <div class="max-w-2xl mx-auto my-12 p-6 bg-red-50 border border-red-200 rounded-lg text-center">
-          <h2 class="text-xl font-bold text-red-800 mb-4">Saying Not Found</h2>
-          <p class="text-red-700">We couldn't find the saying you're looking for.</p>
-          <a href="/" class="inline-block mt-6 text-indigo-600 hover:text-indigo-800">
-            Return to home page
-          </a>
-        </div>
+        <NotificationBanner
+          type="error"
+          message="We couldn't find the saying you're looking for."
+          link={{ url: "/", text: "Return to home page" }}
+        />
       ) : (
         <div class="max-w-2xl mx-auto">
-          <div class="bg-white p-8 rounded-xl shadow-md">
-            <div class="mb-8 text-center">
-              <h1 class="text-3xl font-bold text-gray-900 mb-2">{saying.introText}</h1>
-            </div>
-
-            <div class="space-y-6 text-xl text-center">
-              <p>
-                <span class="text-indigo-600 font-medium">{saying.firstLeadText}</span>{' '}
-                {saying.firstKind}
-              </p>
-              <p>
-                <span class="text-indigo-600 font-medium">{saying.secondLeadText}</span>{' '}
-                {saying.secondKind}
-              </p>
-            </div>
-
-            <div class="mt-8 pt-4 border-t border-gray-200 text-center">
-              <time datetime={saying.createdAt.toISOString()} class="text-sm text-gray-500">
-                Added on {saying.createdAt.toLocaleDateString()}
-              </time>
-            </div>
-          </div>
-
-          <div class="mt-8 text-center">
-            <a
-              href="/"
-              class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-              View all sayings
-            </a>
-            <a
-              href="/create"
-              class="ml-4 inline-flex items-center px-4 py-2 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-              Create your own
-            </a>
-          </div>
+          <SayingDisplay saying={saying} />
+          
+          <ActionButtons 
+            buttons={[
+              { text: "View all sayings", href: "/", primary: true },
+              { text: "Create your own", href: "/create", primary: false }
+            ]}
+          />
         </div>
       )
     }

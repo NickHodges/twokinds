@@ -1,9 +1,9 @@
 ---
 import { db, Sayings, Intros, Leads } from 'astro:db';
-import { eq } from 'astro:db';
 import Layout from '../layouts/Layout.astro';
 import '../styles/index.css';
 import Header from '../components/Header.astro';
+import SayingList from '../components/SayingList.astro';
 
 // Get all sayings with joins to get intro and lead texts
 const sayingsData = await db.select().from(Sayings);
@@ -39,52 +39,6 @@ export const prerender = false;
   <div class="container mx-auto px-4 py-8">
     <Header />
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {
-        sayings.length > 0 ? (
-          sayings.map((saying) => (
-            <article class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-              <div class="p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-3">{saying.introText}</h3>
-
-                <div class="space-y-2 mb-4">
-                  <p class="text-gray-700">
-                    <span class="text-indigo-600 font-medium">{saying.firstLeadText}</span>
-                    {saying.firstKind}
-                  </p>
-                  <p class="text-gray-700">
-                    <span class="text-indigo-600 font-medium">{saying.secondLeadText}</span>
-                    {saying.secondKind}
-                  </p>
-                </div>
-              </div>
-
-              <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
-                <div>
-                  <a
-                    href={`/saying/${saying.id}`}
-                    class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
-                    View as quote →
-                  </a>
-                </div>
-                <time datetime={saying.createdAt.toISOString()} class="text-xs text-gray-500">
-                  {saying.createdAt.toLocaleDateString()}
-                </time>
-              </div>
-            </article>
-          ))
-        ) : (
-          <div class="col-span-full text-center p-12 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900 mb-3">No sayings found.</h3>
-            <p class="text-gray-600 mb-6">Be the first to create one!</p>
-            <a
-              href="/create"
-              class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-              Create New Saying
-            </a>
-          </div>
-        )
-      }
-    </div>
+    <SayingList sayings={sayings} />
   </div>
 </Layout>

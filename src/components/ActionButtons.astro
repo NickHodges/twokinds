@@ -1,0 +1,27 @@
+---
+interface Button {
+  text: string;
+  href: string;
+  primary?: boolean;
+}
+
+interface Props {
+  buttons: Button[];
+}
+
+const { buttons } = Astro.props;
+---
+
+<div class="mt-8 text-center">
+  {buttons.map((button, index) => (
+    <a
+      href={button.href}
+      class={`${index > 0 ? "ml-4 " : ""}inline-flex items-center px-4 py-2 border ${
+        button.primary 
+          ? "border-transparent text-white bg-indigo-600 hover:bg-indigo-700" 
+          : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+      } text-base font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}>
+      {button.text}
+    </a>
+  ))}
+</div>
