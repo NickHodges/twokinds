@@ -11,7 +11,7 @@ export const config = {
      */
     sayingsPerPage: 6,
   },
-  
+
   /**
    * Site metadata
    */
@@ -19,7 +19,7 @@ export const config = {
     /**
      * Site title
      */
-    title: "Two Kinds of People",
+    title: "Two Kinds of People in the World",
     /**
      * Site description
      */
