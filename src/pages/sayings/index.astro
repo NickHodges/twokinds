@@ -1,5 +1,5 @@
 ---
-import { db, Sayings, Intros, Leads } from 'astro:db';
+import { db, Sayings, Intros, Leads, desc } from 'astro:db';
 import Layout from '../../layouts/Layout.astro';
 import '../../styles/index.css';
 import Header from '../../components/Header.astro';
@@ -7,24 +7,24 @@ import SayingList from '../../components/SayingList.astro';
 import Pagination from '../../components/Pagination.astro';
 import { config } from '../../lib/config';
 
-// Get all sayings with joins to get intro and lead texts, ordered by newest first
-const sayingsData = await db.select().from(Sayings).orderBy(Sayings.createdAt, 'desc');
+// Get all sayings with joins to get intro and lead texts
+const sayingsData = await db.select().from(Sayings).orderBy(desc(Sayings.id));
 
 // Fetch related data
 const intros = await db.select().from(Intros);
 const leads = await db.select().from(Leads);
 
 // Combine the data
-const allSayings = sayingsData.map(saying => {
-  const intro = intros.find(i => i.id === saying.intro);
-  const firstLead = leads.find(l => l.id === saying.firstLead);
-  const secondLead = leads.find(l => l.id === saying.secondLead);
-  
+const allSayings = sayingsData.map((saying) => {
+  const intro = intros.find((i) => i.id === saying.intro);
+  const firstLead = leads.find((l) => l.id === saying.firstLead);
+  const secondLead = leads.find((l) => l.id === saying.secondLead);
+
   return {
     ...saying,
-    introText: intro?.introText || "Unknown intro",
-    firstLeadText: firstLead?.leadText || "Unknown lead",
-    secondLeadText: secondLead?.leadText || "Unknown lead"
+    introText: intro?.introText || 'Unknown intro',
+    firstLeadText: firstLead?.leadText || 'Unknown lead',
+    secondLeadText: secondLead?.leadText || 'Unknown lead',
   };
 });
 
@@ -47,8 +47,8 @@ const page = {
   lastPage: totalPages,
   url: {
     prev: null,
-    next: totalPages > 1 ? "/sayings/2" : null
-  }
+    next: totalPages > 1 ? '/sayings/2' : null,
+  },
 };
 
 // Don't prerender so we always get fresh data
@@ -58,11 +58,9 @@ export const prerender = false;
 <Layout>
   <div class="container mx-auto px-4 py-8">
     <Header />
-    
+
     <SayingList sayings={page.data} />
-    
-    {page.lastPage > 1 && (
-      <Pagination page={page} basePath="/sayings" />
-    )}
+
+    {page.lastPage > 1 && <Pagination page={page} basePath="/sayings" />}
   </div>
 </Layout>

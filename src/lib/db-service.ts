@@ -1,4 +1,4 @@
-import { db, Sayings, Intros, Leads, eq } from 'astro:db';
+import { db, Sayings, Intros, Leads, eq, desc } from 'astro:db';
 
 /**
  * Get a complete saying with all related data by ID
@@ -59,8 +59,8 @@ export async function getSayingById(id: number) {
  */
 export async function getAllSayings() {
   try {
-    // Get all sayings, sorted by createdAt in descending order (newest first)
-    const sayings = await db.select().from(Sayings).orderBy(Sayings.createdAt, 'desc');
+    // Get all sayings
+    const sayings = await db.select().from(Sayings).orderBy(desc(Sayings.id));
 
     // Get all intros and leads
     const intros = await db.select().from(Intros);
