@@ -6,6 +6,7 @@ import Header from '../../components/Header.astro';
 import SayingList from '../../components/SayingList.astro';
 import Pagination from '../../components/Pagination.astro';
 import { config } from '../../lib/config';
+import { getAllSayings } from '../../lib/db-service';
 
 // Get page number from URL
 const { page: pageParam } = Astro.params;
@@ -17,7 +18,7 @@ if (isNaN(currentPage) || currentPage < 1) {
 }
 
 // Get all sayings with joins to get intro and lead texts
-const sayingsData = await db.select().from(Sayings).orderBy(desc(Sayings.id));
+const sayingsData = await getAllSayings();
 
 // Fetch related data
 const intros = await db.select().from(Intros);
