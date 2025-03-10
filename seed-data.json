@@ -1,12 +1,98 @@
-[
-  {
-    "introText": "There are two kinds of people in the world...",
-    "id": 1,
-    "createdAt": "2025-03-09T21:26:52.011Z"
-  },
-  {
-    "introText": "In life, you'll meet two types of people...",
-    "id": 2,
-    "createdAt": "2025-03-09T21:26:52.011Z"
-  }
-]
+{
+  "intros": [
+    { "introText": "There are two kinds of people in the world...", "id": 1 },
+    { "introText": "In life, you'll meet two types of people...", "id": 2 },
+    { "introText": "I believe there are only two types of people:", "id": 3 },
+    { "introText": "Humanity falls into two categories:", "id": 4 },
+    { "introText": "The world is split between:", "id": 5 }
+  ],
+  "leads": [
+    { "id": 1, "leadText": "those who" },
+    { "id": 2, "leadText": "people who" },
+    { "id": 3, "leadText": "the ones who" },
+    { "id": 4, "leadText": "individuals who" },
+    { "id": 5, "leadText": "folks who" }
+  ],
+  "sayings": [
+    {
+      "id": 1,
+      "firstLead": 1,
+      "secondLead": 1,
+      "firstKind": "fold their toilet paper",
+      "secondKind": "scrunch it up",
+      "intro": 1
+    },
+    {
+      "id": 2,
+      "firstLead": 2,
+      "secondLead": 2,
+      "firstKind": "put milk in first then cereal",
+      "secondKind": "put cereal in first then milk",
+      "intro": 2
+    },
+    {
+      "id": 3,
+      "firstLead": 3,
+      "secondLead": 3,
+      "firstKind": "use dark mode",
+      "secondKind": "use light mode",
+      "intro": 3
+    },
+    {
+      "id": 4,
+      "firstLead": 4,
+      "secondLead": 4,
+      "firstKind": "save everything to their desktop",
+      "secondKind": "organize files into folders",
+      "intro": 4
+    },
+    {
+      "id": 5,
+      "firstLead": 5,
+      "secondLead": 5,
+      "firstKind": "make their bed every morning",
+      "secondKind": "only make it when guests visit",
+      "intro": 5
+    },
+    {
+      "id": 6,
+      "firstLead": 1,
+      "secondLead": 1,
+      "firstKind": "read the instructions first",
+      "secondKind": "figure it out as they go",
+      "intro": 1
+    },
+    {
+      "id": 7,
+      "firstLead": 2,
+      "secondLead": 2,
+      "firstKind": "reply to emails immediately",
+      "secondKind": "let their inbox fill with hundreds of unread messages",
+      "intro": 2
+    },
+    {
+      "id": 8,
+      "firstLead": 3,
+      "secondLead": 3,
+      "firstKind": "plan their vacations down to the hour",
+      "secondKind": "wing it completely",
+      "intro": 3
+    },
+    {
+      "id": 9,
+      "firstLead": 4,
+      "secondLead": 4,
+      "firstKind": "keep their gas tank above half",
+      "secondKind": "drive until the warning light comes on",
+      "intro": 4
+    },
+    {
+      "id": 10,
+      "firstLead": 5,
+      "secondLead": 5,
+      "firstKind": "arrive 15 minutes early",
+      "secondKind": "rush in 5 minutes late",
+      "intro": 5
+    }
+  ]
+}

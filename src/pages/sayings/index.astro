@@ -7,8 +7,8 @@ import SayingList from '../../components/SayingList.astro';
 import Pagination from '../../components/Pagination.astro';
 import { config } from '../../lib/config';
 
-// Get all sayings with joins to get intro and lead texts
-const sayingsData = await db.select().from(Sayings);
+// Get all sayings with joins to get intro and lead texts, ordered by newest first
+const sayingsData = await db.select().from(Sayings).orderBy(Sayings.createdAt, 'desc');
 
 // Fetch related data
 const intros = await db.select().from(Intros);

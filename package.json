@@ -9,6 +9,7 @@
     "astro": "astro",
     "db:push": "astro db push",
     "db:seed": "astro db seed",
+    "seed-turso": "node seed-turso.mjs",
     "lint": "eslint . --ext .ts,.astro",
     "lint:fix": "eslint . --ext .ts,.astro --fix",
     "format": "prettier --write .",

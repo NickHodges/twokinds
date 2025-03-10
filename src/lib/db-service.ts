@@ -59,8 +59,8 @@ export async function getSayingById(id: number) {
  */
 export async function getAllSayings() {
   try {
-    // Get all sayings
-    const sayings = await db.select().from(Sayings);
+    // Get all sayings, sorted by createdAt in descending order (newest first)
+    const sayings = await db.select().from(Sayings).orderBy(Sayings.createdAt, 'desc');
 
     // Get all intros and leads
     const intros = await db.select().from(Intros);
