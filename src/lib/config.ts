@@ -19,7 +19,7 @@ export const config = {
     /**
      * Site title
      */
-    title: "Two Kinds of People in the World",
+    title: "Two Kinds of People",
     /**
      * Site description
      */

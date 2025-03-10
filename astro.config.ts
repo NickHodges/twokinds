@@ -1,6 +1,5 @@
 import { defineConfig, envField } from 'astro/config';
 import db from '@astrojs/db';
-import node from '@astrojs/node';
 import dotenv from 'dotenv';
 
 import vercel from '@astrojs/vercel';
