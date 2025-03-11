@@ -1,0 +1,44 @@
+---
+import { ADS } from '../lib/constants';
+---
+
+<div class="adsense-container my-8 text-center">
+  <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">Advertisement</div>
+
+  <div class="ad-slot mx-auto">
+    <script
+      async
+      src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADS.PUBLISHER_ID}`}
+      crossorigin="anonymous"></script>
+    <!-- Banner Ad -->
+    <ins
+      class="adsbygoogle"
+      style="display:block"
+      data-ad-client={ADS.PUBLISHER_ID}
+      data-ad-slot={ADS.BANNER_SLOT_ID}
+      data-ad-format="horizontal"
+      data-ad-layout="in-article"
+      data-adtest="on"></ins>
+    <script>
+      (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+  </div>
+</div>
+
+<style>
+  .adsense-container {
+    width: 100%;
+    overflow: hidden;
+    margin: 0 auto;
+  }
+
+  .ad-slot {
+    min-height: 90px;
+    background-color: #f9fafb;
+  }
+
+  /* Dark mode styles */
+  :global(.dark) .ad-slot {
+    background-color: #1f2937;
+  }
+</style>

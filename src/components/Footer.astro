@@ -1,0 +1,31 @@
+---
+import AdBanner from './AdBanner.astro';
+import PlaceholderAd from './PlaceholderAd.astro';
+import { ADS } from '../lib/constants';
+---
+
+<footer class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
+  {ADS.USE_PLACEHOLDER ? <PlaceholderAd /> : <AdBanner />}
+
+  <div class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+    <p>© {new Date().getFullYear()} Two Kinds of People. All rights reserved.</p>
+    <p class="mt-2">
+      <a href="/" class="hover:text-blue-600 dark:hover:text-blue-400">Home</a> ·
+      <a href="/about" class="hover:text-blue-600 dark:hover:text-blue-400">About</a>
+    </p>
+
+    {/* Only show in development mode */}
+    {
+      import.meta.env.DEV && (
+        <p class="mt-4 py-2 px-3 bg-gray-100 dark:bg-gray-800 inline-block rounded-lg">
+          <span class="font-medium">Ad Mode:</span>{' '}
+          {ADS.USE_PLACEHOLDER
+            ? 'Placeholder'
+            : ADS.TEST_MODE
+              ? 'AdSense Test Mode'
+              : 'AdSense Live Mode'}
+        </p>
+      )
+    }
+  </div>
+</footer>

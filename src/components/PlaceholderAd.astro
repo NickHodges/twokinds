@@ -1,0 +1,72 @@
+---
+// A placeholder component to test ad layouts without loading actual AdSense
+// Using only leaderboard format (wider banner)
+const adSize = { width: 728, height: 90, name: 'Leaderboard' };
+---
+
+<div class="adsense-container my-8 text-center">
+  <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">Advertisement (Placeholder)</div>
+
+  <div
+    class="ad-placeholder mx-auto"
+    style={`width: ${adSize.width}px; height: ${adSize.height}px;`}
+  >
+    <div class="ad-content">
+      <div class="ad-info">
+        <div class="size">{adSize.width} × {adSize.height}</div>
+        <div class="name">{adSize.name}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .adsense-container {
+    width: 100%;
+    overflow: hidden;
+    margin: 0 auto;
+  }
+
+  .ad-placeholder {
+    max-width: 100%;
+    margin: 0 auto;
+    border: 1px dashed #cbd5e1;
+    background-color: #f9fafb;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-family:
+      system-ui,
+      -apple-system,
+      sans-serif;
+  }
+
+  .ad-content {
+    padding: 1rem;
+  }
+
+  .ad-info {
+    color: #94a3b8;
+  }
+
+  .size {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .name {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
+
+  /* Dark mode styles */
+  :global(.dark) .ad-placeholder {
+    background-color: #1f2937;
+    border-color: #4b5563;
+  }
+
+  :global(.dark) .ad-info {
+    color: #64748b;
+  }
+</style>

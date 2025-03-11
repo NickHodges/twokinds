@@ -23,26 +23,28 @@ export const prerender = false;
 ---
 
 <MainLayout title={saying ? `${saying.intro}` : 'Saying Not Found'}>
-  <PageHeader title="Saying Details" />
+  <div class="flex flex-col">
+    <PageHeader title="Saying Details" />
 
-  {
-    notFound ? (
-      <NotificationBanner
-        type="error"
-        message="We couldn't find the saying you're looking for."
-        link={{ url: '/', text: 'Return to home page' }}
-      />
-    ) : (
-      <div class="max-w-2xl mx-auto">
-        <SayingDisplay saying={saying} />
-
-        <ActionButtons
-          buttons={[
-            { text: 'View all sayings', href: '/', primary: true },
-            { text: 'Create your own', href: '/create', primary: false },
-          ]}
+    {
+      notFound ? (
+        <NotificationBanner
+          type="error"
+          message="We couldn't find the saying you're looking for."
+          link={{ url: '/', text: 'Return to home page' }}
         />
-      </div>
-    )
-  }
+      ) : (
+        <div class="max-w-2xl mx-auto">
+          <SayingDisplay saying={saying} />
+
+          <ActionButtons
+            buttons={[
+              { text: 'View all sayings', href: '/', primary: true },
+              { text: 'Create your own', href: '/create', primary: false },
+            ]}
+          />
+        </div>
+      )
+    }
+  </div>
 </MainLayout>

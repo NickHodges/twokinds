@@ -2,8 +2,10 @@
 import ThemeToggle from './ThemeToggle.astro';
 ---
 
-<header class="mb-8">
-  <nav class="flex justify-between items-center py-4">
+<header
+  class="sticky top-0 z-50 mb-4 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm shadow-sm transition duration-300"
+>
+  <nav class="container mx-auto px-4 flex justify-between items-center py-3 max-w-6xl">
     <a href="/" class="text-xl font-semibold text-blue-600 dark:text-blue-400">TwoKinds</a>
 
     <div class="flex items-center space-x-4">
@@ -21,3 +23,37 @@ import ThemeToggle from './ThemeToggle.astro';
     </div>
   </nav>
 </header>
+
+<script>
+  // Enhance sticky header appearance while scrolling
+  document.addEventListener('DOMContentLoaded', () => {
+    const header = document.querySelector('header');
+    if (!header) return;
+
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 30) {
+        header.classList.add('scrolled');
+        header.classList.remove('shadow-sm');
+        header.classList.add('shadow-md');
+      } else {
+        header.classList.remove('scrolled');
+        header.classList.add('shadow-sm');
+        header.classList.remove('shadow-md');
+      }
+    });
+  });
+</script>
+
+<style>
+  header {
+    border-bottom: 1px solid transparent;
+  }
+
+  header.scrolled {
+    border-bottom-color: rgba(226, 232, 240, 0.3);
+  }
+
+  :global(.dark) header.scrolled {
+    border-bottom-color: rgba(55, 65, 81, 0.6);
+  }
+</style>

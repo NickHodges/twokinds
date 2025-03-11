@@ -1,6 +1,7 @@
 ---
 import Layout from './Layout.astro';
 import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
 
 interface Props {
   title?: string;
@@ -10,8 +11,11 @@ const { title = 'Two Kinds of People' } = Astro.props;
 ---
 
 <Layout>
-  <div class="container mx-auto px-4 py-8">
-    <Header />
-    <slot />
+  <Header />
+  <div class="container mx-auto px-4 pt-2 pb-8 max-w-6xl">
+    <main>
+      <slot />
+    </main>
+    <Footer />
   </div>
 </Layout>

@@ -20,42 +20,44 @@ const success = result?.success;
 ---
 
 <MainLayout>
-  <PageHeader title="Create a New Saying" />
+  <div class="flex flex-col">
+    <PageHeader title="Create a New Saying" />
 
-  <div class="max-w-4xl mx-auto my-8 p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md">
-    <h2 class="text-2xl font-bold mb-6">Create a New Saying</h2>
+    <div class="max-w-4xl mx-auto mt-4 mb-8 p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+      <h2 class="text-2xl font-bold mb-6">Create a New Saying</h2>
 
-    {
-      success && (
-        <NotificationBanner
-          type="success"
-          message="Your saying was successfully created!"
-          link={{
-            url: `/saying/${result?.data?.id}`,
-            text: 'View your new saying',
-          }}
-        />
-      )
-    }
-
-    {result?.error && <NotificationBanner type="error" message={result.error} />}
-
-    <NewSayingForm intros={intros} leads={leads} />
-    {
-      result?.success && result.data && (
-        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <h3 class="text-lg font-medium mb-3">Created Successfully:</h3>
-          <ActionButtons
-            buttons={[
-              {
-                text: 'View your new saying',
-                href: `/saying/${result.data.id}`,
-                primary: true,
-              },
-            ]}
+      {
+        success && (
+          <NotificationBanner
+            type="success"
+            message="Your saying was successfully created!"
+            link={{
+              url: `/saying/${result?.data?.id}`,
+              text: 'View your new saying',
+            }}
           />
-        </div>
-      )
-    }
+        )
+      }
+
+      {result?.error && <NotificationBanner type="error" message={result.error} />}
+
+      <NewSayingForm intros={intros} leads={leads} />
+      {
+        result?.success && result.data && (
+          <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-medium mb-3">Created Successfully:</h3>
+            <ActionButtons
+              buttons={[
+                {
+                  text: 'View your new saying',
+                  href: `/saying/${result.data.id}`,
+                  primary: true,
+                },
+              ]}
+            />
+          </div>
+        )
+      }
+    </div>
   </div>
 </MainLayout>
