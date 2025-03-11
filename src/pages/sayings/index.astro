@@ -1,10 +1,10 @@
 ---
 import { db, Sayings, Intros, Leads, desc } from 'astro:db';
-import Layout from '../../layouts/Layout.astro';
+import MainLayout from '../../layouts/MainLayout.astro';
 import '../../styles/index.css';
-import Header from '../../components/Header.astro';
 import SayingList from '../../components/SayingList.astro';
 import Pagination from '../../components/Pagination.astro';
+import Hero from '../../components/Hero.astro';
 import { config } from '../../lib/config';
 import { getAllSayings } from '../../lib/db-service';
 
@@ -55,12 +55,10 @@ const page = {
 export const prerender = false;
 ---
 
-<Layout>
-  <div class="container mx-auto px-4 py-8">
-    <Header />
+<MainLayout>
+  <Hero />
 
-    <SayingList sayings={page.data} />
+  <SayingList sayings={page.data} />
 
-    {page.lastPage > 1 && <Pagination page={page} basePath="/sayings" />}
-  </div>
-</Layout>
+  {page.lastPage > 1 && <Pagination page={page} basePath="/sayings" />}
+</MainLayout>

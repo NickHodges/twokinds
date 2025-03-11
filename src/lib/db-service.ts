@@ -9,10 +9,7 @@ import { db, Sayings, Intros, Leads, eq, desc } from 'astro:db';
 export async function getSayingById(id: number) {
   try {
     // Get the saying record
-    const sayingResults = await db
-      .select()
-      .from(Sayings)
-      .where(eq(Sayings.id, id));
+    const sayingResults = await db.select().from(Sayings).where(eq(Sayings.id, id));
 
     // If no results, return null
     if (!sayingResults || sayingResults.length === 0) {
@@ -23,28 +20,19 @@ export async function getSayingById(id: number) {
     const saying = sayingResults[0];
 
     // Get the related intro
-    const introResults = await db
-      .select()
-      .from(Intros)
-      .where(eq(Intros.id, saying.intro));
+    const introResults = await db.select().from(Intros).where(eq(Intros.id, saying.intro));
 
     // Get the related leads
-    const firstLeadResults = await db
-      .select()
-      .from(Leads)
-      .where(eq(Leads.id, saying.firstLead));
+    const firstLeadResults = await db.select().from(Leads).where(eq(Leads.id, saying.firstLead));
 
-    const secondLeadResults = await db
-      .select()
-      .from(Leads)
-      .where(eq(Leads.id, saying.secondLead));
+    const secondLeadResults = await db.select().from(Leads).where(eq(Leads.id, saying.secondLead));
 
     // Combine the data
     return {
       ...saying,
-      introText: introResults[0]?.introText || "Unknown intro",
-      firstLeadText: firstLeadResults[0]?.leadText || "Unknown lead",
-      secondLeadText: secondLeadResults[0]?.leadText || "Unknown lead",
+      introText: introResults[0]?.introText || 'Unknown intro',
+      firstLeadText: firstLeadResults[0]?.leadText || 'Unknown lead',
+      secondLeadText: secondLeadResults[0]?.leadText || 'Unknown lead',
     };
   } catch (error) {
     console.error('Error getting saying by ID:', error);
@@ -67,16 +55,16 @@ export async function getAllSayings() {
     const leads = await db.select().from(Leads);
 
     // Combine the data
-    return sayings.map(saying => {
-      const intro = intros.find(i => i.id === saying.intro);
-      const firstLead = leads.find(l => l.id === saying.firstLead);
-      const secondLead = leads.find(l => l.id === saying.secondLead);
+    return sayings.map((saying) => {
+      const intro = intros.find((i) => i.id === saying.intro);
+      const firstLead = leads.find((l) => l.id === saying.firstLead);
+      const secondLead = leads.find((l) => l.id === saying.secondLead);
 
       return {
         ...saying,
-        introText: intro?.introText || "Unknown intro",
-        firstLeadText: firstLead?.leadText || "Unknown lead",
-        secondLeadText: secondLead?.leadText || "Unknown lead",
+        introText: intro?.introText || 'Unknown intro',
+        firstLeadText: firstLead?.leadText || 'Unknown lead',
+        secondLeadText: secondLead?.leadText || 'Unknown lead',
       };
     });
   } catch (error) {

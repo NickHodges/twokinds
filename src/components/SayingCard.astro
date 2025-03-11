@@ -14,40 +14,40 @@ const { id, introText, firstLeadText, secondLeadText, firstKind, secondKind, cre
 ---
 
 <article
-  class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+  class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
 >
   <div class="p-6">
-    <h3 class="text-lg font-medium text-gray-900 mb-3">{introText}</h3>
+    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">{introText}</h3>
 
     <div class="space-y-2 mb-4">
-      <p class="text-gray-700">
-        <span class="text-indigo-600 font-medium">{firstLeadText}</span>
+      <p class="text-gray-700 dark:text-gray-300">
+        <span class="text-blue-600 dark:text-blue-400 font-medium">{firstLeadText}</span>
         {firstKind}
       </p>
-      <p class="text-gray-500 text-left text-sm font-medium">
-        and
-      </p>
-      <p class="text-gray-700">
-        <span class="text-indigo-600 font-medium">{secondLeadText}</span>
+      <p class="text-gray-500 dark:text-gray-400 text-left text-sm font-medium">and</p>
+      <p class="text-gray-700 dark:text-gray-300">
+        <span class="text-blue-600 dark:text-blue-400 font-medium">{secondLeadText}</span>
         {secondKind}
       </p>
     </div>
   </div>
 
-  <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+  <div
+    class="px-6 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 flex justify-between items-center"
+  >
     <div>
       {
         id && (
           <a
             href={`/saying/${id}`}
-            class="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+            class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
           >
             View as quote →
           </a>
         )
       }
     </div>
-    <time datetime={createdAt.toISOString()} class="text-xs text-gray-500">
+    <time datetime={createdAt.toISOString()} class="text-xs text-gray-500 dark:text-gray-400">
       {createdAt.toLocaleDateString()}
     </time>
   </div>

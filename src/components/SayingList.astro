@@ -21,13 +21,13 @@ interface Props {
   };
 }
 
-const { 
-  sayings, 
-  emptyStateText = "No sayings found.", 
+const {
+  sayings,
+  emptyStateText = 'No sayings found.',
   emptyStateCallToAction = {
-    text: "Create New Saying",
-    href: "/create"
-  }
+    text: 'Create New Saying',
+    href: '/create',
+  },
 } = Astro.props;
 ---
 
@@ -35,7 +35,7 @@ const {
   {
     sayings.length > 0 ? (
       sayings.map((saying) => (
-        <SayingCard 
+        <SayingCard
           id={saying.id}
           introText={saying.introText}
           firstLeadText={saying.firstLeadText}
@@ -46,10 +46,7 @@ const {
         />
       ))
     ) : (
-      <EmptyState 
-        message={emptyStateText} 
-        callToAction={emptyStateCallToAction} 
-      />
+      <EmptyState message={emptyStateText} callToAction={emptyStateCallToAction} />
     )
   }
 </div>

@@ -9,9 +9,7 @@ dotenv.config();
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [
-    db()
-  ],
+  integrations: [db()],
 
   server: {
     // Configuration to fix WebSocket issues in WSL
@@ -24,14 +22,22 @@ export default defineConfig({
   adapter: vercel(),
 
   env: {
-       schema: {
-           ASTRO_DATABASE_FILE: envField.string({context: "server", access: "secret", optional: true}),
-           TURSO_DB_URL: envField.string({context: "server", access: "secret", optional: false}),
-           TURSO_DB_AUTH_TOKEN: envField.string({context: "server", access: "secret", optional: false}),
-           ASTRO_DB_REMOTE_URL: envField.string({context: "server", access: "secret", optional: false}),
-           ASTRO_DB_APP_TOKEN: envField.string({context: "server", access: "secret", optional: false}),
-  }
-},
+    schema: {
+      ASTRO_DATABASE_FILE: envField.string({ context: 'server', access: 'secret', optional: true }),
+      TURSO_DB_URL: envField.string({ context: 'server', access: 'secret', optional: false }),
+      TURSO_DB_AUTH_TOKEN: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: false,
+      }),
+      ASTRO_DB_REMOTE_URL: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: false,
+      }),
+      ASTRO_DB_APP_TOKEN: envField.string({ context: 'server', access: 'secret', optional: false }),
+    },
+  },
 
   vite: {
     server: {
@@ -41,17 +47,17 @@ export default defineConfig({
         // Use the server port (not the HMR port)
         clientPort: 4321,
         // Increase timeout
-        timeout: 60000
+        timeout: 60000,
       },
       fs: {
         // Allow serving files from all directories
-        allow: ['.']
+        allow: ['.'],
       },
     },
     // Better debug support
     optimizeDeps: {
       include: [],
-      force: true
+      force: true,
     },
   },
 });

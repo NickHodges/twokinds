@@ -10,13 +10,18 @@ interface Props {
 const { message, callToAction } = Astro.props;
 ---
 
-<div class="col-span-full text-center p-12 bg-gray-50 rounded-lg border border-gray-200">
-  <h3 class="text-lg font-medium text-gray-900 mb-3">{message}</h3>
-  {callToAction && (
-    <a
-      href={callToAction.href}
-      class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-      {callToAction.text}
-    </a>
-  )}
+<div
+  class="col-span-full text-center p-12 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+>
+  <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">{message}</h3>
+  {
+    callToAction && (
+      <a
+        href={callToAction.href}
+        class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900"
+      >
+        {callToAction.text}
+      </a>
+    )
+  }
 </div>

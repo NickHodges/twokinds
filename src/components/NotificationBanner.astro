@@ -1,6 +1,6 @@
 ---
 interface Props {
-  type: "success" | "error";
+  type: 'success' | 'error';
   message: string;
   link?: {
     url: string;
@@ -10,16 +10,28 @@ interface Props {
 
 const { type, message, link } = Astro.props;
 
-const bgColor = type === "success" ? "bg-green-50" : "bg-red-50";
-const borderColor = type === "success" ? "border-green-200" : "border-red-200";
-const textColor = type === "success" ? "text-green-800" : "text-red-800";
+const bgColor =
+  type === 'success' ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30';
+
+const borderColor =
+  type === 'success'
+    ? 'border-green-200 dark:border-green-800'
+    : 'border-red-200 dark:border-red-800';
+
+const textColor =
+  type === 'success' ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200';
 ---
 
 <div class={`mb-6 p-4 ${bgColor} border ${borderColor} ${textColor} rounded-md`}>
   <p class="mb-2">{message}</p>
-  {link && (
-    <a href={link.url} class="text-indigo-600 underline hover:text-indigo-800">
-      {link.text}
-    </a>
-  )}
+  {
+    link && (
+      <a
+        href={link.url}
+        class="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300"
+      >
+        {link.text}
+      </a>
+    )
+  }
 </div>

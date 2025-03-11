@@ -8,7 +8,7 @@ interface Props {
       next: string | null;
     };
   };
-  
+
   /**
    * Base path for pagination links
    * @example "/sayings" for /sayings/1, /sayings/2, etc.
@@ -17,7 +17,7 @@ interface Props {
   basePath?: string;
 }
 
-const { page, basePath = "" } = Astro.props;
+const { page, basePath = '' } = Astro.props;
 
 // Generate an array of page numbers to display
 // If there are many pages, we'll show ellipses (...)
@@ -30,26 +30,26 @@ if (page.lastPage <= MAX_VISIBLE_PAGES) {
 } else {
   // Otherwise, show a window of pages around the current one
   visiblePages = [1]; // Always show first page
-  
+
   // Determine start and end of visible page window
   let start = Math.max(2, page.currentPage - 1);
   let end = Math.min(page.lastPage - 1, page.currentPage + 1);
-  
+
   // Add ellipsis before window if needed
   if (start > 2) {
-    visiblePages.push("...");
+    visiblePages.push('...');
   }
-  
+
   // Add the window of pages
   for (let i = start; i <= end; i++) {
     visiblePages.push(i);
   }
-  
+
   // Add ellipsis after window if needed
   if (end < page.lastPage - 1) {
-    visiblePages.push("...");
+    visiblePages.push('...');
   }
-  
+
   // Always show last page
   visiblePages.push(page.lastPage);
 }
@@ -57,7 +57,7 @@ if (page.lastPage <= MAX_VISIBLE_PAGES) {
 // Function to get URL for a specific page
 const getPageUrl = (pageNum: number) => {
   if (pageNum === 1) {
-    return basePath || "/"; // First page is at the base path
+    return basePath || '/'; // First page is at the base path
   } else {
     return `${basePath}/${pageNum}`;
   }
@@ -66,51 +66,57 @@ const getPageUrl = (pageNum: number) => {
 
 <nav aria-label="Pagination" class="mt-8">
   <ul class="flex flex-wrap justify-center items-center gap-2">
-    {page.url.prev && (
-      <li>
-        <a 
-          href={page.url.prev} 
-          class="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700"
-          aria-label="Previous page"
-        >
-          &larr; Prev
-        </a>
-      </li>
-    )}
-    
-    {visiblePages.map((num) => (
-      typeof num === "number" ? (
+    {
+      page.url.prev && (
         <li>
           <a
-            href={getPageUrl(num)}
-            aria-current={page.currentPage === num ? "page" : undefined}
-            aria-label={`Page ${num}`}
-            class={`flex items-center justify-center w-10 h-10 rounded-full transition-colors ${
-              page.currentPage === num 
-                ? 'bg-indigo-600 text-white font-medium' 
-                : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-            }`}
+            href={page.url.prev}
+            class="px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
+            aria-label="Previous page"
           >
-            {num}
+            &larr; Prev
           </a>
         </li>
-      ) : (
-        <li class="px-1">
-          <span class="text-gray-500">...</span>
+      )
+    }
+
+    {
+      visiblePages.map((num) =>
+        typeof num === 'number' ? (
+          <li>
+            <a
+              href={getPageUrl(num)}
+              aria-current={page.currentPage === num ? 'page' : undefined}
+              aria-label={`Page ${num}`}
+              class={`flex items-center justify-center w-10 h-10 rounded-full transition-colors ${
+                page.currentPage === num
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white font-medium'
+                  : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              {num}
+            </a>
+          </li>
+        ) : (
+          <li class="px-1">
+            <span class="text-gray-500 dark:text-gray-400">...</span>
+          </li>
+        )
+      )
+    }
+
+    {
+      page.url.next && (
+        <li>
+          <a
+            href={page.url.next}
+            class="px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
+            aria-label="Next page"
+          >
+            Next &rarr;
+          </a>
         </li>
       )
-    ))}
-    
-    {page.url.next && (
-      <li>
-        <a 
-          href={page.url.next} 
-          class="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700"
-          aria-label="Next page"
-        >
-          Next &rarr;
-        </a>
-      </li>
-    )}
+    }
   </ul>
 </nav>

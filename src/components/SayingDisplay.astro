@@ -16,27 +16,28 @@ interface Props {
 const { saying } = Astro.props;
 ---
 
-<div class="bg-white p-8 rounded-xl shadow-md">
+<div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-md">
   <div class="mb-8 text-center">
-    <h1 class="text-3xl font-bold text-gray-900 mb-2">{saying.introText}</h1>
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">{saying.introText}</h1>
   </div>
 
   <div class="space-y-6 text-xl text-center">
-    <p>
-      <span class="text-indigo-600 font-medium">{saying.firstLeadText}</span>{' '}
+    <p class="text-gray-800 dark:text-gray-200">
+      <span class="text-blue-600 dark:text-blue-400 font-medium">{saying.firstLeadText}</span>{' '}
       {saying.firstKind}
     </p>
-    <p class="font-medium text-gray-600">
-      and
-    </p>
-    <p>
-      <span class="text-indigo-600 font-medium">{saying.secondLeadText}</span>{' '}
+    <p class="font-medium text-gray-600 dark:text-gray-400">and</p>
+    <p class="text-gray-800 dark:text-gray-200">
+      <span class="text-blue-600 dark:text-blue-400 font-medium">{saying.secondLeadText}</span>{' '}
       {saying.secondKind}
     </p>
   </div>
 
-  <div class="mt-8 pt-4 border-t border-gray-200 text-center">
-    <time datetime={saying.createdAt.toISOString()} class="text-sm text-gray-500">
+  <div class="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
+    <time
+      datetime={saying.createdAt.toISOString()}
+      class="text-sm text-gray-500 dark:text-gray-400"
+    >
       Added on {saying.createdAt.toLocaleDateString()}
     </time>
   </div>

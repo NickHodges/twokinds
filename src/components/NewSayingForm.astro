@@ -1,99 +1,103 @@
----
-import { actions } from "astro:actions";
-
-interface Intro {
-  id: number;
-  introText: string;
-  createdAt: Date;
-}
-
-interface Lead {
-  id: number;
-  leadText: string;
-  createdAt: Date;
-}
-
-interface Props {
-  intros: Intro[];
-  leads: Lead[];
-}
-
-const { intros, leads } = Astro.props;
----
-
-<form method="POST" action={actions.submitSaying} class="space-y-6">
-  <div class="space-y-4">
-    <label class="block font-medium text-gray-700">
-      Choose an Introduction:
-      <select
-        name="intro"
-        class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-        required>
-        <option value="">-- Select an Introduction --</option>
-        {intros.map((intro) => <option value={intro.id}>{intro.introText}</option>)}
-      </select>
-    </label>
-  </div>
-
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div class="space-y-4">
-      <label class="block font-medium text-gray-700">
-        First Lead:
-        <select
-          name="firstLead"
-          class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-          required>
-          <option value="">-- Select a Lead --</option>
-          {leads.map((lead) => <option value={lead.id}>{lead.leadText}</option>)}
-        </select>
-      </label>
-
-      <label class="block font-medium text-gray-700">
-        First Kind of People:
-        <input
-          type="text"
-          name="firstKind"
-          placeholder="e.g., put their shopping cart back"
-          class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-          required
-          minlength="3"
-          maxlength="100"
-        />
-      </label>
-    </div>
-
-    <div class="space-y-4">
-      <label class="block font-medium text-gray-700">
-        Second Lead:
-        <select
-          name="secondLead"
-          class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-          required>
-          <option value="">-- Select a Lead --</option>
-          {leads.map((lead) => <option value={lead.id}>{lead.leadText}</option>)}
-        </select>
-      </label>
-
-      <label class="block font-medium text-gray-700">
-        Second Kind of People:
-        <input
-          type="text"
-          name="secondKind"
-          placeholder="e.g., leave it in the parking lot"
-          class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-          required
-          minlength="3"
-          maxlength="100"
-        />
-      </label>
-    </div>
-  </div>
-
-  <div>
-    <button
-      type="submit"
-      class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-      Create Saying
-    </button>
-  </div>
+---
+import { actions } from 'astro:actions';
+
+interface Intro {
+  id: number;
+  introText: string;
+  createdAt: Date;
+}
+
+interface Lead {
+  id: number;
+  leadText: string;
+  createdAt: Date;
+}
+
+interface Props {
+  intros: Intro[];
+  leads: Lead[];
+}
+
+const { intros, leads } = Astro.props;
+---
+
+<form method="POST" action={actions.submitSaying} class="space-y-6">
+  <div class="space-y-4">
+    <label class="block font-medium text-gray-700 dark:text-gray-300">
+      Choose an Introduction:
+      <select
+        name="intro"
+        class="mt-1 block w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 focus:ring-opacity-50"
+        required
+      >
+        <option value="">-- Select an Introduction --</option>
+        {intros.map((intro) => <option value={intro.id}>{intro.introText}</option>)}
+      </select>
+    </label>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="space-y-4">
+      <label class="block font-medium text-gray-700 dark:text-gray-300">
+        First Lead:
+        <select
+          name="firstLead"
+          class="mt-1 block w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 focus:ring-opacity-50"
+          required
+        >
+          <option value="">-- Select a Lead --</option>
+          {leads.map((lead) => <option value={lead.id}>{lead.leadText}</option>)}
+        </select>
+      </label>
+
+      <label class="block font-medium text-gray-700 dark:text-gray-300">
+        First Kind of People:
+        <input
+          type="text"
+          name="firstKind"
+          placeholder="e.g., put their shopping cart back"
+          class="mt-1 block w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 focus:ring-opacity-50"
+          required
+          minlength="3"
+          maxlength="100"
+        />
+      </label>
+    </div>
+
+    <div class="space-y-4">
+      <label class="block font-medium text-gray-700 dark:text-gray-300">
+        Second Lead:
+        <select
+          name="secondLead"
+          class="mt-1 block w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 focus:ring-opacity-50"
+          required
+        >
+          <option value="">-- Select a Lead --</option>
+          {leads.map((lead) => <option value={lead.id}>{lead.leadText}</option>)}
+        </select>
+      </label>
+
+      <label class="block font-medium text-gray-700 dark:text-gray-300">
+        Second Kind of People:
+        <input
+          type="text"
+          name="secondKind"
+          placeholder="e.g., leave it in the parking lot"
+          class="mt-1 block w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 focus:ring-opacity-50"
+          required
+          minlength="3"
+          maxlength="100"
+        />
+      </label>
+    </div>
+  </div>
+
+  <div>
+    <button
+      type="submit"
+      class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900"
+    >
+      Create Saying
+    </button>
+  </div>
 </form>

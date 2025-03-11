@@ -1,5 +1,5 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+import MainLayout from '../../layouts/MainLayout.astro';
 import '../../styles/index.css';
 import { getSayingById } from '../../lib/db-service';
 import PageHeader from '../../components/PageHeader.astro';
@@ -18,38 +18,31 @@ const saying = await getSayingById(sayingId);
 // Handle case where saying doesn't exist
 const notFound = !saying;
 
-
 // Don't prerender so we always get fresh data
 export const prerender = false;
 ---
 
-<Layout title={saying ? `${saying.intro}` : 'Saying Not Found'}>
-  <div class="container mx-auto px-4 py-8">
-    <PageHeader 
-      title="Saying Details" 
-      backLink="/" 
-      backText="← Back to all sayings"
-    />
+<MainLayout title={saying ? `${saying.intro}` : 'Saying Not Found'}>
+  <PageHeader title="Saying Details" />
 
-    {
-      notFound ? (
-        <NotificationBanner
-          type="error"
-          message="We couldn't find the saying you're looking for."
-          link={{ url: "/", text: "Return to home page" }}
+  {
+    notFound ? (
+      <NotificationBanner
+        type="error"
+        message="We couldn't find the saying you're looking for."
+        link={{ url: '/', text: 'Return to home page' }}
+      />
+    ) : (
+      <div class="max-w-2xl mx-auto">
+        <SayingDisplay saying={saying} />
+
+        <ActionButtons
+          buttons={[
+            { text: 'View all sayings', href: '/', primary: true },
+            { text: 'Create your own', href: '/create', primary: false },
+          ]}
         />
-      ) : (
-        <div class="max-w-2xl mx-auto">
-          <SayingDisplay saying={saying} />
-          
-          <ActionButtons 
-            buttons={[
-              { text: "View all sayings", href: "/", primary: true },
-              { text: "Create your own", href: "/create", primary: false }
-            ]}
-          />
-        </div>
-      )
-    }
-  </div>
-</Layout>
+      </div>
+    )
+  }
+</MainLayout>

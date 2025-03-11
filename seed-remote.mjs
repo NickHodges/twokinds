@@ -14,60 +14,64 @@ async function seedDatabase() {
     // Check for environment variables
     const dbUrl = process.env.TURSO_DB_URL;
     const authToken = process.env.TURSO_DB_AUTH_TOKEN;
-    
+
     if (!dbUrl || !authToken) {
-      console.error('Error: TURSO_DB_URL or TURSO_DB_AUTH_TOKEN environment variables are not set.');
-      console.error('Please run with: TURSO_DB_URL=your_url TURSO_DB_AUTH_TOKEN=your_token node seed-remote.mjs');
+      console.error(
+        'Error: TURSO_DB_URL or TURSO_DB_AUTH_TOKEN environment variables are not set.'
+      );
+      console.error(
+        'Please run with: TURSO_DB_URL=your_url TURSO_DB_AUTH_TOKEN=your_token node seed-remote.mjs'
+      );
       process.exit(1);
     }
-    
+
     console.log('Starting to seed remote database...');
-    
+
     // Create Turso client
     const client = createClient({
       url: dbUrl,
-      authToken: authToken
+      authToken: authToken,
     });
-    
+
     // Get seed data
     const seedData = await getSeedData();
-    
+
     // Begin transaction
     const transaction = await client.transaction();
-    
+
     try {
       console.log('Seeding Intros table...');
       for (const intro of seedData.intros) {
         await transaction.execute({
           sql: 'INSERT OR IGNORE INTO Intros (id, introText, createdAt) VALUES (?, ?, ?)',
-          args: [intro.id, intro.introText, new Date().toISOString()]
+          args: [intro.id, intro.introText, new Date().toISOString()],
         });
       }
-      
+
       console.log('Seeding Leads table...');
       for (const lead of seedData.leads) {
         await transaction.execute({
           sql: 'INSERT OR IGNORE INTO Leads (id, leadText, createdAt) VALUES (?, ?, ?)',
-          args: [lead.id, lead.leadText, new Date().toISOString()]
+          args: [lead.id, lead.leadText, new Date().toISOString()],
         });
       }
-      
+
       console.log('Seeding Sayings table...');
       for (const saying of seedData.sayings) {
         await transaction.execute({
           sql: 'INSERT OR IGNORE INTO Sayings (id, firstLead, secondLead, firstKind, secondKind, intro, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
           args: [
-            saying.id, 
-            saying.firstLead, 
-            saying.secondLead, 
-            saying.firstKind, 
-            saying.secondKind, 
-            saying.intro, 
-            new Date().toISOString()
-          ]
+            saying.id,
+            saying.firstLead,
+            saying.secondLead,
+            saying.firstKind,
+            saying.secondKind,
+            saying.intro,
+            new Date().toISOString(),
+          ],
         });
       }
-      
+
       // Commit the transaction
       await transaction.commit();
       console.log('Database seeded successfully!');

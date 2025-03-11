@@ -7,8 +7,24 @@
     <meta name="generator" content={Astro.generator} />
     <title>Two Kinds of People</title>
     <link rel="stylesheet" href="/src/styles/layout.css" />
+
+    <!-- Theme script (must be in the head) -->
+    <script is:inline>
+      // On page load or when changing themes, best to add inline in `head` to avoid FOUC
+      if (
+        localStorage.getItem('theme') === 'dark' ||
+        (!localStorage.getItem('theme') &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches)
+      ) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
   </head>
-  <body>
+  <body
+    class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200"
+  >
     <slot />
   </body>
 </html>

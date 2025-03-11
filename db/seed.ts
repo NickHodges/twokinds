@@ -1,5 +1,4 @@
-import { db, Intros, Leads, Sayings  } from 'astro:db';
-
+import { db, Intros, Leads, Sayings } from 'astro:db';
 
 export default async function seed() {
   // Seed the Intros table with some sample data
