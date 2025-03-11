@@ -14,26 +14,34 @@ const { id, introText, firstLeadText, secondLeadText, firstKind, secondKind, cre
 ---
 
 <article
-  class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+  class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col h-full group"
 >
-  <div class="p-6">
-    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">{introText}</h3>
+  <div class="p-6 flex-grow overflow-hidden">
+    <h3
+      class="text-lg font-medium text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:line-clamp-none transition-all"
+    >
+      {introText}
+    </h3>
 
-    <div class="space-y-2 mb-4">
+    <div class="space-y-2 relative">
       <p class="text-gray-700 dark:text-gray-300">
         <span class="text-blue-600 dark:text-blue-400 font-medium">{firstLeadText}</span>
-        {firstKind}
+        <span class="break-words line-clamp-3 group-hover:line-clamp-none transition-all"
+          >{firstKind}</span
+        >
       </p>
       <p class="text-gray-500 dark:text-gray-400 text-left text-sm font-medium">and</p>
       <p class="text-gray-700 dark:text-gray-300">
         <span class="text-blue-600 dark:text-blue-400 font-medium">{secondLeadText}</span>
-        {secondKind}
+        <span class="break-words line-clamp-3 group-hover:line-clamp-none transition-all"
+          >{secondKind}</span
+        >
       </p>
     </div>
   </div>
 
   <div
-    class="px-6 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 flex justify-between items-center"
+    class="px-6 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 flex justify-between items-center mt-auto"
   >
     <div>
       {
