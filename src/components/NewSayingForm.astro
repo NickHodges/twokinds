@@ -21,8 +21,8 @@ interface Props {
 const { intros, leads } = Astro.props;
 ---
 
-<form method="POST" action={actions.submitSaying} class="space-y-6">
-  <div class="space-y-4">
+<form method="POST" action={actions.submitSaying} class="space-y-6 w-full">
+  <div class="space-y-4 w-full">
     <label class="block font-medium text-gray-700 dark:text-gray-300">
       Choose an Introduction:
       <select
@@ -36,8 +36,8 @@ const { intros, leads } = Astro.props;
     </label>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div class="space-y-4">
+  <div class="space-y-6 w-full">
+    <div class="w-full">
       <label class="block font-medium text-gray-700 dark:text-gray-300">
         First Lead:
         <select
@@ -49,14 +49,16 @@ const { intros, leads } = Astro.props;
           {leads.map((lead) => <option value={lead.id}>{lead.leadText}</option>)}
         </select>
       </label>
+    </div>
 
+    <div class="w-full">
       <label class="block font-medium text-gray-700 dark:text-gray-300">
         First Kind of People:
         <input
           type="text"
           name="firstKind"
           placeholder="e.g., put their shopping cart back"
-          class="mt-1 block w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 focus:ring-opacity-50"
+          class="mt-1 block w-full md:w-[600px] p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 focus:ring-opacity-50"
           required
           minlength="3"
           maxlength="100"
@@ -64,7 +66,7 @@ const { intros, leads } = Astro.props;
       </label>
     </div>
 
-    <div class="space-y-4">
+    <div class="w-full">
       <label class="block font-medium text-gray-700 dark:text-gray-300">
         Second Lead:
         <select
@@ -76,14 +78,16 @@ const { intros, leads } = Astro.props;
           {leads.map((lead) => <option value={lead.id}>{lead.leadText}</option>)}
         </select>
       </label>
+    </div>
 
+    <div class="w-full">
       <label class="block font-medium text-gray-700 dark:text-gray-300">
         Second Kind of People:
         <input
           type="text"
           name="secondKind"
           placeholder="e.g., leave it in the parking lot"
-          class="mt-1 block w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 focus:ring-opacity-50"
+          class="mt-1 block w-full md:w-[600px] p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 focus:ring-opacity-50"
           required
           minlength="3"
           maxlength="100"

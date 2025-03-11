@@ -53,6 +53,13 @@ export default defineConfig({
         // Allow serving files from all directories
         allow: ['.'],
       },
+      watch: {
+        // Improve file watching in WSL environment
+        usePolling: true,
+        interval: 1000,
+        // Explicitly watch node_modules to catch module updates
+        ignored: ['!**/node_modules/**'],
+      },
     },
     // Better debug support
     optimizeDeps: {

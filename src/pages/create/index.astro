@@ -23,8 +23,14 @@ const success = result?.success;
   <div class="flex flex-col">
     <PageHeader title="Create a New Saying" />
 
-    <div class="max-w-4xl mx-auto mt-4 mb-8 p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md">
-      <h2 class="text-2xl font-bold mb-6">Create a New Saying</h2>
+    <div class="mx-auto mt-4 mb-8 p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+      <style>
+        input[name="firstKind"],
+        input[name="secondKind"] {
+          width: 100% !important;
+          max-width: 800px !important;
+        }
+      </style>
 
       {
         success && (
