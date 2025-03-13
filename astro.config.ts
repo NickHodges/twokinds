@@ -24,12 +24,6 @@ export default defineConfig({
   env: {
     schema: {
       ASTRO_DATABASE_FILE: envField.string({ context: 'server', access: 'secret', optional: true }),
-      TURSO_DB_URL: envField.string({ context: 'server', access: 'secret', optional: false }),
-      TURSO_DB_AUTH_TOKEN: envField.string({
-        context: 'server',
-        access: 'secret',
-        optional: false,
-      }),
       ASTRO_DB_REMOTE_URL: envField.string({
         context: 'server',
         access: 'secret',
@@ -43,7 +37,11 @@ export default defineConfig({
       GITHUB_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
       GITHUB_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
       GOOGLE_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
-      GOOGLE_CLIENT_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
+      GOOGLE_CLIENT_SECRET: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: false,
+      }),
     },
   },
 
