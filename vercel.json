@@ -5,7 +5,6 @@
   "framework": "astro",
   "outputDirectory": "dist",
   "env": {
-    "TURSO_DB_URL": "@turso_db_url",
     "TURSO_DB_AUTH_TOKEN": "@turso_db_auth_token",
     "ASTRO_DB_REMOTE_URL": "@astro_db_remote_url",
     "ASTRO_DB_APP_TOKEN": "@astro_db_app_token",

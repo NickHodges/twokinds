@@ -40,6 +40,27 @@ const Sayings = defineTable({
   },
 });
 
+/**
+ * Users table - stores information about authenticated users
+ */
+const Users = defineTable({
+  columns: {
+    id: column.text({ primaryKey: true }), // Auth provider user ID
+    name: column.text({ optional: true }),
+    email: column.text({ optional: true }),
+    image: column.text({ optional: true }),
+    provider: column.text({ optional: true }), // 'github', 'google', etc.
+    lastLogin: column.date({ default: new Date() }),
+    createdAt: column.date({ default: new Date() }),
+    updatedAt: column.date({ default: new Date() }),
+    role: column.text({ default: 'user' }), // 'user', 'admin', etc.
+    preferences: column.json({ optional: true }), // Store user preferences as JSON
+  },
+  indexes: {
+    email_idx: { on: ['email'], unique: true },
+  },
+});
+
 export default defineDb({
-  tables: { Intros, Leads, Sayings },
+  tables: { Intros, Leads, Sayings, Users },
 });

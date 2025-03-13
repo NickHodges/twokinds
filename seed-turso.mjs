@@ -7,19 +7,19 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Get Turso credentials from environment
-const TURSO_DB_URL = process.env.TURSO_DB_URL;
+const REMOTE_DB_URL = process.env.ASTRO_DB_REMOTE_URL;
 const TURSO_DB_AUTH_TOKEN = process.env.TURSO_DB_AUTH_TOKEN;
 
 // Validate credentials are available
-if (!TURSO_DB_URL || !TURSO_DB_AUTH_TOKEN) {
+if (!REMOTE_DB_URL || !TURSO_DB_AUTH_TOKEN) {
   console.error('Error: Missing Turso database credentials.');
-  console.error('Make sure TURSO_DB_URL and TURSO_DB_AUTH_TOKEN are set in your .env file.');
+  console.error('Make sure ASTRO_DB_REMOTE_URL and TURSO_DB_AUTH_TOKEN are set in your .env file.');
   process.exit(1);
 }
 
 // Connect to Turso database
 const db = createClient({
-  url: TURSO_DB_URL,
+  url: REMOTE_DB_URL,
   authToken: TURSO_DB_AUTH_TOKEN,
 });
 
@@ -37,7 +37,7 @@ async function getSeedData() {
 // Main function to seed the database
 async function seedTursoDatabase() {
   console.log('Starting to seed Turso database...');
-  console.log(`Using database URL: ${TURSO_DB_URL}`);
+  console.log(`Using database URL: ${REMOTE_DB_URL}`);
 
   try {
     // Get seed data

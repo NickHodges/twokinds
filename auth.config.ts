@@ -40,17 +40,28 @@ export default defineConfig({
     signIn: '/auth/signin', // Custom sign-in page
   },
   callbacks: {
-    async signIn() {
+    async signIn({ user, account }) {
+      if (!user?.email) return false;
+      // Generate a consistent ID based on the provider and email
+      user.id = `${account?.provider}|${user.email}`;
       return true;
     },
     async redirect({ url: _url, baseUrl: _baseUrl }) {
       // Always redirect to home page after sign-in or sign-out
       return '/';
     },
-    async session({ session }) {
+    async session({ session, token }) {
+      if (session.user) {
+        // Include the user ID in the session
+        session.user.id = token.sub || (token.id as string);
+      }
       return session;
     },
-    async jwt({ token }) {
+    async jwt({ token, user, account }) {
+      if (user) {
+        // Set the user ID in the token
+        token.id = `${account?.provider}|${user.email}`;
+      }
       return token;
     },
   },

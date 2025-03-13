@@ -1,0 +1,187 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { getUserById } from '../utils/user-db';
+import type { ExtendedSession } from '../env';
+
+// Get the user's session
+const session = Astro.locals.session as ExtendedSession | null;
+console.log('[Profile Page] Full session:', JSON.stringify(session, null, 2));
+
+// Try to find the user ID from various possible locations
+const userId =
+  session?.user?.id || session?.user?.sub || session?.sub || session?.userId || session?.user?.sub;
+
+console.log('[Profile Page] User ID candidates:', {
+  id: session?.user?.id,
+  userSub: session?.user?.sub,
+  sessionSub: session?.sub,
+  sessionUserId: session?.userId,
+  email: session?.user?.email,
+});
+
+// Redirect if not logged in
+if (!session?.user || !userId) {
+  console.log('[Profile Page] No valid user identifier found, redirecting...');
+  return Astro.redirect('/?error=unauthorized');
+}
+
+// Get the user's database record
+console.log('[Profile Page] Getting user from database with ID:', userId);
+const dbUser = await getUserById(userId);
+console.log('[Profile Page] Database user found:', !!dbUser);
+
+// If no database user is found, redirect
+if (!dbUser) {
+  console.log('[Profile Page] No database user found, redirecting...');
+  return Astro.redirect('/?error=user_not_found');
+}
+
+// Define the preferences type to fix linter errors
+interface UserPreferences {
+  theme?: 'light' | 'dark' | 'system';
+  emailNotifications?: boolean;
+}
+
+// Ensure preferences is an object
+const preferences = (dbUser.preferences as UserPreferences) || {};
+---
+
+<MainLayout title="Your Profile">
+  <div class="max-w-4xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-6">Your Profile</h1>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+      <div class="flex items-center gap-4 mb-6">
+        {
+          session.user?.image && (
+            <img
+              src={session.user.image}
+              alt={session.user?.name || 'User avatar'}
+              class="w-16 h-16 rounded-full"
+            />
+          )
+        }
+        <div>
+          <h2 class="text-xl font-semibold">{session.user?.name}</h2>
+          <p class="text-gray-600 dark:text-gray-400">{session.user?.email}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-500">
+            Member since {
+              dbUser?.createdAt ? new Date(dbUser.createdAt).toLocaleDateString() : 'Unknown'
+            }
+          </p>
+        </div>
+      </div>
+
+      <div class="border-t dark:border-gray-700 pt-6">
+        <h3 class="text-lg font-semibold mb-4">Account Information</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">User ID</p>
+            <p class="font-medium">{userId}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Provider</p>
+            <p class="font-medium capitalize">{dbUser?.provider || 'Unknown'}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Last Login</p>
+            <p class="font-medium">
+              {dbUser?.lastLogin ? new Date(dbUser.lastLogin).toLocaleString() : 'Unknown'}
+            </p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Role</p>
+            <p class="font-medium capitalize">{dbUser?.role || 'User'}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <h3 class="text-lg font-semibold mb-4">Preferences</h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-4">
+        You can customize your experience by setting your preferences.
+      </p>
+
+      <form id="preferences-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Theme
+          </label>
+          <select
+            name="theme"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            value={preferences.theme || 'system'}
+          >
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="system">System (Default)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Email Notifications
+          </label>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              name="emailNotifications"
+              class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              checked={preferences.emailNotifications || false}
+            />
+            <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">
+              Receive email notifications
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          Save Preferences
+        </button>
+      </form>
+    </div>
+  </div>
+</MainLayout>
+
+<script>
+  // Client-side script to handle form submission
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('preferences-form');
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target as HTMLFormElement);
+      const theme = formData.get('theme');
+      const emailNotifications = formData.has('emailNotifications');
+
+      try {
+        const response = await fetch('/api/user/preferences', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            preferences: {
+              theme,
+              emailNotifications,
+            },
+          }),
+        });
+
+        if (response.ok) {
+          alert('Preferences saved successfully!');
+        } else {
+          alert('Failed to save preferences. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error saving preferences:', error);
+        alert('An error occurred while saving preferences.');
+      }
+    });
+  });
+</script>

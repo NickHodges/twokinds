@@ -12,15 +12,15 @@ async function getSeedData() {
 async function seedDatabase() {
   try {
     // Check for environment variables
-    const dbUrl = process.env.TURSO_DB_URL;
+    const dbUrl = process.env.ASTRO_DB_REMOTE_URL;
     const authToken = process.env.TURSO_DB_AUTH_TOKEN;
 
     if (!dbUrl || !authToken) {
       console.error(
-        'Error: TURSO_DB_URL or TURSO_DB_AUTH_TOKEN environment variables are not set.'
+        'Error: ASTRO_DB_REMOTE_URL or TURSO_DB_AUTH_TOKEN environment variables are not set.'
       );
       console.error(
-        'Please run with: TURSO_DB_URL=your_url TURSO_DB_AUTH_TOKEN=your_token node seed-remote.mjs'
+        'Please run with: ASTRO_DB_REMOTE_URL=your_url TURSO_DB_AUTH_TOKEN=your_token node seed-remote.mjs'
       );
       process.exit(1);
     }
