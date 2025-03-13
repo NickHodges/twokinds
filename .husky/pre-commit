@@ -1,6 +1,4 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+#!/bin/sh
 
-# Temporarily skip linting to allow commits
-# npx lint-staged
-echo "Skipping lint-staged checks temporarily to allow commits"
+# Run lint-staged to check code quality
+npx lint-staged
