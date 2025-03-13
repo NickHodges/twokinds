@@ -1,0 +1,122 @@
+---
+import type { Session } from '@auth/core/types';
+import { Auth, SignIn, SignOut } from 'auth-astro/components';
+
+interface Props {
+  title?: string;
+}
+
+const { title } = Astro.props;
+---
+
+<div class="auth-container">
+  <div class="auth-status">
+    <Auth>
+      {(session: Session | null) => {
+        return session ? (
+          <div class="user-info">
+            {session.user?.image && (
+              <img
+                src={session.user.image}
+                alt={session.user?.name || "User avatar"}
+                class="avatar"
+              />
+            )}
+            <span class="user-name">Welcome, {session.user?.name}</span>
+            <SignOut class="auth-button signout">
+              Sign out
+            </SignOut>
+          </div>
+        ) : (
+          <div class="auth-buttons">
+            <a href="/auth/signin" class="auth-button github">
+              Sign in
+            </a>
+          </div>
+        );
+      }}
+    </Auth>
+  </div>
+  <slot />
+</div>
+
+<style>
+  .auth-container {
+    padding: 1rem;
+  }
+
+  .auth-status {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+  }
+
+  .user-name {
+    font-weight: 500;
+  }
+
+  .auth-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .auth-button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .github {
+    background-color: #24292e;
+    color: white;
+  }
+
+  .github:hover {
+    background-color: #1b1f23;
+  }
+
+  .google {
+    background-color: #4285f4;
+    color: white;
+  }
+
+  .google:hover {
+    background-color: #3367d6;
+  }
+
+  .signout {
+    background-color: #e5e7eb;
+    color: #374151;
+  }
+
+  .signout:hover {
+    background-color: #d1d5db;
+  }
+
+  :global(.auth-astro-sign-out-button) {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    font: inherit !important;
+    cursor: pointer !important;
+    outline: inherit !important;
+    color: inherit !important;
+  }
+</style>

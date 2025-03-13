@@ -1,0 +1,12 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+
+// Redirect to home page after signout
+return Astro.redirect('/');
+---
+
+<MainLayout title="Signing out...">
+  <div class="flex items-center justify-center min-h-screen">
+    <p class="text-lg">Signing out...</p>
+  </div>
+</MainLayout>

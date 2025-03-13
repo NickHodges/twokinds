@@ -1,0 +1,40 @@
+---
+import type { Session } from '@auth/core/types';
+import MainLayout from '../../layouts/MainLayout.astro';
+import { getSession } from 'auth-astro/server';
+import authConfig from '../../../auth.config';
+
+const session = await getSession(Astro.request, authConfig) as Session | null;
+
+// This is protected by middleware, but double-check
+if (!session) {
+  return Astro.redirect('/?error=unauthorized');
+}
+---
+
+<MainLayout title="Dashboard">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <div class="flex items-center gap-4 mb-6">
+        {session.user?.image && (
+          <img
+            src={session.user.image}
+            alt={session.user?.name || "User avatar"}
+            class="w-16 h-16 rounded-full"
+          />
+        )}
+        <div>
+          <h2 class="text-xl font-semibold">{session.user?.name}</h2>
+          <p class="text-gray-600 dark:text-gray-400">{session.user?.email}</p>
+        </div>
+      </div>
+
+      <div class="border-t dark:border-gray-700 pt-6">
+        <h3 class="text-lg font-semibold mb-4">Your Activity</h3>
+        <!-- Add dashboard content here -->
+      </div>
+    </div>
+  </div>
+</MainLayout>

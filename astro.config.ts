@@ -1,7 +1,7 @@
 import { defineConfig, envField } from 'astro/config';
 import db from '@astrojs/db';
+import auth from 'auth-astro';
 import dotenv from 'dotenv';
-
 import vercel from '@astrojs/vercel';
 
 // Force load .env
@@ -9,7 +9,7 @@ dotenv.config();
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [db()],
+  integrations: [db(), auth()],
 
   server: {
     // Configuration to fix WebSocket issues in WSL
@@ -36,6 +36,14 @@ export default defineConfig({
         optional: false,
       }),
       ASTRO_DB_APP_TOKEN: envField.string({ context: 'server', access: 'secret', optional: false }),
+      // Auth.js Configuration
+      AUTH_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
+      AUTH_TRUST_HOST: envField.string({ context: 'server', access: 'secret', optional: false }),
+      // OAuth Provider Credentials
+      GITHUB_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
+      GITHUB_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
+      GOOGLE_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
+      GOOGLE_CLIENT_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
     },
   },
 

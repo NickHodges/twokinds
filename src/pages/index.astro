@@ -3,6 +3,7 @@ import { db, Sayings, Intros, Leads } from 'astro:db';
 import MainLayout from '../layouts/MainLayout.astro';
 import '../styles/index.css';
 import SayingList from '../components/SayingList.astro';
+import AuthLayout from '../layouts/AuthLayout.astro';
 
 // Redirect to the paginated sayings page
 export const prerender = false;
@@ -10,3 +11,10 @@ export const prerender = false;
 // Server-side redirect
 return Astro.redirect('/sayings');
 ---
+
+<AuthLayout>
+  <main>
+    <h1>Welcome to the App</h1>
+    <!-- Your existing content -->
+  </main>
+</AuthLayout>

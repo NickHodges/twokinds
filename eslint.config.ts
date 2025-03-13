@@ -1,42 +1,69 @@
-import eslint from '@eslint/js';
-import tseslint from 'typescript-eslint';
-import prettierConfig from 'eslint-config-prettier';
-import astroPlugin from 'eslint-plugin-astro';
-import type { Linter } from 'eslint';
+import js from "@eslint/js";
+import typescriptEslint from "@typescript-eslint/eslint-plugin";
+import globals from "globals";
+import tsParser from "@typescript-eslint/parser";
+import astroParser from "astro-eslint-parser";
+import { FlatCompat } from "@eslint/eslintrc";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const compat = new FlatCompat({
+    baseDirectory: __dirname,
+    recommendedConfig: js.configs.recommended,
+    allConfig: js.configs.all
+});
 
 export default [
-  eslint.configs.recommended,
-  ...tseslint.configs.recommended,
-  prettierConfig,
+  ...compat.extends(
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:astro/recommended",
+    "prettier",
+  ),
   {
-    ignores: [
-      'dist/**',
-      '.astro/**',
-      'node_modules/**',
-      'package-lock.json',
-      'package.json',
-      '**/*.config.js',
-      '**/*.config.cjs',
-      '**/*.config.mjs',
-      'public/**',
-    ],
-  },
-  {
-    files: ['**/*.{js,ts,astro}'],
+    plugins: {
+      "@typescript-eslint": typescriptEslint,
+    },
     languageOptions: {
-      sourceType: 'module',
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+      parser: tsParser,
       ecmaVersion: 2022,
+      sourceType: "module",
     },
     rules: {
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        { argsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' },
-      ],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      "@typescript-eslint/no-unused-vars": ["error", {
+        argsIgnorePattern: "^_",
+        destructuredArrayIgnorePattern: "^_",
+      }],
+      "@typescript-eslint/no-explicit-any": "warn",
     },
   },
   {
-    files: ['**/*.astro'],
-    ...astroPlugin.configs.recommended,
+    files: ["**/*.astro"],
+    languageOptions: {
+      parser: astroParser,
+      parserOptions: {
+        parser: tsParser,
+        extraFileExtensions: [".astro"],
+      },
+    },
   },
-] as Linter.FlatConfig[];
+  {
+    ignores: [
+      "dist/**",
+      ".astro/**",
+      "node_modules/**",
+      "package-lock.json",
+      "package.json",
+      "**/*.config.js",
+      "**/*.config.cjs",
+      "**/*.config.mjs",
+      "public/**",
+    ],
+  },
+];

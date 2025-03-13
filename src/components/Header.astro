@@ -1,5 +1,6 @@
 ---
 import ThemeToggle from './ThemeToggle.astro';
+import AuthStatus from './AuthStatus.astro';
 ---
 
 <header
@@ -19,6 +20,7 @@ import ThemeToggle from './ThemeToggle.astro';
         class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
         >About</a
       >
+      <AuthStatus />
       <ThemeToggle />
     </div>
   </nav>
