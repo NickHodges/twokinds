@@ -1,4 +1,4 @@
-import { ILogger } from './ILogger';
+import type { ILogger } from './ILogger';
 import { ConsoleLogger } from './ConsoleLogger';
 
 /**
@@ -10,4 +10,5 @@ export function createLogger(context: string): ILogger {
   return new ConsoleLogger(context);
 }
 
-export { ILogger, ConsoleLogger };
+export type { ILogger };
+export { ConsoleLogger };
