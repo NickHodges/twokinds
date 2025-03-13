@@ -40,10 +40,10 @@ export default defineConfig({
     signIn: '/auth/signin', // Custom sign-in page
   },
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user }) {
       if (!user?.email) return false;
-      // Generate a consistent ID based on the provider and email
-      user.id = `${account?.provider}|${user.email}`;
+      // Use only the email address as the user ID
+      user.id = user.email;
       return true;
     },
     async redirect({ url: _url, baseUrl: _baseUrl }) {
@@ -57,10 +57,10 @@ export default defineConfig({
       }
       return session;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         // Set the user ID in the token
-        token.id = `${account?.provider}|${user.email}`;
+        token.id = user.email;
       }
       return token;
     },
