@@ -1,11 +1,7 @@
 import { defineConfig, envField } from 'astro/config';
 import db from '@astrojs/db';
 import auth from 'auth-astro';
-import dotenv from 'dotenv';
 import vercel from '@astrojs/vercel';
-
-// Force load .env
-dotenv.config();
 
 // https://astro.build/config
 export default defineConfig({
@@ -33,6 +29,8 @@ export default defineConfig({
       // Auth.js Configuration
       AUTH_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
       AUTH_TRUST_HOST: envField.string({ context: 'server', access: 'secret', optional: false }),
+      NEXTAUTH_URL: envField.string({ context: 'server', access: 'secret', optional: false }),
+      AUTH_URL: envField.string({ context: 'server', access: 'secret', optional: false }),
       // OAuth Provider Credentials
       GITHUB_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
       GITHUB_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),

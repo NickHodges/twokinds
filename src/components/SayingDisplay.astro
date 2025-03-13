@@ -1,4 +1,6 @@
 ---
+import LikeButton from './LikeButton.astro';
+
 interface Saying {
   id: number;
   introText: string;
@@ -9,11 +11,15 @@ interface Saying {
   createdAt: Date;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Props {
   saying: Saying;
+  initialLiked?: boolean;
+  totalLikes?: number;
+  isAuthenticated?: boolean;
 }
 
-const { saying } = Astro.props;
+const { saying, initialLiked = false, totalLikes = 0, isAuthenticated = false } = Astro.props;
 ---
 
 <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-md">
@@ -35,56 +41,75 @@ const { saying } = Astro.props;
 
   <div class="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
     <div class="flex justify-between items-center">
-      <time
-        datetime={saying.createdAt.toISOString()}
-        class="text-sm text-gray-500 dark:text-gray-400"
-      >
-        Added on {saying.createdAt.toLocaleDateString()}
-      </time>
-      
-      <button 
-        id="copy-link-btn" 
+      <div class="flex items-center gap-4">
+        <time
+          datetime={saying.createdAt.toISOString()}
+          class="text-sm text-gray-500 dark:text-gray-400"
+        >
+          Added on {saying.createdAt.toLocaleDateString()}
+        </time>
+        <LikeButton
+          sayingId={saying.id}
+          initialLiked={initialLiked}
+          totalLikes={totalLikes}
+          isAuthenticated={isAuthenticated}
+        />
+      </div>
+
+      <button
+        id="copy-link-btn"
         class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-12a2 2 0 00-2-2h-2M8 5a2 2 0 002-2h4a2 2 0 002 2M8 5a2 2 0 012-2h4a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-12a2 2 0 00-2-2h-2M8 5a2 2 0 002-2h4a2 2 0 002 2M8 5a2 2 0 012-2h4a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+          ></path>
         </svg>
         Copy Link
       </button>
     </div>
-    
+
     <div id="copy-notification" class="mt-2 text-sm text-green-600 dark:text-green-400 hidden">
       Link copied to clipboard!
     </div>
   </div>
 
-<script>
-  // Initialize the copy link functionality
-  document.addEventListener('DOMContentLoaded', () => {
-    const copyButton = document.getElementById('copy-link-btn');
-    const notification = document.getElementById('copy-notification');
-    
-    if (copyButton && notification) {
-      copyButton.addEventListener('click', async () => {
-        try {
-          // Get the current URL
-          const url = window.location.href;
-          
-          // Copy to clipboard
-          await navigator.clipboard.writeText(url);
-          
-          // Show notification
-          notification.classList.remove('hidden');
-          
-          // Hide notification after 2 seconds
-          setTimeout(() => {
-            notification.classList.add('hidden');
-          }, 2000);
-        } catch (err) {
-          console.error('Failed to copy: ', err);
-        }
-      });
-    }
-  });
-</script>
+  <script>
+    // Initialize the copy link functionality
+    document.addEventListener('DOMContentLoaded', () => {
+      const copyButton = document.getElementById('copy-link-btn');
+      const notification = document.getElementById('copy-notification');
+
+      if (copyButton && notification) {
+        copyButton.addEventListener('click', async () => {
+          try {
+            // Get the current URL
+            const url = window.location.href;
+
+            // Copy to clipboard
+            await navigator.clipboard.writeText(url);
+
+            // Show notification
+            notification.classList.remove('hidden');
+
+            // Hide notification after 2 seconds
+            setTimeout(() => {
+              notification.classList.add('hidden');
+            }, 2000);
+          } catch (err) {
+            console.error('Failed to copy: ', err);
+          }
+        });
+      }
+    });
+  </script>
 </div>

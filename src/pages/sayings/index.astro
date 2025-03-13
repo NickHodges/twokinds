@@ -1,5 +1,5 @@
 ---
-import { db, Sayings, Intros, Leads, desc } from 'astro:db';
+import { db, Intros, Leads } from 'astro:db';
 import MainLayout from '../../layouts/MainLayout.astro';
 import '../../styles/index.css';
 import SayingList from '../../components/SayingList.astro';
@@ -7,6 +7,10 @@ import Pagination from '../../components/Pagination.astro';
 import Hero from '../../components/Hero.astro';
 import { config } from '../../lib/config';
 import { getAllSayings } from '../../lib/db-service';
+import type { ExtendedSession } from '../../env';
+
+// Get current user's session
+const session = Astro.locals.session as ExtendedSession | null;
 
 // Get all sayings with joins to get intro and lead texts
 const sayingsData = await getAllSayings();
@@ -60,7 +64,7 @@ export const prerender = false;
     <Hero />
 
     <div class="mt-4">
-      <SayingList sayings={page.data} />
+      <SayingList sayings={page.data} session={session} />
 
       {page.lastPage > 1 && <Pagination page={page} basePath="/sayings" />}
     </div>

@@ -1,4 +1,7 @@
 ---
+import LikeButton from './LikeButton.astro';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Props {
   id?: number;
   introText: string;
@@ -7,10 +10,23 @@ interface Props {
   firstKind: string;
   secondKind: string;
   createdAt: Date;
+  isLiked?: boolean;
+  totalLikes?: number;
+  isAuthenticated?: boolean;
 }
 
-const { id, introText, firstLeadText, secondLeadText, firstKind, secondKind, createdAt } =
-  Astro.props;
+const {
+  id,
+  introText,
+  firstLeadText,
+  secondLeadText,
+  firstKind,
+  secondKind,
+  createdAt,
+  isLiked = false,
+  totalLikes = 0,
+  isAuthenticated = false,
+} = Astro.props;
 ---
 
 <article
@@ -43,15 +59,23 @@ const { id, introText, firstLeadText, secondLeadText, firstKind, secondKind, cre
   <div
     class="px-6 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 flex justify-between items-center mt-auto"
   >
-    <div>
+    <div class="flex items-center gap-4">
       {
         id && (
-          <a
-            href={`/saying/${id}`}
-            class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
-          >
-            View as quote →
-          </a>
+          <>
+            <a
+              href={`/saying/${id}`}
+              class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+            >
+              View as quote →
+            </a>
+            <LikeButton
+              sayingId={id}
+              initialLiked={isLiked}
+              totalLikes={totalLikes}
+              isAuthenticated={isAuthenticated}
+            />
+          </>
         )
       }
     </div>

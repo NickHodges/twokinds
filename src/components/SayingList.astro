@@ -1,6 +1,8 @@
 ---
 import SayingCard from './SayingCard.astro';
 import EmptyState from './EmptyState.astro';
+import type { ExtendedSession } from '../env';
+import { db, Likes, eq, and, count } from 'astro:db';
 
 interface Saying {
   id: number;
@@ -12,6 +14,7 @@ interface Saying {
   createdAt: Date;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Props {
   sayings: Saying[];
   emptyStateText?: string;
@@ -19,6 +22,7 @@ interface Props {
     text: string;
     href: string;
   };
+  session?: ExtendedSession | null;
 }
 
 const {
@@ -28,7 +32,34 @@ const {
     text: 'Create New Saying',
     href: '/create',
   },
+  session,
 } = Astro.props;
+
+const isAuthenticated = !!session?.user;
+
+// Get liked status and total likes for each saying
+const likedStatus = new Map<number, boolean>();
+const totalLikes = new Map<number, number>();
+
+for (const saying of sayings) {
+  // Get total likes for this saying
+  const likesResult = await db
+    .select({ value: count() })
+    .from(Likes)
+    .where(eq(Likes.sayingId, saying.id))
+    .get();
+  totalLikes.set(saying.id, likesResult?.value || 0);
+
+  // Get liked status if user is authenticated
+  if (session?.user?.id) {
+    const like = await db
+      .select()
+      .from(Likes)
+      .where(and(eq(Likes.userId, session.user.id), eq(Likes.sayingId, saying.id)))
+      .get();
+    likedStatus.set(saying.id, !!like);
+  }
+}
 ---
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
@@ -43,6 +74,9 @@ const {
           firstKind={saying.firstKind}
           secondKind={saying.secondKind}
           createdAt={saying.createdAt}
+          isLiked={likedStatus.get(saying.id) || false}
+          totalLikes={totalLikes.get(saying.id) || 0}
+          isAuthenticated={isAuthenticated}
         />
       ))
     ) : (

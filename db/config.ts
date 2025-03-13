@@ -51,6 +51,22 @@ const Sayings = defineTable({
   },
 });
 
+/**
+ * Likes table - tracks which users have liked which sayings
+ */
+const Likes = defineTable({
+  columns: {
+    id: column.number({ primaryKey: true, autoIncrement: true }),
+    userId: column.text({ references: () => Users.columns.id }),
+    sayingId: column.number({ references: () => Sayings.columns.id }),
+    createdAt: column.date({ default: new Date() }),
+  },
+  indexes: {
+    // Ensure a user can only like a saying once
+    unique_like: { on: ['userId', 'sayingId'], unique: true },
+  },
+});
+
 export default defineDb({
-  tables: { Intros, Leads, Sayings, Users },
+  tables: { Intros, Leads, Sayings, Users, Likes },
 });
