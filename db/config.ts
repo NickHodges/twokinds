@@ -29,7 +29,6 @@ const Intros = defineTable({
     introText: column.text({ optional: false }),
     createdAt: column.date({ default: new Date() }),
   },
-  deprecated: true, // Mark as deprecated before removal
 });
 
 const Leads = defineTable({
@@ -38,7 +37,6 @@ const Leads = defineTable({
     leadText: column.text({ optional: false }),
     createdAt: column.date({ default: new Date() }),
   },
-  deprecated: true, // Mark as deprecated before removal
 });
 
 const Sayings = defineTable({
@@ -51,7 +49,6 @@ const Sayings = defineTable({
     intro: column.number({ references: () => Intros.columns.id }),
     createdAt: column.date({ default: new Date() }),
   },
-  deprecated: true, // Mark as deprecated before removal
 });
 
 export default defineDb({

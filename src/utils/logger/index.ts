@@ -1,5 +1,5 @@
-export { ILogger } from './ILogger';
-export { ConsoleLogger } from './ConsoleLogger';
+import { ILogger } from './ILogger';
+import { ConsoleLogger } from './ConsoleLogger';
 
 /**
  * Creates a new logger instance
@@ -9,3 +9,5 @@ export { ConsoleLogger } from './ConsoleLogger';
 export function createLogger(context: string): ILogger {
   return new ConsoleLogger(context);
 }
+
+export { ILogger, ConsoleLogger };
