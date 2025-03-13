@@ -1,5 +1,8 @@
 import { db, Users, sql } from 'astro:db';
 import type { ExtendedSession } from '../env';
+import { createLogger } from './logger';
+
+const logger = createLogger('User DB');
 
 /**
  * Creates or updates a user in the database based on their session information
@@ -10,7 +13,7 @@ export async function upsertUser(session: ExtendedSession | null) {
   if (!session?.user) return null;
 
   // Debug log the entire session structure
-  console.log('[User DB] Full session:', JSON.stringify(session, null, 2));
+  logger.debug('Full session:', session);
 
   // Try to find the user ID from various possible locations
   const userId =
@@ -19,7 +22,7 @@ export async function upsertUser(session: ExtendedSession | null) {
   const { name, email, image } = session.user;
 
   if (!userId) {
-    console.error('[User DB] No valid user identifier found in session. User:', {
+    logger.error('No valid user identifier found in session. User:', {
       id: session.user.id,
       sub: session.user.sub,
       sessionSub: session.sub,
@@ -29,7 +32,7 @@ export async function upsertUser(session: ExtendedSession | null) {
     return null;
   }
 
-  console.log('[User DB] Upserting user:', { userId, email });
+  logger.info('Upserting user:', { userId, email });
 
   // Determine the provider from the session
   const provider = session.account?.provider?.toString() || 'unknown';
@@ -83,7 +86,7 @@ export async function upsertUser(session: ExtendedSession | null) {
       .where(sql`${Users.id} = ${userId}`)
       .get();
   } catch (error) {
-    console.error('[User DB] Error upserting user:', error);
+    logger.error('Error upserting user:', error);
     return null;
   }
 }
@@ -101,7 +104,7 @@ export async function getUserById(id: string) {
       .where(sql`${Users.id} = ${id}`)
       .get();
   } catch (error) {
-    console.error('[User DB] Error getting user by ID:', error);
+    logger.error('Error getting user by ID:', error);
     return null;
   }
 }
@@ -119,7 +122,7 @@ export async function getUserByEmail(email: string) {
       .where(sql`${Users.email} = ${email}`)
       .get();
   } catch (error) {
-    console.error('[User DB] Error getting user by email:', error);
+    logger.error('Error getting user by email:', error);
     return null;
   }
 }
@@ -150,7 +153,7 @@ export async function updateUserPreferences(
       .where(sql`${Users.id} = ${id}`)
       .get();
   } catch (error) {
-    console.error('[User DB] Error updating user preferences:', error);
+    logger.error('Error updating user preferences:', error);
     return null;
   }
 }
@@ -178,7 +181,7 @@ export async function updateUserRole(id: string, role: 'user' | 'admin') {
       .where(sql`${Users.id} = ${id}`)
       .get();
   } catch (error) {
-    console.error('[User DB] Error updating user role:', error);
+    logger.error('Error updating user role:', error);
     return null;
   }
 }

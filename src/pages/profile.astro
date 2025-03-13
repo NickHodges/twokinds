@@ -2,16 +2,19 @@
 import MainLayout from '../layouts/MainLayout.astro';
 import { getUserById } from '../utils/user-db';
 import type { ExtendedSession } from '../env';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('Profile Page');
 
 // Get the user's session
 const session = Astro.locals.session as ExtendedSession | null;
-console.log('[Profile Page] Full session:', JSON.stringify(session, null, 2));
+logger.info('Full session:', session);
 
 // Try to find the user ID from various possible locations
 const userId =
   session?.user?.id || session?.user?.sub || session?.sub || session?.userId || session?.user?.sub;
 
-console.log('[Profile Page] User ID candidates:', {
+logger.debug('User ID candidates:', {
   id: session?.user?.id,
   userSub: session?.user?.sub,
   sessionSub: session?.sub,
@@ -21,18 +24,18 @@ console.log('[Profile Page] User ID candidates:', {
 
 // Redirect if not logged in
 if (!session?.user || !userId) {
-  console.log('[Profile Page] No valid user identifier found, redirecting...');
+  logger.warn('No valid user identifier found, redirecting...');
   return Astro.redirect('/?error=unauthorized');
 }
 
 // Get the user's database record
-console.log('[Profile Page] Getting user from database with ID:', userId);
+logger.debug('Getting user from database with ID:', userId);
 const dbUser = await getUserById(userId);
-console.log('[Profile Page] Database user found:', !!dbUser);
+logger.debug('Database user found:', !!dbUser);
 
 // If no database user is found, redirect
 if (!dbUser) {
-  console.log('[Profile Page] No database user found, redirecting...');
+  logger.warn('No database user found, redirecting...');
   return Astro.redirect('/?error=user_not_found');
 }
 
