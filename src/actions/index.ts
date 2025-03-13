@@ -1,6 +1,7 @@
 import { defineAction } from 'astro:actions';
 import { z } from 'zod';
 import { db, Sayings } from 'astro:db';
+import type { ExtendedSession } from '../env';
 
 export const server = {
   submitSaying: defineAction({
@@ -20,8 +21,16 @@ export const server = {
     }),
 
     // Handle the form submission
-    handler: async (body) => {
+    handler: async (body, { locals }) => {
       try {
+        const session = locals.session as ExtendedSession | null;
+        if (!session?.user?.id) {
+          return {
+            success: false,
+            error: 'You must be logged in to create a saying',
+          };
+        }
+
         console.log('Action received form data:', body);
 
         // Insert data into database
@@ -31,6 +40,7 @@ export const server = {
           secondLead: parseInt(body.secondLead),
           firstKind: body.firstKind,
           secondKind: body.secondKind,
+          userId: session.user.id,
           createdAt: new Date(),
         };
 

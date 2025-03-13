@@ -1,5 +1,6 @@
 ---
-
+const { session } = Astro.props;
+const isAuthenticated = !!session?.user;
 ---
 
 <section class="pt-2 pb-8 text-center">
@@ -7,10 +8,21 @@
   <p class="text-xl text-gray-600 dark:text-gray-400 mb-8">
     Exploring humanity's endless dualities, one saying at a time
   </p>
-  <a
-    href="/create"
-    class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900 mr-2"
-  >
-    Create New Saying
-  </a>
+  {
+    isAuthenticated ? (
+      <a
+        href="/create"
+        class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900 mr-2"
+      >
+        Create New Saying
+      </a>
+    ) : (
+      <a
+        href="/auth/signin"
+        class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900 mr-2"
+      >
+        Login to Create a New Saying
+      </a>
+    )
+  }
 </section>

@@ -61,7 +61,7 @@ export const prerender = false;
 
 <MainLayout>
   <div class="flex flex-col">
-    <Hero />
+    <Hero session={session} />
 
     <div class="mt-4">
       <SayingList sayings={page.data} session={session} />

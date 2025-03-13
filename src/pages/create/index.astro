@@ -7,6 +7,15 @@ import NewSayingForm from '../../components/NewSayingForm.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import NotificationBanner from '../../components/NotificationBanner.astro';
 import ActionButtons from '../../components/ActionButtons.astro';
+import type { ExtendedSession } from '../../env';
+
+// Get the current user's session
+const session = Astro.locals.session as ExtendedSession | null;
+
+// Redirect to login if not authenticated
+if (!session?.user) {
+  return Astro.redirect('/auth/signin');
+}
 
 // Fetch data from database
 const intros = await db.select().from(Intros);
@@ -25,8 +34,8 @@ const success = result?.success;
 
     <div class="mx-auto mt-2 mb-8 p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md">
       <style>
-        input[name="firstKind"],
-        input[name="secondKind"] {
+        input[name='firstKind'],
+        input[name='secondKind'] {
           width: 100% !important;
           max-width: 800px !important;
         }

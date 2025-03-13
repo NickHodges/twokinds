@@ -39,14 +39,18 @@ const Leads = defineTable({
   },
 });
 
+/**
+ * Sayings table - stores the actual sayings
+ */
 const Sayings = defineTable({
   columns: {
     id: column.number({ primaryKey: true, autoIncrement: true }),
+    intro: column.number({ references: () => Intros.columns.id }),
     firstLead: column.number({ references: () => Leads.columns.id }),
     secondLead: column.number({ references: () => Leads.columns.id }),
-    firstKind: column.text({ optional: false }),
-    secondKind: column.text({ optional: false }),
-    intro: column.number({ references: () => Intros.columns.id }),
+    firstKind: column.text(),
+    secondKind: column.text(),
+    userId: column.text({ references: () => Users.columns.id, optional: true }),
     createdAt: column.date({ default: new Date() }),
   },
 });
