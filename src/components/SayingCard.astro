@@ -5,27 +5,27 @@ import LikeButton from './LikeButton.astro';
 interface Props {
   id?: number;
   introText: string;
-  firstLeadText: string;
-  secondLeadText: string;
+  typeName: string;
   firstKind: string;
   secondKind: string;
   createdAt: Date;
   isLiked?: boolean;
   totalLikes?: number;
   isAuthenticated?: boolean;
+  isEditable?: boolean;
 }
 
 const {
   id,
   introText,
-  firstLeadText,
-  secondLeadText,
+  typeName,
   firstKind,
   secondKind,
   createdAt,
   isLiked = false,
   totalLikes = 0,
   isAuthenticated = false,
+  isEditable = false,
 } = Astro.props;
 ---
 
@@ -40,15 +40,16 @@ const {
     </h3>
 
     <div class="space-y-2 relative">
+      <h4 class="text-blue-600 dark:text-blue-400 font-medium mb-2">{typeName}</h4>
       <p class="text-gray-700 dark:text-gray-300">
-        <span class="text-blue-600 dark:text-blue-400 font-medium">{firstLeadText}</span>
+        <span class="text-blue-600 dark:text-blue-400 font-medium">Those who </span>
         <span class="break-words line-clamp-3 group-hover:line-clamp-none transition-all"
           >{firstKind}</span
         >
       </p>
       <p class="text-gray-500 dark:text-gray-400 text-left text-sm font-medium">and</p>
       <p class="text-gray-700 dark:text-gray-300">
-        <span class="text-blue-600 dark:text-blue-400 font-medium">{secondLeadText}</span>
+        <span class="text-blue-600 dark:text-blue-400 font-medium">those who </span>
         <span class="break-words line-clamp-3 group-hover:line-clamp-none transition-all"
           >{secondKind}</span
         >
@@ -69,6 +70,23 @@ const {
             >
               View as quote →
             </a>
+            {isEditable && (
+              <>
+                <a
+                  href={`/edit-saying/${id}`}
+                  class="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 font-medium"
+                >
+                  Edit saying →
+                </a>
+                <button
+                  type="button"
+                  class="delete-saying-btn text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium"
+                  data-saying-id={id}
+                >
+                  Delete
+                </button>
+              </>
+            )}
             <LikeButton
               sayingId={id}
               initialLiked={isLiked}
@@ -84,3 +102,49 @@ const {
     </time>
   </div>
 </article>
+
+<script>
+  // Initialize like buttons (existing script)
+  // ...
+
+  // Handle delete buttons
+  document.querySelectorAll('.delete-saying-btn').forEach((buttonElement) => {
+    if (buttonElement instanceof HTMLButtonElement) {
+      const button = buttonElement as HTMLButtonElement;
+      button.addEventListener('click', async () => {
+        const sayingId = parseInt(button.dataset.sayingId || '0');
+        if (!sayingId) return;
+
+        // Confirm deletion
+        if (!confirm('Are you sure you want to delete this saying? This action cannot be undone.')) {
+          return;
+        }
+
+        // Disable the button during the request
+        button.disabled = true;
+
+        try {
+          const response = await fetch('/api/delete-saying', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ sayingId }),
+          });
+
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || 'Failed to delete saying');
+          }
+
+          // On success, redirect to the dashboard with a success message
+          window.location.href = '/dashboard?success=saying-deleted';
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Failed to delete saying. Please try again.');
+          button.disabled = false;
+        }
+      });
+    }
+  });
+</script>

@@ -1,5 +1,5 @@
 ---
-import { db, Intros, Leads } from 'astro:db';
+import { db, Intros, Types } from 'astro:db';
 import MainLayout from '../../layouts/MainLayout.astro';
 import '../../styles/index.css';
 import SayingList from '../../components/SayingList.astro';
@@ -9,54 +9,46 @@ import { config } from '../../lib/config';
 import { getAllSayings } from '../../lib/db-service';
 import type { ExtendedSession } from '../../env';
 
+// Don't prerender so we always get fresh data
+export const prerender = false;
+
 // Get current user's session
 const session = Astro.locals.session as ExtendedSession | null;
 
-// Get all sayings with joins to get intro and lead texts
-const sayingsData = await getAllSayings();
-// Fetch related data
-const intros = await db.select().from(Intros);
-const leads = await db.select().from(Leads);
+// Empty array for the page data and default pagination
+let sayingsForCurrentPage: any[] = [];
+let totalPages = 1;
+let currentPage = 1;
 
-// Combine the data
-const allSayings = sayingsData.map((saying) => {
-  const intro = intros.find((i) => i.id === saying.intro);
-  const firstLead = leads.find((l) => l.id === saying.firstLead);
-  const secondLead = leads.find((l) => l.id === saying.secondLead);
+// Get all sayings with joins to get intro and type data
+try {
+  const allSayings = await getAllSayings();
 
-  return {
-    ...saying,
-    introText: intro?.introText || 'Unknown intro',
-    firstLeadText: firstLead?.leadText || 'Unknown lead',
-    secondLeadText: secondLead?.leadText || 'Unknown lead',
-  };
-});
+  // Pagination
+  const pageSize = config.pagination.sayingsPerPage;
+  currentPage = 1;
+  totalPages = Math.ceil(allSayings.length / pageSize);
+  const startIndex = 0;
+  const endIndex = Math.min(startIndex + pageSize, allSayings.length);
+  sayingsForCurrentPage = allSayings.slice(startIndex, endIndex);
+} catch (error) {
+  console.error("Error getting sayings:", error);
+}
 
-// Pagination
-const pageSize = config.pagination.sayingsPerPage;
-const currentPage = 1;
-const totalPages = Math.ceil(allSayings.length / pageSize);
-const startIndex = 0;
-const endIndex = Math.min(startIndex + pageSize, allSayings.length);
-const sayingsForCurrentPage = allSayings.slice(startIndex, endIndex);
-
-// Create page object that mimics the one from paginate()
+// Create page object for pagination
 const page = {
   data: sayingsForCurrentPage,
-  start: startIndex,
-  end: endIndex - 1,
-  size: pageSize,
-  total: allSayings.length,
+  start: 0,
+  end: sayingsForCurrentPage.length - 1,
+  size: config.pagination.sayingsPerPage,
+  total: sayingsForCurrentPage.length,
   currentPage: currentPage,
   lastPage: totalPages,
   url: {
     prev: null,
-    next: totalPages > 1 ? '/sayings/2' : null,
+    next: totalPages > 1 ? `/sayings/2` : null,
   },
 };
-
-// Don't prerender so we always get fresh data
-export const prerender = false;
 ---
 
 <MainLayout>

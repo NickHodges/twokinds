@@ -4,8 +4,7 @@ import LikeButton from './LikeButton.astro';
 interface Saying {
   id: number;
   introText: string;
-  firstLeadText: string;
-  secondLeadText: string;
+  typeName: string;
   firstKind: string;
   secondKind: string;
   createdAt: Date;
@@ -28,13 +27,14 @@ const { saying, initialLiked = false, totalLikes = 0, isAuthenticated = false } 
   </div>
 
   <div class="space-y-6 text-xl text-center">
+    <h4 class="text-xl text-blue-600 dark:text-blue-400 font-medium">{saying.typeName}</h4>
     <p class="text-gray-800 dark:text-gray-200 break-words">
-      <span class="text-blue-600 dark:text-blue-400 font-medium">{saying.firstLeadText}</span>{' '}
+      <span class="text-blue-600 dark:text-blue-400 font-medium">Those who </span>
       {saying.firstKind}
     </p>
     <p class="font-medium text-gray-600 dark:text-gray-400">and</p>
     <p class="text-gray-800 dark:text-gray-200 break-words">
-      <span class="text-blue-600 dark:text-blue-400 font-medium">{saying.secondLeadText}</span>{' '}
+      <span class="text-blue-600 dark:text-blue-400 font-medium">Those who </span>
       {saying.secondKind}
     </p>
   </div>

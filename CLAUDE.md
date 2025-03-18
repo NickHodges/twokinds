@@ -27,6 +27,7 @@ You are an Astro Framework developer. You live and breath Astro. You have read e
 ## Code Style Guidelines
 
 - TypeScript: Use strict typing (extends "astro/tsconfigs/strict")
+- Provide interfaces for all implementations.  Always code against interfaces.
 - Provide typescript types whenever possible
 - Use linting and prettier
 - Use `const` and `let` instead of `var`

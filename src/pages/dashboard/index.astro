@@ -2,7 +2,7 @@
 import MainLayout from '../../layouts/MainLayout.astro';
 import { getSession } from 'auth-astro/server';
 import authConfig from '../../../auth.config';
-import { db, Sayings, Intros, Leads, eq } from 'astro:db';
+import { db, Sayings, Intros, Types, Likes, eq, and, count } from 'astro:db';
 import SayingCard from '../../components/SayingCard.astro';
 import type { ExtendedSession } from '../../env';
 
@@ -13,6 +13,11 @@ if (!session?.user?.id) {
   return Astro.redirect('/?error=unauthorized');
 }
 
+// Get any success or error messages from URL
+const url = new URL(Astro.request.url);
+const successMessage = url.searchParams.get('success');
+const errorMessage = url.searchParams.get('error');
+
 // First, get all sayings for the user
 const userSayings = await db
   .select()
@@ -20,23 +25,45 @@ const userSayings = await db
   .where(eq(Sayings.userId, session.user.id))
   .orderBy(Sayings.createdAt);
 
+// Get liked status and total likes for each saying
+const likedStatus = new Map<number, boolean>();
+const totalLikes = new Map<number, number>();
+
+for (const saying of userSayings) {
+  // Get total likes for this saying
+  const likesResult = await db
+    .select({ value: count() })
+    .from(Likes)
+    .where(eq(Likes.sayingId, saying.id))
+    .get();
+  totalLikes.set(saying.id, likesResult?.value || 0);
+
+  // Get liked status
+  const like = await db
+    .select()
+    .from(Likes)
+    .where(and(eq(Likes.userId, session.user.id), eq(Likes.sayingId, saying.id)))
+    .get();
+  likedStatus.set(saying.id, !!like);
+}
+
 // Then, get the related data for each saying
 const sayingsWithData = await Promise.all(
   userSayings.map(async (saying) => {
-    const [intro, firstLead, secondLead] = await Promise.all([
+    const [intro, type] = await Promise.all([
       db.select().from(Intros).where(eq(Intros.id, saying.intro)).get(),
-      db.select().from(Leads).where(eq(Leads.id, saying.firstLead)).get(),
-      db.select().from(Leads).where(eq(Leads.id, saying.secondLead)).get(),
+      db.select().from(Types).where(eq(Types.id, saying.type)).get(),
     ]);
 
     return {
       id: saying.id,
       introText: intro?.introText || '',
-      firstLeadText: firstLead?.leadText || '',
-      secondLeadText: secondLead?.leadText || '',
+      typeName: type?.name || '',
       firstKind: saying.firstKind,
       secondKind: saying.secondKind,
       createdAt: saying.createdAt,
+      isLiked: likedStatus.get(saying.id) || false,
+      totalLikes: totalLikes.get(saying.id) || 0
     };
   })
 );
@@ -45,6 +72,28 @@ const sayingsWithData = await Promise.all(
 <MainLayout title="Dashboard">
   <div class="max-w-4xl mx-auto">
     <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
+
+    {successMessage === 'saying-updated' && (
+      <div class="mb-6 p-4 bg-green-100 border border-green-200 text-green-700 rounded-md">
+        <p>Your saying has been updated successfully!</p>
+      </div>
+    )}
+
+    {successMessage === 'saying-deleted' && (
+      <div class="mb-6 p-4 bg-green-100 border border-green-200 text-green-700 rounded-md">
+        <p>Your saying has been deleted successfully!</p>
+      </div>
+    )}
+
+    {errorMessage && (
+      <div class="mb-6 p-4 bg-red-100 border border-red-200 text-red-700 rounded-md">
+        <p>
+          {errorMessage === 'invalid-id' && 'Invalid saying ID.'}
+          {errorMessage === 'not-found-or-unauthorized' && 'Saying not found or you are not authorized to edit it.'}
+          {errorMessage !== 'invalid-id' && errorMessage !== 'not-found-or-unauthorized' && errorMessage}
+        </p>
+      </div>
+    )}
 
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div class="flex items-center gap-4 mb-6">
@@ -91,12 +140,14 @@ const sayingsWithData = await Promise.all(
                 <SayingCard
                   id={saying.id}
                   introText={saying.introText}
-                  firstLeadText={saying.firstLeadText}
-                  secondLeadText={saying.secondLeadText}
+                  typeName={saying.typeName}
                   firstKind={saying.firstKind}
                   secondKind={saying.secondKind}
                   createdAt={saying.createdAt}
+                  isLiked={saying.isLiked}
+                  totalLikes={saying.totalLikes}
                   isAuthenticated={true}
+                  isEditable={true}
                 />
               ))}
             </div>

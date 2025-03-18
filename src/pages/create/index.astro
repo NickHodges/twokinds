@@ -1,12 +1,9 @@
 ---
-import { db, Intros, Leads } from 'astro:db';
+import { db, Intros, Types } from 'astro:db';
 import '../../styles/index.css';
-import { actions } from 'astro:actions';
 import MainLayout from '../../layouts/MainLayout.astro';
 import NewSayingForm from '../../components/NewSayingForm.astro';
 import PageHeader from '../../components/PageHeader.astro';
-import NotificationBanner from '../../components/NotificationBanner.astro';
-import ActionButtons from '../../components/ActionButtons.astro';
 import type { ExtendedSession } from '../../env';
 
 // Get the current user's session
@@ -19,13 +16,12 @@ if (!session?.user) {
 
 // Fetch data from database
 const intros = await db.select().from(Intros);
-const leads = await db.select().from(Leads);
+const types = await db.select().from(Types);
 
 // Don't prerender so we always get fresh data
 export const prerender = false;
 
-const result = Astro.getActionResult(actions.submitSaying)?.data;
-const success = result?.success;
+// Action results will be processed in the NewSayingForm component
 ---
 
 <MainLayout>
@@ -34,45 +30,14 @@ const success = result?.success;
 
     <div class="mx-auto mt-2 mb-8 p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md">
       <style>
-        input[name='firstKind'],
-        input[name='secondKind'] {
+        input[name="firstKind"],
+        input[name="secondKind"] {
           width: 100% !important;
           max-width: 800px !important;
         }
       </style>
 
-      {
-        success && (
-          <NotificationBanner
-            type="success"
-            message="Your saying was successfully created!"
-            link={{
-              url: `/saying/${result?.data?.id}`,
-              text: 'View your new saying',
-            }}
-          />
-        )
-      }
-
-      {result?.error && <NotificationBanner type="error" message={result.error} />}
-
-      <NewSayingForm intros={intros} leads={leads} />
-      {
-        result?.success && result.data && (
-          <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-medium mb-3">Created Successfully:</h3>
-            <ActionButtons
-              buttons={[
-                {
-                  text: 'View your new saying',
-                  href: `/saying/${result.data.id}`,
-                  primary: true,
-                },
-              ]}
-            />
-          </div>
-        )
-      }
+      <NewSayingForm intros={intros} types={types} />
     </div>
   </div>
 </MainLayout>

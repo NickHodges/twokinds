@@ -1,73 +1,67 @@
-import { db, Intros, Leads, Sayings, Users, eq } from 'astro:db';
+import { db, Intros, Types, Users, Sayings } from 'astro:db';
 
 export default async function seed() {
-  // Check if system user exists first
-  const existingSystemUser = await db.select().from(Users).where(eq(Users.id, 'system')).get();
-
-  if (!existingSystemUser) {
-    // Create system user only if it doesn't exist
-    await db.insert(Users).values({
+  // Create system user
+  const [systemUser] = await db
+    .insert(Users)
+    .values({
       id: 'system',
       name: 'System',
       email: 'system@twokindsof.com',
       provider: 'system',
-      role: 'system',
+      lastLogin: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),
-      lastLogin: new Date(),
-    });
-  }
+      role: 'system',
+      preferences: {},
+    })
+    .returning();
 
-  // Seed the Intros table with some sample data
-  const introResults = await db
+  // Insert intros
+  const [intro1, intro2, intro3] = await db
     .insert(Intros)
     .values([
-      { introText: 'There are two kinds of people in the world...' },
-      { introText: "In life, you'll meet two types of people..." },
-      { introText: 'People can be divided into two categories...' },
-      { introText: 'The world has exactly two types of people...' },
-      { introText: 'Humanity consists of two distinct groups...' },
+      { introText: 'There are two kinds of', createdAt: new Date() },
+      { introText: 'In this world, there are two kinds of', createdAt: new Date() },
+      { introText: 'You can divide everything into two kinds of', createdAt: new Date() },
     ])
     .returning();
 
-  // Seed the Leads table with lead-in phrases
-  const leadResults = await db
-    .insert(Leads)
+  // Insert types
+  const [type1, type2, type3] = await db
+    .insert(Types)
     .values([
-      { leadText: 'People who...' },
-      { leadText: 'Folks who...' },
-      { leadText: 'Those who...' },
-      { leadText: 'The people who...' },
-      { leadText: 'Individuals who...' },
-      { leadText: 'The ones who...' },
+      { name: 'people', createdAt: new Date() },
+      { name: 'dogs', createdAt: new Date() },
+      { name: 'refrigerators', createdAt: new Date() },
     ])
     .returning();
 
-  // Seed the Sayings table with some example sayings
+  // Insert sayings
   await db.insert(Sayings).values([
     {
-      intro: introResults[0].id,
-      firstLead: leadResults[0].id,
-      secondLead: leadResults[2].id,
-      firstKind: 'put their shopping cart back',
-      secondKind: 'leave it in the parking lot',
-      userId: 'system',
+      intro: intro1.id,
+      type: type1.id,
+      firstKind: 'eat pizza with a fork',
+      secondKind: 'eat pizza with their hands',
+      userId: systemUser.id,
+      createdAt: new Date(),
     },
     {
-      intro: introResults[1].id,
-      firstLead: leadResults[1].id,
-      secondLead: leadResults[1].id,
-      firstKind: 'eat the pizza crust',
-      secondKind: 'leave it on the plate',
-      userId: 'system',
+      intro: intro2.id,
+      type: type2.id,
+      firstKind: 'bark at everything',
+      secondKind: 'are quiet and observant',
+      userId: systemUser.id,
+      createdAt: new Date(),
     },
     {
-      intro: introResults[2].id,
-      firstLead: leadResults[2].id,
-      secondLead: leadResults[2].id,
-      firstKind: 'reply to emails right away',
-      secondKind: 'let them sit in their inbox for days',
-      userId: 'system',
+      intro: intro3.id,
+      type: type3.id,
+      firstKind: 'have ice makers',
+      secondKind: 'don\'t have ice makers',
+      userId: systemUser.id,
+      createdAt: new Date(),
     },
   ]);
 }

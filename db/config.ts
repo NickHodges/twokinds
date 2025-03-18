@@ -1,22 +1,17 @@
-// This file is where you define your database schema using Astro:DB
-
 import { defineDb, defineTable, column } from 'astro:db';
 
-/**
- * Users table - stores information about authenticated users
- */
 const Users = defineTable({
   columns: {
-    id: column.text({ primaryKey: true }), // Auth provider user ID
-    name: column.text({ optional: true }),
-    email: column.text({ optional: true }),
+    id: column.text({ primaryKey: true }),
+    name: column.text(),
+    email: column.text(),
     image: column.text({ optional: true }),
-    provider: column.text({ optional: true }), // 'github', 'google', etc.
-    lastLogin: column.date({ default: new Date() }),
-    createdAt: column.date({ default: new Date() }),
-    updatedAt: column.date({ default: new Date() }),
-    role: column.text({ default: 'user' }), // 'user', 'admin', etc.
-    preferences: column.json({ optional: true }), // Store user preferences as JSON
+    provider: column.text(),
+    lastLogin: column.date(),
+    createdAt: column.date(),
+    updatedAt: column.date(),
+    role: column.text(),
+    preferences: column.json(),
   },
   indexes: {
     email_idx: { on: ['email'], unique: true },
@@ -26,51 +21,49 @@ const Users = defineTable({
 const Intros = defineTable({
   columns: {
     id: column.number({ primaryKey: true, autoIncrement: true }),
-    introText: column.text({ optional: false }),
-    createdAt: column.date({ default: new Date() }),
+    introText: column.text(),
+    createdAt: column.date(),
   },
 });
 
-const Leads = defineTable({
+const Types = defineTable({
   columns: {
     id: column.number({ primaryKey: true, autoIncrement: true }),
-    leadText: column.text({ optional: false }),
-    createdAt: column.date({ default: new Date() }),
+    name: column.text(),
+    createdAt: column.date(),
   },
 });
 
-/**
- * Sayings table - stores the actual sayings
- */
 const Sayings = defineTable({
   columns: {
     id: column.number({ primaryKey: true, autoIncrement: true }),
     intro: column.number({ references: () => Intros.columns.id }),
-    firstLead: column.number({ references: () => Leads.columns.id }),
-    secondLead: column.number({ references: () => Leads.columns.id }),
+    type: column.number({ references: () => Types.columns.id }),
     firstKind: column.text(),
     secondKind: column.text(),
-    userId: column.text({ references: () => Users.columns.id, optional: true }),
-    createdAt: column.date({ default: new Date() }),
+    userId: column.text({ references: () => Users.columns.id }),
+    createdAt: column.date(),
   },
 });
 
-/**
- * Likes table - tracks which users have liked which sayings
- */
 const Likes = defineTable({
   columns: {
     id: column.number({ primaryKey: true, autoIncrement: true }),
     userId: column.text({ references: () => Users.columns.id }),
     sayingId: column.number({ references: () => Sayings.columns.id }),
-    createdAt: column.date({ default: new Date() }),
+    createdAt: column.date(),
   },
   indexes: {
-    // Ensure a user can only like a saying once
     unique_like: { on: ['userId', 'sayingId'], unique: true },
   },
 });
 
 export default defineDb({
-  tables: { Intros, Leads, Sayings, Users, Likes },
+  tables: {
+    Users,
+    Intros,
+    Types,
+    Sayings,
+    Likes,
+  },
 });

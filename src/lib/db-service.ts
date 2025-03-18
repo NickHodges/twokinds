@@ -1,10 +1,10 @@
-import { db, Sayings, Intros, Leads, eq, desc } from 'astro:db';
+import { db, Sayings, Intros, Types, eq, desc } from 'astro:db';
 
 /**
  * Get a complete saying with all related data by ID
  *
  * @param id The ID of the saying to retrieve
- * @returns The saying with intro and lead text fields, or null if not found
+ * @returns The saying with intro and type data, or null if not found
  */
 export async function getSayingById(id: number) {
   try {
@@ -22,17 +22,14 @@ export async function getSayingById(id: number) {
     // Get the related intro
     const introResults = await db.select().from(Intros).where(eq(Intros.id, saying.intro));
 
-    // Get the related leads
-    const firstLeadResults = await db.select().from(Leads).where(eq(Leads.id, saying.firstLead));
-
-    const secondLeadResults = await db.select().from(Leads).where(eq(Leads.id, saying.secondLead));
+    // Get the related type
+    const typeResults = await db.select().from(Types).where(eq(Types.id, saying.type));
 
     // Combine the data
     return {
       ...saying,
       introText: introResults[0]?.introText || 'Unknown intro',
-      firstLeadText: firstLeadResults[0]?.leadText || 'Unknown lead',
-      secondLeadText: secondLeadResults[0]?.leadText || 'Unknown lead',
+      typeName: typeResults[0]?.name || 'Unknown type',
     };
   } catch (error) {
     console.error('Error getting saying by ID:', error);
@@ -43,28 +40,26 @@ export async function getSayingById(id: number) {
 /**
  * Get all sayings with related data
  *
- * @returns Array of sayings with intro and lead text fields
+ * @returns Array of sayings with intro and type data
  */
 export async function getAllSayings() {
   try {
     // Get all sayings
     const sayings = await db.select().from(Sayings).orderBy(desc(Sayings.id));
 
-    // Get all intros and leads
+    // Get all intros and types
     const intros = await db.select().from(Intros);
-    const leads = await db.select().from(Leads);
+    const types = await db.select().from(Types);
 
     // Combine the data
     return sayings.map((saying) => {
       const intro = intros.find((i) => i.id === saying.intro);
-      const firstLead = leads.find((l) => l.id === saying.firstLead);
-      const secondLead = leads.find((l) => l.id === saying.secondLead);
+      const type = types.find((t) => t.id === saying.type);
 
       return {
         ...saying,
         introText: intro?.introText || 'Unknown intro',
-        firstLeadText: firstLead?.leadText || 'Unknown lead',
-        secondLeadText: secondLead?.leadText || 'Unknown lead',
+        typeName: type?.name || 'Unknown type',
       };
     });
   } catch (error) {

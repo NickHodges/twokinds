@@ -3,12 +3,13 @@ import MainLayout from '../layouts/MainLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
 ---
 
-<MainLayout>
+<MainLayout title="About - Two Kinds of People">
   <div class="flex flex-col">
     <PageHeader title="About Two Kinds of People" />
 
-    <main class="max-w-4xl mx-auto mt-4">
+    <main class="max-w-4xl mx-auto mt-4 px-4">
       <div class="prose prose-lg max-w-none dark:prose-invert">
+        <h2 class="text-2xl font-bold mb-4">Our Purpose</h2>
         <p>
           "Two Kinds of People" is a fun exploration of the countless ways humanity divides itself
           into dualities. From the way we squeeze toothpaste to how we organize our digital files,
@@ -21,9 +22,46 @@ import PageHeader from '../components/PageHeader.astro';
           the way.
         </p>
 
+        <h2 class="text-2xl font-bold mt-8 mb-4">How It Works</h2>
+        <p>
+          Our platform allows users to browse, create, and share "sayings" about the two kinds of people in the world.
+          Each saying follows a simple format: an introduction followed by two contrasting behaviors or preferences.
+        </p>
+
         <p class="mt-4">
+          For example: "There are two kinds of people in the world: those who make their bed every morning, and those who see no point since they'll just mess it up again tonight."
+        </p>
+
+        <p class="mt-4">
+          Users can browse sayings by category, like them to show appreciation, and even filter by popularity or recency.
+        </p>
+
+        <h2 class="text-2xl font-bold mt-8 mb-4">How to Contribute</h2>
+        <p>
+          Contributing your own observation is easy:
+        </p>
+
+        <ol class="list-decimal pl-6 mt-4">
+          <li>Create an account or sign in with your preferred method</li>
+          <li>Navigate to the "Create" page</li>
+          <li>Choose an introduction phrase (or create your own)</li>
+          <li>Select a category for your saying</li>
+          <li>Describe the two kinds of people you've observed</li>
+          <li>Submit your creation to share it with the world</li>
+        </ol>
+
+        <p class="mt-6">
+          The best sayings are those that highlight everyday choices we all make but rarely discuss. They should be relatable, thoughtful, and ideally make people smile with recognition.
+        </p>
+
+        <h2 class="text-2xl font-bold mt-8 mb-4">Our Community</h2>
+        <p>
+          Two Kinds of People is more than just a collection of observations—it's a growing community of people who enjoy thinking about the small choices that make us who we are. We encourage respectful, good-humored contributions that celebrate our differences rather than judging them.
+        </p>
+
+        <p class="mt-8 italic">
           Join us in exploring these lighthearted divisions and maybe even contribute your own
-          observation about the two kinds of people in this world.
+          observation about the two kinds of people in this world!
         </p>
       </div>
     </main>

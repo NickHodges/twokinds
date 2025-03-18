@@ -1,0 +1,281 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import { getSession } from 'auth-astro/server';
+import authConfig from '../../../auth.config';
+import { db, Sayings, Intros, Types, eq, and } from 'astro:db';
+import type { ExtendedSession } from '../../env';
+import { getSayingById } from '../../lib/db-service';
+
+const session = (await getSession(Astro.request, authConfig)) as ExtendedSession | null;
+
+// This should be a protected page
+if (!session?.user?.id) {
+  return Astro.redirect('/?error=unauthorized');
+}
+
+// Get the ID from the URL
+const { id } = Astro.params;
+const sayingId = parseInt(id || '0');
+
+if (!sayingId) {
+  return Astro.redirect('/dashboard?error=invalid-id');
+}
+
+// Fetch the saying
+const saying = await getSayingById(sayingId);
+
+// If no saying found or user is not the owner, redirect
+if (!saying || saying.userId !== session.user.id) {
+  return Astro.redirect('/dashboard?error=not-found-or-unauthorized');
+}
+
+// Fetch all available intros for the dropdown
+const intros = await db.select().from(Intros).orderBy(Intros.introText);
+
+// Fetch all available types for the dropdown
+const types = await db.select().from(Types).orderBy(Types.name);
+
+// If form is submitted, update the saying
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+
+    const introId = parseInt(formData.get('intro')?.toString() || '0');
+    const typeId = parseInt(formData.get('type')?.toString() || '0');
+    const typeChoice = formData.get('typeChoice')?.toString() || 'existing';
+    const newType = formData.get('newType')?.toString() || '';
+    const firstKind = formData.get('firstKind')?.toString() || '';
+    const secondKind = formData.get('secondKind')?.toString() || '';
+
+    // Validate inputs
+    if (!introId || !firstKind || !secondKind) {
+      throw new Error('All fields are required');
+    }
+
+    let finalTypeId = typeId;
+
+    // If user chose to create a new type
+    if (typeChoice === 'new' && newType) {
+      // Check if type already exists
+      const existingType = await db
+        .select()
+        .from(Types)
+        .where(eq(Types.name, newType))
+        .get();
+
+      if (existingType) {
+        // Use existing type if found
+        finalTypeId = existingType.id;
+      } else {
+        // Create new type
+        const insertResult = await db
+          .insert(Types)
+          .values({
+            name: newType,
+            createdAt: new Date()
+          })
+          .returning();
+
+        if (insertResult && insertResult.length > 0) {
+          finalTypeId = insertResult[0].id;
+        } else {
+          throw new Error('Failed to create new type');
+        }
+      }
+    }
+
+    // Update the saying
+    await db
+      .update(Sayings)
+      .set({
+        intro: introId,
+        type: finalTypeId,
+        firstKind,
+        secondKind,
+      })
+      .where(and(eq(Sayings.id, sayingId), eq(Sayings.userId, session.user.id)));
+
+    // Redirect back to dashboard with success message
+    return Astro.redirect('/dashboard?success=saying-updated');
+  } catch (error) {
+    console.error('Error updating saying:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return Astro.redirect(`/edit-saying/${sayingId}?error=${encodeURIComponent(errorMessage)}`);
+  }
+}
+
+// Get any error or success messages from URL
+const url = new URL(Astro.request.url);
+const errorMessage = url.searchParams.get('error');
+---
+
+<MainLayout title="Edit Saying">
+  <div class="max-w-2xl mx-auto">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold mb-2">Edit Your Saying</h1>
+      <p class="text-gray-600 dark:text-gray-400">
+        Update your saying below. All fields are required.
+      </p>
+    </div>
+
+    {errorMessage && (
+      <div class="mb-6 p-4 bg-red-100 border border-red-200 text-red-700 rounded-md">
+        <p>{errorMessage}</p>
+      </div>
+    )}
+
+    <form method="POST" class="space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <div>
+        <label for="intro" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          Introduction
+        </label>
+        <select
+          id="intro"
+          name="intro"
+          required
+          class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+        >
+          {intros.map((intro) => (
+            <option value={intro.id} selected={intro.id === saying.intro}>
+              {intro.introText}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <fieldset class="mb-4">
+          <legend class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            Type
+          </legend>
+          <div class="space-y-2">
+            <div class="flex items-center">
+              <input
+                type="radio"
+                id="typeExisting"
+                name="typeChoice"
+                value="existing"
+                checked={true}
+                class="form-radio mr-2"
+              />
+              <label for="typeExisting" class="text-sm">Use existing type</label>
+            </div>
+            <div class="flex items-center">
+              <input
+                type="radio"
+                id="typeNew"
+                name="typeChoice"
+                value="new"
+                class="form-radio mr-2"
+              />
+              <label for="typeNew" class="text-sm">Create new type</label>
+            </div>
+          </div>
+        </fieldset>
+      </div>
+
+      <div id="existingTypeContainer">
+        <label for="type" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          Select Type
+        </label>
+        <select
+          id="type"
+          name="type"
+          class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+        >
+          {types.map((type) => (
+            <option value={type.id} selected={type.id === saying.type}>
+              {type.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div id="newTypeContainer" class="hidden">
+        <label for="newType" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          New Type Name
+        </label>
+        <input
+          type="text"
+          id="newType"
+          name="newType"
+          placeholder="Enter a new type..."
+          class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+        />
+      </div>
+
+      <div>
+        <label for="firstKind" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          First Kind (Those who...)
+        </label>
+        <input
+          type="text"
+          id="firstKind"
+          name="firstKind"
+          value={saying.firstKind}
+          required
+          class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+        />
+      </div>
+
+      <div>
+        <label for="secondKind" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          Second Kind (Those who...)
+        </label>
+        <input
+          type="text"
+          id="secondKind"
+          name="secondKind"
+          value={saying.secondKind}
+          required
+          class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+        />
+      </div>
+
+      <div class="flex justify-between pt-4">
+        <a
+          href="/dashboard"
+          class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+        >
+          Cancel
+        </a>
+        <button
+          type="submit"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+        >
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</MainLayout>
+
+<script>
+  // Handle type choice radio buttons
+  const typeExistingRadio = document.getElementById('typeExisting') as HTMLInputElement;
+  const typeNewRadio = document.getElementById('typeNew') as HTMLInputElement;
+  const existingTypeContainer = document.getElementById('existingTypeContainer');
+  const newTypeContainer = document.getElementById('newTypeContainer');
+  const typeSelect = document.getElementById('type') as HTMLSelectElement;
+  const newTypeInput = document.getElementById('newType') as HTMLInputElement;
+
+  function updateTypeFields() {
+    if (typeExistingRadio.checked) {
+      existingTypeContainer?.classList.remove('hidden');
+      newTypeContainer?.classList.add('hidden');
+      typeSelect.required = true;
+      newTypeInput.required = false;
+    } else {
+      existingTypeContainer?.classList.add('hidden');
+      newTypeContainer?.classList.remove('hidden');
+      typeSelect.required = false;
+      newTypeInput.required = true;
+    }
+  }
+
+  typeExistingRadio?.addEventListener('change', updateTypeFields);
+  typeNewRadio?.addEventListener('change', updateTypeFields);
+
+  // Initial update
+  updateTypeFields();
+</script>

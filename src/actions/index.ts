@@ -8,8 +8,7 @@ export const server = {
     accept: 'form',
     input: z.object({
       intro: z.string().min(1, 'Please select an introduction'),
-      firstLead: z.string().min(1, 'Please select a lead'),
-      secondLead: z.string().min(1, 'Please select a lead'),
+      type: z.string().min(1, 'Please select a type'),
       firstKind: z
         .string()
         .min(3, 'Must be at least 3 characters')
@@ -36,8 +35,7 @@ export const server = {
         // Insert data into database
         const values = {
           intro: parseInt(body.intro),
-          firstLead: parseInt(body.firstLead),
-          secondLead: parseInt(body.secondLead),
+          type: parseInt(body.type),
           firstKind: body.firstKind,
           secondKind: body.secondKind,
           userId: session.user.id,
