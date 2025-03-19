@@ -1,9 +1,16 @@
 ---
 import MainLayout from '../../layouts/MainLayout.astro';
+import { getSession } from 'auth-astro/server';
 import { SignIn } from 'auth-astro/components';
 
 // Get any error from the URL
 const error = Astro.url.searchParams.get('error');
+
+// Check if the user is already signed in
+const session = await getSession(Astro.request);
+if (session) {
+  return Astro.redirect('/');
+}
 ---
 
 <MainLayout title="Sign In">

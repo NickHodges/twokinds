@@ -2,6 +2,13 @@ import { defineAction } from 'astro:actions';
 import { z } from 'zod';
 import { db, Sayings } from 'astro:db';
 import type { ExtendedSession } from '../env';
+import { signIn as authSignIn } from 'auth-astro/server';
+
+// Define Zod schema for sign-in validation
+const SignInSchema = z.object({
+  provider: z.enum(['github', 'google']),
+  callbackUrl: z.string().optional(),
+});
 
 export const server = {
   submitSaying: defineAction({
@@ -56,6 +63,27 @@ export const server = {
         return {
           success: false,
           error: 'Failed to save saying',
+        };
+      }
+    },
+  }),
+
+  signIn: defineAction({
+    accept: 'form',
+    input: SignInSchema,
+
+    handler: async (body) => {
+      try {
+        const { provider, callbackUrl = '/' } = body;
+
+        // Auth.js expects a redirect response from this function
+        return await authSignIn(provider, { callbackUrl });
+      } catch (error) {
+        console.error('Error during sign-in:', error);
+        return {
+          success: false,
+          error: 'Authentication failed',
+          message: error instanceof Error ? error.message : 'Unknown error',
         };
       }
     },
