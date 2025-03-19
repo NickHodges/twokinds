@@ -17,8 +17,6 @@ export default defineConfig({
     // Configuration to fix WebSocket issues in WSL
     host: '0.0.0.0',
   },
-  // Disable pre-rendering to ensure server-side rendering works properly
-  output: 'server',
   // Add Node.js adapter for server-side rendering
   adapter: vercel(),
 
@@ -37,8 +35,12 @@ export default defineConfig({
       NEXTAUTH_URL: envField.string({ context: 'server', access: 'secret', optional: false }),
       AUTH_URL: envField.string({ context: 'server', access: 'secret', optional: false }),
       // OAuth Provider Credentials
-      GITHUB_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
-      GITHUB_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
+      GITHUB_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
+      GITHUB_CLIENT_SECRET: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: false,
+      }),
       GOOGLE_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
       GOOGLE_CLIENT_SECRET: envField.string({
         context: 'server',

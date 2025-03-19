@@ -7,8 +7,8 @@ import { v4 as uuidv4 } from 'uuid';
 export default defineConfig({
   providers: [
     GitHub({
-      clientId: import.meta.env.GITHUB_ID,
-      clientSecret: import.meta.env.GITHUB_SECRET,
+      clientId: import.meta.env.GITHUB_CLIENT_ID,
+      clientSecret: import.meta.env.GITHUB_CLIENT_SECRET,
     }),
     Google({
       clientId: import.meta.env.GOOGLE_CLIENT_ID,
@@ -24,10 +24,14 @@ export default defineConfig({
   },
   pages: {
     signIn: '/auth/signin', // Custom sign-in page
+    error: '/auth/error', // Custom error page
   },
   callbacks: {
     async signIn({ user, account }) {
+      console.log('signIn callback triggered', { user, account });
+
       if (!user.email) {
+        console.error('No email provided by OAuth provider');
         return false;
       }
 
@@ -38,10 +42,13 @@ export default defineConfig({
         if (!existingUser) {
           // Create new user with a UUID
           const now = new Date();
+          const userId = uuidv4(); // Generate a new UUID
+          console.log('Creating new user with ID:', userId);
+
           const newUser = await db
             .insert(Users)
             .values({
-              id: uuidv4(), // Generate a new UUID
+              id: userId,
               name: user.name || '',
               email: user.email,
               image: user.image || '',
@@ -61,8 +68,10 @@ export default defineConfig({
           }
 
           user.id = newUser.id;
+          console.log('New user created successfully:', newUser.id);
         } else {
           // Update existing user's last login
+          console.log('Updating existing user:', existingUser.id);
           await db
             .update(Users)
             .set({
@@ -74,6 +83,7 @@ export default defineConfig({
             .run();
 
           user.id = existingUser.id;
+          console.log('User updated successfully:', existingUser.id);
         }
 
         return true;
@@ -82,17 +92,20 @@ export default defineConfig({
         return false;
       }
     },
-    async redirect({ url: _url, baseUrl: _baseUrl }) {
+    async redirect({ url, baseUrl }) {
+      console.log('Redirect callback', { url, baseUrl });
       // Always redirect to home page after sign-in or sign-out
       return '/';
     },
     async session({ session, token }) {
+      console.log('Session callback', { session, token });
       if (session.user) {
         session.user.id = token.id as string;
       }
       return session;
     },
     async jwt({ token, user }) {
+      console.log('JWT callback', { token, user });
       if (user) {
         token.id = user.id;
       }

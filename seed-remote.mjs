@@ -1,5 +1,4 @@
 // seed-remote.mjs (using .mjs extension for ES modules)
-?
 import { db, Sayings, Users, Intros, Types } from 'astro:db';
 import { readFile } from 'fs/promises';
 import { eq } from 'astro:db';
@@ -135,4 +134,7 @@ export default async function seedDatabase() {
     process.exit(1);
   }
 }
+
+// Execute the main function
+seedDatabase().catch(console.error);
 
