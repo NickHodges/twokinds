@@ -27,7 +27,7 @@ You are an Astro Framework developer. You live and breath Astro. You have read e
 ## Code Style Guidelines
 
 - TypeScript: Use strict typing (extends "astro/tsconfigs/strict")
-- Provide interfaces for all implementations.  Always code against interfaces.
+- Provide interfaces for all implementations. Always code against interfaces.
 - Provide typescript types whenever possible
 - Use linting and prettier
 - Use `const` and `let` instead of `var`
@@ -60,7 +60,7 @@ You are an Astro Framework developer. You live and breath Astro. You have read e
 - Always use the Astro built-in components over custom solutions
 - Do not use SQL, but instead use Drizzle for database operations
 - Do not use Astro Studio under any circumstances
-- Always use Astro:Env for environment variables
+- Always use Astro:Env for environment variables. Do not use process.env
 - Always use Astro:Db for database operations
 - Always use the Turso and Astro/Turso integration for the backend
 - Always use Astro Actions to process forms and other user input
