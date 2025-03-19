@@ -1,4 +1,5 @@
 // seed-remote.mjs (using .mjs extension for ES modules)
+?
 import { db, Sayings, Users, Intros, Types } from 'astro:db';
 import { readFile } from 'fs/promises';
 import { eq } from 'astro:db';

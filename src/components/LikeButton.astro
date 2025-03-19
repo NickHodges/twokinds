@@ -1,7 +1,7 @@
 ---
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Props {
-  sayingId: number;
+  sayingId: string;
   initialLiked?: boolean;
   totalLikes: number;
   isAuthenticated: boolean;
@@ -85,6 +85,8 @@ const {
       try {
         button.disabled = true;
         const sayingId = container.dataset.sayingId;
+        if (!sayingId) return;
+
         const totalLikesSpan = button.querySelector('span:last-child');
         const currentTotalLikes = parseInt(container.dataset.totalLikes || '0');
 
@@ -93,7 +95,7 @@ const {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ sayingId: Number(sayingId) }),
+          body: JSON.stringify({ sayingId }),
         });
 
         if (!response.ok) {

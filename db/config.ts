@@ -2,7 +2,7 @@ import { defineDb, defineTable, column } from 'astro:db';
 
 const Users = defineTable({
   columns: {
-    id: column.number({ primaryKey: true, autoIncrement: true }),
+    id: column.text({ primaryKey: true }),
     name: column.text(),
     email: column.text(),
     image: column.text({ optional: true }),
@@ -41,7 +41,7 @@ const Sayings = defineTable({
     type: column.number({ references: () => Types.columns.id }),
     firstKind: column.text(),
     secondKind: column.text(),
-    userId: column.number({ references: () => Users.columns.id }),
+    userId: column.text({ references: () => Users.columns.id }),
     createdAt: column.date(),
   },
 });
@@ -49,7 +49,7 @@ const Sayings = defineTable({
 const Likes = defineTable({
   columns: {
     id: column.number({ primaryKey: true, autoIncrement: true }),
-    userId: column.number({ references: () => Users.columns.id }),
+    userId: column.text({ references: () => Users.columns.id }),
     sayingId: column.number({ references: () => Sayings.columns.id }),
     createdAt: column.date(),
   },

@@ -6,11 +6,16 @@ import vercel from '@astrojs/vercel';
 // https://astro.build/config
 export default defineConfig({
   integrations: [db(), auth()],
-
+  output: 'server',
+  site: import.meta.env.PUBLIC_SITE_URL,
+  db: {
+    url: import.meta.env.ASTRO_DB_REMOTE_URL,
+    token: import.meta.env.ASTRO_DB_APP_TOKEN,
+    file: import.meta.env.ASTRO_DATABASE_FILE,
+  },
   server: {
     // Configuration to fix WebSocket issues in WSL
-    host: '0.0.0.0', // Listen on all network interfaces
-    port: 4321,
+    host: '0.0.0.0',
   },
   // Disable pre-rendering to ensure server-side rendering works properly
   output: 'server',

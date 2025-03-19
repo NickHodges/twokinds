@@ -3,7 +3,7 @@ import LikeButton from './LikeButton.astro';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Props {
-  id?: number;
+  id?: string;
   introText: string;
   typeName: string;
   firstKind: string;
@@ -12,7 +12,7 @@ interface Props {
   isLiked?: boolean;
   totalLikes?: number;
   isAuthenticated?: boolean;
-  isEditable?: boolean;
+  canEdit?: boolean;
 }
 
 const {
@@ -25,7 +25,7 @@ const {
   isLiked = false,
   totalLikes = 0,
   isAuthenticated = false,
-  isEditable = false,
+  canEdit = false,
 } = Astro.props;
 ---
 
@@ -70,7 +70,7 @@ const {
             >
               View as quote →
             </a>
-            {isEditable && (
+            {canEdit && (
               <>
                 <a
                   href={`/edit-saying/${id}`}
@@ -112,11 +112,13 @@ const {
     if (buttonElement instanceof HTMLButtonElement) {
       const button = buttonElement as HTMLButtonElement;
       button.addEventListener('click', async () => {
-        const sayingId = parseInt(button.dataset.sayingId || '0');
+        const sayingId = button.dataset.sayingId;
         if (!sayingId) return;
 
         // Confirm deletion
-        if (!confirm('Are you sure you want to delete this saying? This action cannot be undone.')) {
+        if (
+          !confirm('Are you sure you want to delete this saying? This action cannot be undone.')
+        ) {
           return;
         }
 

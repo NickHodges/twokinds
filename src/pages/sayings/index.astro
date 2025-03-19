@@ -1,5 +1,4 @@
 ---
-import { db, Intros, Types } from 'astro:db';
 import MainLayout from '../../layouts/MainLayout.astro';
 import '../../styles/index.css';
 import SayingList from '../../components/SayingList.astro';
@@ -8,6 +7,7 @@ import Hero from '../../components/Hero.astro';
 import { config } from '../../lib/config';
 import { getAllSayings } from '../../lib/db-service';
 import type { ExtendedSession } from '../../env';
+import type { Saying } from '../../types/saying';
 
 // Don't prerender so we always get fresh data
 export const prerender = false;
@@ -16,7 +16,7 @@ export const prerender = false;
 const session = Astro.locals.session as ExtendedSession | null;
 
 // Empty array for the page data and default pagination
-let sayingsForCurrentPage: any[] = [];
+let sayingsForCurrentPage: Saying[] = [];
 let totalPages = 1;
 let currentPage = 1;
 
@@ -32,7 +32,7 @@ try {
   const endIndex = Math.min(startIndex + pageSize, allSayings.length);
   sayingsForCurrentPage = allSayings.slice(startIndex, endIndex);
 } catch (error) {
-  console.error("Error getting sayings:", error);
+  console.error('Error getting sayings:', error);
 }
 
 // Create page object for pagination
