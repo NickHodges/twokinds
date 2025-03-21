@@ -16,17 +16,28 @@ if (!session) {
 }
 
 // Fetch data from database
-const intros = (await db.select().from(Intros)) as IntroType[];
-const types = (await db.select().from(Types)) as SayingType[];
+const introsData = (await db.select().from(Intros)) as IntroType[];
+const typesData = (await db.select().from(Types)) as SayingType[];
+
+// Map data to the format expected by the NewSayingForm component
+const intros = introsData.map((intro) => ({
+  id: intro.id.toString(),
+  introText: intro.introText,
+}));
+
+const types = typesData.map((type) => ({
+  id: type.id.toString(),
+  typeName: type.name,
+}));
 
 // Initialize success/error values
-let success = false;
+let success = '';
 let error = '';
 let newSayingId: string | undefined = undefined;
 
 // Handle form submission result from action redirect
 if (Astro.url.searchParams.has('success')) {
-  success = Astro.url.searchParams.get('success') === 'true';
+  success = Astro.url.searchParams.get('success') === 'true' ? 'true' : '';
   if (success && Astro.url.searchParams.has('id')) {
     newSayingId = Astro.url.searchParams.get('id') || undefined;
   }
@@ -51,6 +62,22 @@ export const prerender = false;
         input[name='firstKind'],
         input[name='secondKind'] {
           width: 100% !important;
+        }
+
+        select,
+        select option {
+          color: black !important;
+          background-color: white !important;
+        }
+
+        .dark select {
+          background-color: #1f2937 !important;
+          color: white !important;
+        }
+
+        .dark select option {
+          background-color: #1f2937 !important;
+          color: white !important;
         }
 
         button[type='submit'] {
