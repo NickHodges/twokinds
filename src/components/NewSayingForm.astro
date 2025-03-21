@@ -1,330 +1,205 @@
 ---
-import { submitSaying } from '../actions/submit-saying';
 import NotificationBanner from './NotificationBanner.astro';
 import ActionButtons from './ActionButtons.astro';
 
-interface Intro {
-  id: number;
-  introText: string;
-  createdAt: Date;
+export interface Props {
+  intros: {
+    id: string;
+    introText: string;
+  }[];
+  types: {
+    id: string;
+    typeName: string;
+  }[];
+  error?: string;
+  success?: string;
+  newSayingId?: string;
 }
 
-interface Type {
-  id: number;
-  name: string;
-  createdAt: Date;
-}
-
-interface Props {
-  intros: Intro[];
-  types: Type[];
-}
-
-const { intros, types } = Astro.props;
-
-// Process form submission if POST method
-let result: { success: boolean; data?: any; error?: string } | null = null;
-
-// We'll handle form submission entirely on the client side with JavaScript
-// to avoid the Reflect.get error in Astro's action system
+const { intros = [], types = [], error, success, newSayingId } = Astro.props;
 ---
 
-<div class="max-w-4xl mx-auto">
-  <div id="successBanner" class="hidden">
-    <NotificationBanner
-      type="success"
-      message="Your saying was successfully created!"
-      link={{
-        url: `/sayings`,
-        text: 'View all sayings',
-      }}
-    />
+<div class="w-full">
+  {
+    success && (
+      <NotificationBanner type="success">
+        <p>Your saying has been created successfully!</p>
+        <ActionButtons viewUrl={`/saying/${newSayingId}`} createAnotherUrl="/create" />
+      </NotificationBanner>
+    )
+  }
 
-    <div class="mt-8 mb-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-      <h3 class="text-lg font-medium mb-3">Created Successfully:</h3>
-      <ActionButtons
-        buttons={[
-          {
-            text: 'View your new saying',
-            href: `/sayings`,
-            primary: true,
-          },
-        ]}
-      />
-    </div>
-  </div>
+  {
+    error && (
+      <NotificationBanner type="error">
+        <p>{error}</p>
+      </NotificationBanner>
+    )
+  }
 
-  <div id="errorBanner" class="hidden">
-    <NotificationBanner
-      type="error"
-      message="An error occurred while creating your saying."
-    />
-  </div>
-
-  <form id="sayingForm" class="space-y-6 w-full">
-    <div class="space-y-4 w-full">
-      <div class="space-y-2">
-        <label class="block font-medium text-gray-700 dark:text-gray-300">
-          Type Selection:
-        </label>
-        <div class="flex items-center space-x-4">
-          <label class="inline-flex items-center">
-            <input type="radio" name="typeChoice" value="existing" class="form-radio" checked>
-            <span class="ml-2">Choose Existing</span>
-          </label>
-          <label class="inline-flex items-center">
-            <input type="radio" name="typeChoice" value="new" class="form-radio">
-            <span class="ml-2">Create New</span>
-          </label>
-        </div>
-      </div>
-
-      <div id="existingTypeSection">
-        <label class="block font-medium text-gray-700 dark:text-gray-300">
-          Choose a Type:
-          <select
-            name="type"
-            class="mt-1 block w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 focus:ring-opacity-50"
-            required
-          >
-            <option value="">-- Select a Type --</option>
-            {types.map((type) => (
-              <option value={type.id}>{type.name}</option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <div id="newTypeSection" class="hidden">
-        <label class="block font-medium text-gray-700 dark:text-gray-300">
-          New Type Name:
-          <input
-            type="text"
-            name="newType"
-            placeholder="Enter a new type..."
-            class="mt-1 block w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 focus:ring-opacity-50"
-          />
-        </label>
-      </div>
-
-      <label class="block font-medium text-gray-700 dark:text-gray-300">
-        Choose an Introduction:
-        <select
-          name="intro"
-          class="mt-1 block w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 focus:ring-opacity-50"
-          required
-        >
-          <option value="">-- Select an Introduction --</option>
-          {intros.map((intro) => (
-            <option value={intro.id}>{intro.introText}</option>
-          ))}
-        </select>
+  <form
+    action="/api/create-saying"
+    method="POST"
+    class="space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
+  >
+    <div>
+      <label for="intro" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+        Introduction
       </label>
-    </div>
-
-    <div class="space-y-4">
-      <div class="w-full">
-        <label class="block font-medium text-gray-700 dark:text-gray-300">
-          First Kind:
-          <input
-            type="text"
-            name="firstKind"
-            placeholder="e.g., eat pizza with a fork"
-            class="mt-1 block w-full md:w-[600px] p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 focus:ring-opacity-50"
-            required
-            minlength="3"
-            maxlength="100"
-          />
-        </label>
-      </div>
-
-      <div class="w-full">
-        <label class="block font-medium text-gray-700 dark:text-gray-300">
-          Second Kind:
-          <input
-            type="text"
-            name="secondKind"
-            placeholder="e.g., eat pizza with their hands"
-            class="mt-1 block w-full md:w-[600px] p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 focus:ring-opacity-50"
-            required
-            minlength="3"
-            maxlength="100"
-          />
-        </label>
-      </div>
+      <select
+        name="intro"
+        id="intro"
+        required
+        class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+      >
+        <option value="">Select an introduction...</option>
+        {intros.map((intro) => <option value={intro.id}>{intro.introText}</option>)}
+      </select>
     </div>
 
     <div>
+      <fieldset class="mb-4">
+        <legend class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          Type
+        </legend>
+        <div class="space-y-2">
+          <div class="flex items-center">
+            <input
+              type="radio"
+              id="typeExisting"
+              name="typeChoice"
+              value="existing"
+              checked={true}
+              class="form-radio mr-2"
+            />
+            <label for="typeExisting" class="text-sm">Use existing type</label>
+          </div>
+          <div class="flex items-center">
+            <input
+              type="radio"
+              id="typeNew"
+              name="typeChoice"
+              value="new"
+              class="form-radio mr-2"
+            />
+            <label for="typeNew" class="text-sm">Create new type</label>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+
+    <div id="existingTypeContainer">
+      <label for="type" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+        Select Type
+      </label>
+      <select
+        id="type"
+        name="type"
+        class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+      >
+        <option value="">Select a type...</option>
+        {types.map((type) => <option value={type.id}>{type.typeName}</option>)}
+      </select>
+    </div>
+
+    <div id="newTypeContainer" class="hidden">
+      <label for="newType" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+        New Type Name
+      </label>
+      <input
+        type="text"
+        id="newType"
+        name="newType"
+        placeholder="Enter a new type..."
+        class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+      />
+    </div>
+
+    <div>
+      <label
+        for="firstKind"
+        class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+      >
+        First Kind (Those who...)
+      </label>
+      <input
+        type="text"
+        id="firstKind"
+        name="firstKind"
+        placeholder="Enter the first kind..."
+        required
+        minlength="3"
+        maxlength="100"
+        class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+      />
+      <p class="mt-1 text-xs text-gray-500">3-100 characters</p>
+    </div>
+
+    <div>
+      <label
+        for="secondKind"
+        class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+      >
+        Second Kind (Those who...)
+      </label>
+      <input
+        type="text"
+        id="secondKind"
+        name="secondKind"
+        placeholder="Enter the second kind..."
+        required
+        minlength="3"
+        maxlength="100"
+        class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+      />
+      <p class="mt-1 text-xs text-gray-500">3-100 characters</p>
+    </div>
+
+    <div class="flex justify-between pt-4">
+      <a
+        href="/dashboard"
+        class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+      >
+        Cancel
+      </a>
       <button
         type="submit"
-        class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900"
+        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
       >
         Create Saying
       </button>
-      <p id="submitStatus" class="mt-2 text-sm text-gray-500"></p>
     </div>
   </form>
 </div>
 
 <script>
-  // Handle type selection toggle
-  const typeChoiceRadios = document.querySelectorAll('input[name="typeChoice"]');
-  const existingTypeSection = document.getElementById('existingTypeSection');
-  const newTypeSection = document.getElementById('newTypeSection');
-  const typeSelect = document.querySelector('select[name="type"]') as HTMLSelectElement;
-  const newTypeInput = document.querySelector('input[name="newType"]') as HTMLInputElement;
-  const form = document.getElementById('sayingForm') as HTMLFormElement;
-  const submitStatus = document.getElementById('submitStatus');
-  const successBanner = document.getElementById('successBanner');
-  const errorBanner = document.getElementById('errorBanner');
+  // Handle type choice radio buttons
+  document.addEventListener('DOMContentLoaded', () => {
+    const typeExistingRadio = document.getElementById('typeExisting') as HTMLInputElement;
+    const typeNewRadio = document.getElementById('typeNew') as HTMLInputElement;
+    const existingTypeContainer = document.getElementById('existingTypeContainer');
+    const newTypeContainer = document.getElementById('newTypeContainer');
+    const typeSelect = document.getElementById('type') as HTMLSelectElement;
+    const newTypeInput = document.getElementById('newType') as HTMLInputElement;
 
-  function updateTypeValidation() {
-    const activeRadio = document.querySelector('input[name="typeChoice"]:checked') as HTMLInputElement;
-
-    if (activeRadio?.value === 'existing') {
-      existingTypeSection?.classList.remove('hidden');
-      newTypeSection?.classList.add('hidden');
-      typeSelect?.setAttribute('required', '');
-      newTypeInput?.removeAttribute('required');
-      newTypeInput.value = '';
-    } else {
-      existingTypeSection?.classList.add('hidden');
-      newTypeSection?.classList.remove('hidden');
-      typeSelect?.removeAttribute('required');
-      newTypeInput?.setAttribute('required', '');
-      typeSelect.value = '';
-    }
-  }
-
-  // Initialize form state
-  updateTypeValidation();
-
-  // Handle radio button changes
-  typeChoiceRadios.forEach(radio => {
-    radio.addEventListener('change', updateTypeValidation);
-  });
-
-  // Handle form submission
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    if (submitStatus) {
-      submitStatus.textContent = 'Submitting...';
-    }
-
-    // Get form data
-    const formData = new FormData(form);
-
-    // Validate form data
-    const typeChoice = formData.get('typeChoice');
-
-    try {
-      // For new type, ensure newType has a value and remove type
-      if (typeChoice === 'new') {
-        const newTypeValue = formData.get('newType');
-        if (!newTypeValue) {
-          throw new Error("New type name is required when creating a new type");
-        }
-        formData.delete('type');
-      }
-      // For existing type, ensure type has a value and remove newType
-      else if (typeChoice === 'existing') {
-        const typeValue = formData.get('type');
-        if (!typeValue) {
-          throw new Error("You must select a type when choosing an existing type");
-        }
-        formData.delete('newType');
-      }
-
-      // Submit form directly to create endpoint
-      const response = await fetch('/api/create-saying', {
-        method: 'POST',
-        body: formData
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Instead of showing success message, redirect to the saying page
-        if (submitStatus) {
-          submitStatus.textContent = 'Success! Redirecting to your new saying...';
-        }
-
-        // Extract the ID from the result data
-        const newSayingId = result.data.id;
-
-        // Redirect to the saying page
-        window.location.href = `/saying/${newSayingId}`;
+    function updateTypeFields() {
+      if (typeExistingRadio.checked) {
+        existingTypeContainer?.classList.remove('hidden');
+        newTypeContainer?.classList.add('hidden');
+        typeSelect.required = true;
+        newTypeInput.required = false;
       } else {
-        // Show error message
-        if (errorBanner) {
-          errorBanner.classList.remove('hidden');
-          const errorBannerMessage = errorBanner.querySelector('.text-red-800');
-          if (errorBannerMessage) {
-            errorBannerMessage.textContent = result.error || 'An error occurred';
-          }
-        }
-        if (submitStatus) {
-          submitStatus.textContent = `Error: ${result.error || 'Unknown error'}`;
-        }
-      }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      if (errorBanner) {
-        errorBanner.classList.remove('hidden');
-        const errorBannerMessage = errorBanner.querySelector('.text-red-800');
-        if (errorBannerMessage) {
-          errorBannerMessage.textContent = error instanceof Error ? error.message : 'An error occurred';
-        }
-      }
-      if (submitStatus) {
-        submitStatus.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        existingTypeContainer?.classList.add('hidden');
+        newTypeContainer?.classList.remove('hidden');
+        typeSelect.required = false;
+        newTypeInput.required = true;
       }
     }
+
+    typeExistingRadio?.addEventListener('change', updateTypeFields);
+    typeNewRadio?.addEventListener('change', updateTypeFields);
+
+    // Initial update
+    updateTypeFields();
   });
 </script>
-
-<style>
-  /* Add disabled input styles */
-  input:disabled,
-  select:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  /* Style radio buttons */
-  .form-radio {
-    appearance: none;
-    padding: 0;
-    print-color-adjust: exact;
-    display: inline-block;
-    vertical-align: middle;
-    background-origin: border-box;
-    user-select: none;
-    flex-shrink: 0;
-    height: 1rem;
-    width: 1rem;
-    background-color: #fff;
-    border: 2px solid #6b7280;
-    border-radius: 50%;
-  }
-
-  .form-radio:checked {
-    background-color: #3b82f6;
-    border-color: #3b82f6;
-    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='4'/%3e%3c/svg%3e");
-    background-size: 100% 100%;
-    background-position: center;
-    background-repeat: no-repeat;
-  }
-
-  .dark .form-radio {
-    background-color: #1f2937;
-    border-color: #4b5563;
-  }
-
-  .dark .form-radio:checked {
-    background-color: #3b82f6;
-    border-color: #3b82f6;
-  }
-</style>

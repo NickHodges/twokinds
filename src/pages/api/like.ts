@@ -1,64 +1,56 @@
 import type { APIRoute } from 'astro';
-import { db, Likes, eq, and } from 'astro:db';
-import { getSession } from 'auth-astro/server';
-import authConfig from '../../../auth.config';
-import { getUserIdFromSession } from '../../utils/user-db';
 
+// Now using Astro Actions, this endpoint is deprecated
+export const GET: APIRoute = async () => {
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: 'This endpoint is deprecated. Please use Astro Actions instead.',
+    }),
+    {
+      status: 410, // Gone
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
+};
+
+// Redirect POST requests to the Astro Action
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const session = await getSession(request, authConfig);
-    if (!session?.user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-      });
+    // Get the request body
+    const body = await request.json();
+    const { sayingId, action } = body;
+
+    // Construct form data
+    const formData = new FormData();
+    formData.append('sayingId', sayingId.toString());
+    if (action) {
+      formData.append('action', action);
     }
 
-    const userId = getUserIdFromSession(session);
-    if (!userId) {
-      return new Response(JSON.stringify({ error: 'Invalid user ID' }), {
-        status: 400,
-      });
-    }
-
-    const { sayingId } = await request.json();
-    if (!sayingId) {
-      return new Response(JSON.stringify({ error: 'Missing sayingId' }), {
-        status: 400,
-      });
-    }
-
-    // Check if like exists
-    const existingLike = await db
-      .select()
-      .from(Likes)
-      .where(and(eq(Likes.userId, userId), eq(Likes.sayingId, sayingId)))
-      .get();
-
-    if (existingLike) {
-      // Unlike: delete the like
-      await db
-        .delete(Likes)
-        .where(and(eq(Likes.userId, userId), eq(Likes.sayingId, sayingId)))
-        .run();
-
-      return new Response(JSON.stringify({ liked: false }));
-    } else {
-      // Like: create new like
-      await db
-        .insert(Likes)
-        .values({
-          userId,
-          sayingId,
-          createdAt: new Date(),
-        })
-        .run();
-
-      return new Response(JSON.stringify({ liked: true }));
-    }
+    // Forward to the Astro Action handler (will be handled by the toggleLike action)
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: 'This endpoint is deprecated. Please use Astro Actions directly.',
+        action: action || 'toggle',
+        sayingId,
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   } catch (error) {
     console.error('Error in like API:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-    });
+    return new Response(
+      JSON.stringify({
+        error: 'This endpoint is deprecated. Please use Astro Actions instead.',
+      }),
+      {
+        status: 410,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 };

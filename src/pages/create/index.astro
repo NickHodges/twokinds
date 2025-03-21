@@ -4,19 +4,37 @@ import '../../styles/index.css';
 import MainLayout from '../../layouts/MainLayout.astro';
 import NewSayingForm from '../../components/NewSayingForm.astro';
 import PageHeader from '../../components/PageHeader.astro';
-import type { ExtendedSession } from '../../env';
+import { getSession } from 'auth-astro/server';
+import type { IntroType, SayingType } from '../../types/saying';
 
 // Get the current user's session
-const session = Astro.locals.session as ExtendedSession | null;
+const session = await getSession(Astro.request);
 
 // Redirect to login if not authenticated
-if (!session?.user) {
-  return Astro.redirect('/auth/signin');
+if (!session) {
+  return Astro.redirect('/auth/signin?redirect=/create');
 }
 
 // Fetch data from database
-const intros = await db.select().from(Intros);
-const types = await db.select().from(Types);
+const intros = (await db.select().from(Intros)) as IntroType[];
+const types = (await db.select().from(Types)) as SayingType[];
+
+// Initialize success/error values
+let success = false;
+let error = '';
+let newSayingId: string | undefined = undefined;
+
+// Handle form submission result from action redirect
+if (Astro.url.searchParams.has('success')) {
+  success = Astro.url.searchParams.get('success') === 'true';
+  if (success && Astro.url.searchParams.has('id')) {
+    newSayingId = Astro.url.searchParams.get('id') || undefined;
+  }
+}
+
+if (Astro.url.searchParams.has('error')) {
+  error = decodeURIComponent(Astro.url.searchParams.get('error') || '');
+}
 
 // Don't prerender so we always get fresh data
 export const prerender = false;
@@ -25,19 +43,36 @@ export const prerender = false;
 ---
 
 <MainLayout>
-  <div class="flex flex-col">
+  <div class="container mx-auto max-w-4xl px-4">
     <PageHeader title="Create a New Saying" />
 
-    <div class="mx-auto mt-2 mb-8 p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+    <div class="mt-2 mb-8 p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md">
       <style>
-        input[name="firstKind"],
-        input[name="secondKind"] {
+        input[name='firstKind'],
+        input[name='secondKind'] {
           width: 100% !important;
-          max-width: 800px !important;
+        }
+
+        button[type='submit'] {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          width: auto !important;
+          margin-top: 1.5rem !important;
+          background-color: #3b82f6 !important;
+          color: white !important;
+          font-weight: bold !important;
+          padding: 0.75rem 1.5rem !important;
         }
       </style>
 
-      <NewSayingForm intros={intros} types={types} />
+      <NewSayingForm
+        intros={intros}
+        types={types}
+        success={success}
+        error={error}
+        newSayingId={newSayingId}
+      />
     </div>
   </div>
 </MainLayout>

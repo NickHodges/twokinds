@@ -1,7 +1,7 @@
 ---
 import SayingCard from './SayingCard.astro';
 import EmptyState from './EmptyState.astro';
-import type { Saying as DBSaying } from '../types/saying';
+import type { Saying } from '../types/saying';
 import { db, Likes, eq, and, count } from 'astro:db';
 
 const {
@@ -17,8 +17,8 @@ const {
 const isAuthenticated = !!session?.user;
 
 // Get liked status and total likes for each saying
-const likedStatus = new Map<string, boolean>();
-const totalLikes = new Map<string, number>();
+const likedStatus = new Map<number, boolean>();
+const totalLikes = new Map<number, number>();
 
 for (const saying of sayings) {
   // Get total likes for this saying
@@ -44,7 +44,7 @@ for (const saying of sayings) {
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
   {
     sayings.length > 0 ? (
-      sayings.map((saying: DBSaying) => (
+      sayings.map((saying: Saying) => (
         <SayingCard
           id={saying.id}
           introText={saying.introText || saying.intro_data?.introText || ''}

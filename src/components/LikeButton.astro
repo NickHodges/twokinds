@@ -1,7 +1,9 @@
 ---
+import { server } from '../actions';
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Props {
-  sayingId: string;
+  sayingId: number;
   initialLiked?: boolean;
   totalLikes: number;
   isAuthenticated: boolean;
@@ -15,130 +17,172 @@ const {
   isAuthenticated = false,
   class: className = '',
 } = Astro.props;
+
+// Only process the toggleLike action if it's a POST request
+let result;
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  result = await server.toggleLike(formData);
+  console.log('Server-side like toggle result:', result);
+}
 ---
 
 {
   isAuthenticated ? (
     <div
       class="like-button-container"
-      data-saying-id={sayingId}
+      data-saying-id={sayingId.toString()}
       data-total-likes={totalLikes}
       data-liked={initialLiked}
     >
-      <button
-        type="button"
-        class:list={[
-          'flex items-center gap-1 rounded-full px-3 py-1.5 text-sm transition-colors',
-          initialLiked
-            ? 'bg-red-100 text-red-600 hover:bg-red-200'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
-          className,
-        ]}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill={initialLiked ? 'currentColor' : 'none'}
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="h-4 w-4"
-          aria-hidden="true"
+      <form method="POST" class="inline">
+        <input type="hidden" name="sayingId" value={sayingId} />
+        <input
+          type="hidden"
+          name="action"
+          value={initialLiked ? 'unlike' : 'like'}
+          id="likeAction"
+        />
+
+        <button
+          type="submit"
+          class:list={[
+            'like-button inline-flex items-center text-xs font-medium gap-1 transition-colors',
+            initialLiked
+              ? 'text-red-600 dark:text-red-400'
+              : 'text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400',
+            className,
+          ]}
         >
-          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-        </svg>
-        <span>{initialLiked ? 'Liked' : 'Like'}</span>
-        <span class="ml-1">({totalLikes})</span>
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="w-4 h-4"
+          >
+            <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
+          </svg>
+          <span class="like-count">{totalLikes}</span>
+        </button>
+      </form>
     </div>
   ) : (
-    <div class="flex items-center gap-1 rounded-full px-3 py-1.5 text-sm text-gray-600">
+    <div
+      class="inline-flex items-center text-xs font-medium gap-1 text-gray-500 dark:text-gray-400"
+      title="Sign in to like this saying"
+    >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
         viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        class="h-4 w-4"
-        aria-hidden="true"
+        fill="currentColor"
+        class="w-4 h-4"
       >
-        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+        <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
       </svg>
-      <span class="ml-1">{totalLikes}</span>
+      <span>{totalLikes}</span>
     </div>
   )
 }
 
 <script>
-  function initializeLikeButton(container: HTMLElement) {
-    const button = container.querySelector('button');
-    if (!button) return;
+  // Use JavaScript to enhance the form submission with AJAX to avoid page reload
+  document.addEventListener('DOMContentLoaded', () => {
+    const forms = document.querySelectorAll('.like-button-container form');
 
-    button.addEventListener('click', async () => {
-      try {
-        button.disabled = true;
-        const sayingId = container.dataset.sayingId;
-        if (!sayingId) return;
+    forms.forEach((form) => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-        const totalLikesSpan = button.querySelector('span:last-child');
-        const currentTotalLikes = parseInt(container.dataset.totalLikes || '0');
+        const form = e.currentTarget as HTMLFormElement;
+        const container = form.closest('.like-button-container') as HTMLElement;
 
-        const response = await fetch('/api/like', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ sayingId }),
-        });
+        if (!container) return;
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to like/unlike');
+        const likeCountElement = form.querySelector('.like-count') as HTMLElement;
+        const likeButton = form.querySelector('button') as HTMLButtonElement;
+        const actionInput = form.querySelector('#likeAction') as HTMLInputElement;
+
+        const isLiked = container.dataset.liked === 'true';
+        const currentCount = parseInt(likeCountElement?.textContent || '0', 10);
+
+        // Optimistically update UI
+        const newCount = isLiked ? currentCount - 1 : currentCount + 1;
+        likeCountElement.textContent = newCount.toString();
+
+        if (isLiked) {
+          // Switching to unlike
+          likeButton.classList.remove('text-red-600', 'dark:text-red-400');
+          likeButton.classList.add(
+            'text-gray-500',
+            'dark:text-gray-400',
+            'hover:text-red-600',
+            'dark:hover:text-red-400'
+          );
+          container.dataset.liked = 'false';
+          actionInput.value = 'like'; // For next click
+        } else {
+          // Switching to like
+          likeButton.classList.add('text-red-600', 'dark:text-red-400');
+          likeButton.classList.remove(
+            'text-gray-500',
+            'dark:text-gray-400',
+            'hover:text-red-600',
+            'dark:hover:text-red-400'
+          );
+          container.dataset.liked = 'true';
+          actionInput.value = 'unlike'; // For next click
         }
 
-        const { liked } = await response.json();
-        container.dataset.liked = liked.toString();
+        try {
+          // Submit the form data via AJAX
+          const formData = new FormData(form);
+          const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+          });
 
-        // Update total likes count
-        const newTotalLikes = liked ? currentTotalLikes + 1 : currentTotalLikes - 1;
-        container.dataset.totalLikes = newTotalLikes.toString();
-        if (totalLikesSpan) {
-          totalLikesSpan.textContent = `(${newTotalLikes})`;
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+
+          const result = await response.json();
+
+          // Update total likes count in the container
+          container.dataset.totalLikes = newCount.toString();
+          console.log('Client-side like toggle result:', result);
+        } catch (error) {
+          console.error('Error toggling like:', error);
+
+          // Revert UI changes on error
+          const originalLiked = !isLiked;
+          const originalCount = isLiked ? currentCount : currentCount - 1;
+
+          likeCountElement.textContent = originalCount.toString();
+
+          if (originalLiked) {
+            likeButton.classList.add('text-red-600', 'dark:text-red-400');
+            likeButton.classList.remove(
+              'text-gray-500',
+              'dark:text-gray-400',
+              'hover:text-red-600',
+              'dark:hover:text-red-400'
+            );
+            actionInput.value = 'unlike';
+          } else {
+            likeButton.classList.remove('text-red-600', 'dark:text-red-400');
+            likeButton.classList.add(
+              'text-gray-500',
+              'dark:text-gray-400',
+              'hover:text-red-600',
+              'dark:hover:text-red-400'
+            );
+            actionInput.value = 'like';
+          }
+
+          container.dataset.liked = originalLiked.toString();
+          container.dataset.totalLikes = originalCount.toString();
         }
-
-        // Update button appearance
-        const svg = button.querySelector('svg');
-        if (svg) svg.setAttribute('fill', liked ? 'currentColor' : 'none');
-
-        const textSpan = button.querySelector('span:first-of-type');
-        if (textSpan) textSpan.textContent = liked ? 'Liked' : 'Like';
-
-        button.classList.toggle('bg-red-100', liked);
-        button.classList.toggle('text-red-600', liked);
-        button.classList.toggle('hover:bg-red-200', liked);
-        button.classList.toggle('bg-gray-100', !liked);
-        button.classList.toggle('text-gray-600', !liked);
-        button.classList.toggle('hover:bg-gray-200', !liked);
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to update like status. Please try again.');
-      } finally {
-        button.disabled = false;
-      }
+      });
     });
-  }
-
-  // Initialize all like buttons on the page
-  document.querySelectorAll('.like-button-container').forEach((container) => {
-    if (container instanceof HTMLElement) {
-      initializeLikeButton(container);
-    }
   });
 </script>

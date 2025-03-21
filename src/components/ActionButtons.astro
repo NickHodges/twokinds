@@ -1,30 +1,23 @@
 ---
-interface Button {
-  text: string;
-  href: string;
-  primary?: boolean;
+export interface Props {
+  viewUrl: string;
+  createAnotherUrl: string;
 }
 
-interface Props {
-  buttons: Button[];
-}
-
-const { buttons } = Astro.props;
+const { viewUrl, createAnotherUrl } = Astro.props;
 ---
 
-<div class="mt-8 text-center">
-  {
-    buttons.map((button, index) => (
-      <a
-        href={button.href}
-        class={`${index > 0 ? 'ml-4 ' : ''}inline-flex items-center px-4 py-2 border ${
-          button.primary
-            ? 'border-transparent text-white bg-blue-600 hover:bg-blue-700'
-            : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
-        } text-base font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-      >
-        {button.text}
-      </a>
-    ))
-  }
+<div class="mt-4 flex justify-center space-x-4">
+  <a
+    href={viewUrl}
+    class="inline-flex items-center px-4 py-2 border border-transparent text-white bg-blue-600 hover:bg-blue-700 text-base font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+  >
+    View your new saying
+  </a>
+  <a
+    href={createAnotherUrl}
+    class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 text-base font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+  >
+    Create another saying
+  </a>
 </div>

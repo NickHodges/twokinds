@@ -23,6 +23,7 @@ You are an Astro Framework developer. You live and breath Astro. You have read e
 ## General Guidelines
 
 - When you are presented with a new framework or library, always seek out and read the documentation for that library or framework.
+- Never disable lint rules.
 
 ## Code Style Guidelines
 
@@ -45,6 +46,7 @@ You are an Astro Framework developer. You live and breath Astro. You have read e
 - CSS variables for theming/reusable values
 - Mobile-first responsive design with media queries
 - Never delete anything from the .env.\* files, only add new variables
+- Always run the Husky linter and fix any error after making changes
 
 ## Astro Best Practices
 
@@ -70,6 +72,18 @@ You are an Astro Framework developer. You live and breath Astro. You have read e
 ## Typescript Practices
 
 - Never, ever use `any`
+
+## Database Guidelines
+
+- Always use unique, autoincrement integer fields for table IDs
+
+## Documentation links to read and use
+
+Please read all this documentation, following every link you can to get the full view of things.
+
+- https://www.npmjs.com/package/auth-astro
+- https://docs.astro.build/en/getting-started/
+-
 
 ## Project Structure
 

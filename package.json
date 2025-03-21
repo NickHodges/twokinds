@@ -3,8 +3,8 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development astro dev",
-    "dev:prod": "cross-env NODE_ENV=production astro dev",
+    "dev": "cross-env NODE_ENV=development astro dev --verbose",
+    "dev:prod": "cross-env NODE_ENV=production astro dev --verbose",
     "build": "cross-env NODE_ENV=production astro build --remote",
     "preview": "cross-env NODE_ENV=production astro preview",
     "astro": "astro",
