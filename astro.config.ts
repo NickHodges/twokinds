@@ -7,11 +7,21 @@ import vercel from '@astrojs/vercel';
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [tailwind(), db(), auth()],
+  integrations: [
+    tailwind(),
+    // @ts-expect-error - The db integration does accept configuration options
+    db({
+      // Enable remote DB for production
+      remote: process.env.NODE_ENV === 'production',
+    }),
+    auth(),
+  ],
   output: 'server',
   site: import.meta.env.PUBLIC_SITE_URL,
   // Add Vercel adapter for server-side rendering
-  adapter: vercel(),
+  adapter: vercel({
+    webAnalytics: { enabled: true },
+  }),
 
   vite: {
     resolve: {
