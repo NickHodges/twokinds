@@ -1,16 +1,16 @@
 ---
+/**
+ * @typedef {object} Props
+ * @property {string} [title="Two Kinds of People"] - Page title
+ */
 import Layout from './Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 
-interface Props {
-  title?: string;
-}
-
 const { title = 'Two Kinds of People' } = Astro.props;
 ---
 
-<Layout>
+<Layout title={title}>
   <Header />
   <div class="container mx-auto px-4 pt-0 pb-8">
     <main>

@@ -1,10 +1,11 @@
 ---
-export interface Props {
-  viewUrl: string;
-  createAnotherUrl: string;
-}
+/**
+ * @typedef {object} Props
+ * @property {string} [viewUrl] - URL to view the saying (optional)
+ * @property {string} createAnotherUrl - URL to create another saying
+ */
 
-const { viewUrl, createAnotherUrl } = Astro.props;
+const { createAnotherUrl, viewUrl } = Astro.props;
 ---
 
 <div class="mt-4 flex justify-center space-x-4">

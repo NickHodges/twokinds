@@ -1,3 +1,4 @@
+/// <reference types="../src/env.d.ts" />
 import { defineConfig } from 'auth-astro';
 import GitHub from '@auth/core/providers/github';
 import Google from '@auth/core/providers/google';
@@ -14,7 +15,7 @@ export default defineConfig({
     }),
   ],
   secret: import.meta.env.AUTH_SECRET,
-  trustHost: import.meta.env.AUTH_TRUST_HOST ?? true,
+  trustHost: Boolean(import.meta.env.AUTH_TRUST_HOST),
   debug: process.env.NODE_ENV !== 'production', // Only enable debug in development
   session: {
     strategy: 'jwt',
@@ -29,12 +30,10 @@ export default defineConfig({
       console.log('JWT callback', { token, user, account });
 
       // If this is a sign-in, user will be provided
-      if (user) {
+      if (user?.id) {
         token.id = user.id;
-      }
-
-      // If no ID in token but we have a sub, use that
-      if (!token.id && token.sub) {
+      } else if (token.sub && !token.id) {
+        // If we don't have a user ID but we have a sub, use that as ID
         token.id = token.sub;
       }
 
@@ -46,7 +45,7 @@ export default defineConfig({
 
       if (session.user) {
         // Ensure we always have an ID - use token.id or token.sub
-        session.user.id = token.id || token.sub;
+        session.user.id = (token.id || token.sub) as string;
       }
 
       return session;

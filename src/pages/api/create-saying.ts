@@ -54,15 +54,6 @@ export const GET: APIRoute = async () => {
 // Handle form submission via API
 export const POST: APIRoute = async ({ request, locals, redirect }) => {
   try {
-    // Get session from locals first to verify authentication
-    const session = locals.session as ExtendedSession | null;
-    console.log('API session:', session?.user);
-
-    if (!session?.user?.id) {
-      console.error('No session found or user ID missing');
-      return redirect('/auth/signin?redirect=/create', 302);
-    }
-
     // Get form data from request
     const formData = await request.formData();
     const formValues = Object.fromEntries(formData.entries());
@@ -90,6 +81,14 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
 
     const body = parseResult.data;
     console.log('Validated data:', body);
+
+    // Get session from locals
+    const session = locals.session as ExtendedSession | null;
+    console.log('API session:', session?.user);
+
+    if (!session?.user?.id) {
+      return redirect('/create?error=You must be logged in to create a saying', 302);
+    }
 
     // Process type selection
     let typeId: number;

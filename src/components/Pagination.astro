@@ -1,23 +1,17 @@
 ---
-interface Props {
-  page: {
-    currentPage: number;
-    lastPage: number;
-    url: {
-      prev: string | null;
-      next: string | null;
-    };
-  };
+/**
+ * @typedef {object} Props
+ * @property {object} page - Page object with navigation info
+ * @property {string} [basePath="/"] - Base path for pagination links
+ */
 
-  /**
-   * Base path for pagination links
-   * @example "/sayings" for /sayings/1, /sayings/2, etc.
-   * @default "" (root path)
-   */
-  basePath?: string;
-}
+/**
+ * Base path for pagination links
+ * @example "/sayings" for /sayings/1, /sayings/2, etc.
+ * @default "" (root path)
+ */
 
-const { page, basePath = '' } = Astro.props;
+const { page, basePath = '/' } = Astro.props;
 
 // Generate an array of page numbers to display
 // If there are many pages, we'll show ellipses (...)
