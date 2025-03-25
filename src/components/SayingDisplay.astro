@@ -41,20 +41,12 @@ const { saying, initialLiked = false, totalLikes = 0, isAuthenticated = false } 
 
   <div class="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700 text-center">
     <div class="flex justify-between items-center">
-      <div class="flex items-center gap-4">
-        <time
-          datetime={saying.createdAt.toISOString()}
-          class="text-sm text-gray-500 dark:text-gray-400"
-        >
-          Added on {saying.createdAt.toLocaleDateString()}
-        </time>
-        <LikeButton
-          sayingId={saying.id}
-          initialLiked={initialLiked}
-          totalLikes={totalLikes}
-          isAuthenticated={isAuthenticated}
-        />
-      </div>
+      <time
+        datetime={saying.createdAt.toISOString()}
+        class="text-sm text-gray-500 dark:text-gray-400"
+      >
+        Added on {saying.createdAt.toLocaleDateString()}
+      </time>
 
       <button
         id="copy-link-btn"
