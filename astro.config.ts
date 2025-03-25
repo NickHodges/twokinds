@@ -7,27 +7,9 @@ import vercel from '@astrojs/vercel';
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [
-    tailwind(),
-    // Configure DB integration with correct remote settings
-    // @ts-expect-error - The db integration actually does accept configuration options
-    db({
-      remote: process.env.NODE_ENV === 'production',
-      // Explicitly set to false to avoid using Astro Studio
-      studio: false,
-    }),
-    auth(),
-  ],
+  integrations: [tailwind(), db(), auth()],
   output: 'server',
   site: import.meta.env.PUBLIC_SITE_URL,
-  db: {
-    url: import.meta.env.ASTRO_DB_REMOTE_URL,
-    token: import.meta.env.ASTRO_DB_APP_TOKEN,
-  },
-  server: {
-    // Configuration to fix WebSocket issues in WSL
-    host: '0.0.0.0',
-  },
   // Add Vercel adapter for server-side rendering
   adapter: vercel(),
 
