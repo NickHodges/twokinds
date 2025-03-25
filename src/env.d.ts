@@ -8,9 +8,6 @@ import type { Session } from '@auth/core/types';
 
 interface ImportMetaEnv {
   // Database URLs
-  readonly ASTRO_DATABASE_FILE: string;
-  readonly ASTRO_DB_REMOTE_URL: string;
-  readonly ASTRO_DB_APP_TOKEN: string;
 
   // Auth Configuration
   readonly AUTH_SECRET: string;

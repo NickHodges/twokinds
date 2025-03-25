@@ -5,13 +5,18 @@ import vercel from '@astrojs/vercel';
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [db(), auth()],
+  integrations: [
+    db({
+      // Enable remote DB for production
+      remote: process.env.NODE_ENV === 'production',
+    }),
+    auth(),
+  ],
   output: 'server',
   site: import.meta.env.PUBLIC_SITE_URL,
   db: {
     url: import.meta.env.ASTRO_DB_REMOTE_URL,
     token: import.meta.env.ASTRO_DB_APP_TOKEN,
-    file: import.meta.env.ASTRO_DATABASE_FILE,
   },
   server: {
     // Configuration to fix WebSocket issues in WSL
@@ -22,18 +27,26 @@ export default defineConfig({
 
   env: {
     schema: {
-      ASTRO_DATABASE_FILE: envField.string({ context: 'server', access: 'secret', optional: true }),
+      // Database Configuration
+      ASTRO_DATABASE_FILE: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+        default: '.astro/db.sqlite',
+      }),
       ASTRO_DB_REMOTE_URL: envField.string({
         context: 'server',
         access: 'secret',
-        optional: false,
+        optional: true,
       }),
-      ASTRO_DB_APP_TOKEN: envField.string({ context: 'server', access: 'secret', optional: false }),
+      ASTRO_DB_APP_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),
+
       // Auth.js Configuration
       AUTH_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
       AUTH_TRUST_HOST: envField.string({ context: 'server', access: 'secret', optional: false }),
       NEXTAUTH_URL: envField.string({ context: 'server', access: 'secret', optional: false }),
       AUTH_URL: envField.string({ context: 'server', access: 'secret', optional: false }),
+
       // OAuth Provider Credentials
       GITHUB_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
       GITHUB_CLIENT_SECRET: envField.string({

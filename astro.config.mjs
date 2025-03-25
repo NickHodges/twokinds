@@ -10,8 +10,8 @@ export default defineConfig({
   integrations: [
     tailwind(),
     db({
-      // Set this to false to prevent trying to connect to Astro Studio
-      remote: false
+      // Set to true for production builds to use the remote database
+      remote: process.env.NODE_ENV === 'production'
     }),
     auth()
   ],
@@ -38,8 +38,8 @@ export default defineConfig({
       NEXTAUTH_URL: envField.string({ context: "server", access: "secret" }),
       AUTH_URL: envField.string({ context: "server", access: "secret" }),
 
-      // Database configuration
-      ASTRO_DATABASE_FILE: envField.string({ context: "server", access: "public", default: '.astro/db.sqlite' }),
+      // Database variables
+      ASTRO_DATABASE_FILE: envField.string({ context: "server", access: "secret", optional: true, default: '.astro/db.sqlite' }),
       ASTRO_DB_REMOTE_URL: envField.string({ context: "server", access: "secret", optional: true }),
       ASTRO_DB_APP_TOKEN: envField.string({ context: "server", access: "secret", optional: true }),
 
