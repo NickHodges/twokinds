@@ -47,7 +47,7 @@ export default defineConfig({
     },
     build: {
       rollupOptions: {
-        external: ['astro:db/schema'],
+        external: ['astro:db/schema', 'astro:db'],
       },
     },
   },

@@ -1,7 +1,26 @@
 // seed-remote.mjs (using .mjs extension for ES modules)
-import { db, Sayings, Users, Intros, Types } from 'astro:db';
+import dotenv from 'dotenv';
+import { createClient } from '@libsql/client';
 import { readFile } from 'fs/promises';
-import { eq } from 'astro:db';
+
+// Load environment variables
+dotenv.config();
+
+// Get Turso credentials from environment
+const REMOTE_DB_URL = process.env.ASTRO_DB_REMOTE_URL;
+const TURSO_DB_AUTH_TOKEN = process.env.ASTRO_DB_APP_TOKEN;
+
+if (!REMOTE_DB_URL || !TURSO_DB_AUTH_TOKEN) {
+  console.error('Error: Database credentials not found in environment variables.');
+  console.error('Make sure ASTRO_DB_REMOTE_URL and ASTRO_DB_APP_TOKEN are set in your .env file.');
+  process.exit(1);
+}
+
+// Create Turso client
+const client = createClient({
+  url: REMOTE_DB_URL,
+  authToken: TURSO_DB_AUTH_TOKEN,
+});
 
 // Function to get seed data from JSON file
 async function getSeedData() {
@@ -16,42 +35,50 @@ async function getSeedData() {
 
 // Function to get or create system user
 async function getSystemUser() {
-  const systemUser = await db.select().from(Users)
-    .where(eq(Users.email, 'system@twokindsof.com'))
-    .get();
+  const { rows: systemUsers } = await client.execute(
+    'SELECT * FROM Users WHERE email = ?',
+    ['system@twokindsof.com']
+  );
 
-  if (!systemUser) {
-    const now = new Date();
-    const newUser = await db.insert(Users).values({
-      name: 'System User',
-      email: 'system@twokindsof.com',
-      provider: 'system',
-      lastLogin: now,
-      createdAt: now,
-      updatedAt: now,
-      role: 'system',
-      preferences: {},
-    }).returning().get();
+  if (systemUsers.length === 0) {
+    const now = new Date().toISOString();
+    const { rows: newUser } = await client.execute(
+      `INSERT INTO Users (id, name, email, provider, lastLogin, createdAt, updatedAt, role, preferences)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       RETURNING *`,
+      [
+        'system-user-' + Date.now(),
+        'System User',
+        'system@twokindsof.com',
+        'system',
+        now,
+        now,
+        now,
+        'system',
+        '{}'
+      ]
+    );
 
-    return newUser;
+    return newUser[0];
   }
 
-  return systemUser;
+  return systemUsers[0];
 }
 
 // Function to seed Intros
 async function seedIntros(intros) {
   console.log('Seeding Intros...');
   for (const intro of intros) {
-    const existingIntro = await db.select().from(Intros)
-      .where(eq(Intros.introText, intro.introText))
-      .get();
+    const { rows: existingIntros } = await client.execute(
+      'SELECT * FROM Intros WHERE introText = ?',
+      [intro.introText]
+    );
 
-    if (!existingIntro) {
-      await db.insert(Intros).values({
-        introText: intro.introText,
-        createdAt: new Date(),
-      }).run();
+    if (existingIntros.length === 0) {
+      await client.execute(
+        'INSERT INTO Intros (introText, createdAt) VALUES (?, ?)',
+        [intro.introText, new Date().toISOString()]
+      );
     }
   }
 }
@@ -68,21 +95,22 @@ async function seedTypes() {
   ];
 
   for (const type of types) {
-    const existingType = await db.select().from(Types)
-      .where(eq(Types.name, type.name))
-      .get();
+    const { rows: existingTypes } = await client.execute(
+      'SELECT * FROM Types WHERE name = ?',
+      [type.name]
+    );
 
-    if (!existingType) {
-      await db.insert(Types).values({
-        name: type.name,
-        createdAt: new Date(),
-      }).run();
+    if (existingTypes.length === 0) {
+      await client.execute(
+        'INSERT INTO Types (name, createdAt) VALUES (?, ?)',
+        [type.name, new Date().toISOString()]
+      );
     }
   }
 }
 
 // Main function to seed the database
-export default async function seedDatabase() {
+async function seedDatabase() {
   console.log('Starting to seed database...');
 
   try {
@@ -98,32 +126,38 @@ export default async function seedDatabase() {
     await seedTypes();
 
     // Get the Animals type ID
-    const animalsType = await db.select().from(Types)
-      .where(eq(Types.name, 'Animals'))
-      .get();
+    const { rows: animalsTypes } = await client.execute(
+      'SELECT * FROM Types WHERE name = ?',
+      ['Animals']
+    );
 
-    if (!animalsType) {
+    if (animalsTypes.length === 0) {
       throw new Error('Animals type not found');
     }
+
+    const animalsType = animalsTypes[0];
 
     // Seed Sayings
     console.log('Seeding Sayings...');
     for (const saying of seedData.sayings) {
       // Check if saying already exists
-      const existingSaying = await db.select().from(Sayings)
-        .where(eq(Sayings.firstKind, saying.firstKind))
-        .where(eq(Sayings.secondKind, saying.secondKind))
-        .get();
+      const { rows: existingSayings } = await client.execute(
+        'SELECT * FROM Sayings WHERE firstKind = ? AND secondKind = ?',
+        [saying.firstKind, saying.secondKind]
+      );
 
-      if (!existingSaying) {
-        await db.insert(Sayings).values({
-          intro: saying.intro,
-          type: animalsType.id,
-          firstKind: saying.firstKind,
-          secondKind: saying.secondKind,
-          userId: systemUser.id,
-          createdAt: new Date(),
-        }).run();
+      if (existingSayings.length === 0) {
+        await client.execute(
+          'INSERT INTO Sayings (intro, type, firstKind, secondKind, userId, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
+          [
+            saying.intro,
+            animalsType.id,
+            saying.firstKind,
+            saying.secondKind,
+            systemUser.id,
+            new Date().toISOString()
+          ]
+        );
       }
     }
 

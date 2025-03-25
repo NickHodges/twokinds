@@ -1,5 +1,4 @@
 ---
-import { db, Intros } from 'astro:db';
 import MainLayout from '../../layouts/MainLayout.astro';
 import '../../styles/index.css';
 import SayingList from '../../components/SayingList.astro';
@@ -19,22 +18,11 @@ if (isNaN(currentPage) || currentPage < 1) {
 // Get all sayings with joins to get intro and lead texts
 const sayingsData = await getAllSayings();
 
-// Fetch related data
-const intros = await db.select().from(Intros);
-
-// Combine the data
-const allSayings = sayingsData.map((saying) => {
-  const intro = intros.find((i) => i.id === saying.intro);
-
-  return {
-    ...saying,
-    introText: intro?.introText || 'Unknown intro',
-  };
-});
+// No need to fetch Intros separately, they're already included in sayingsData
 
 // Pagination
 const pageSize = config.pagination.sayingsPerPage;
-const totalPages = Math.ceil(allSayings.length / pageSize);
+const totalPages = Math.ceil(sayingsData.length / pageSize);
 
 // Redirect if page number is too high
 if (currentPage > totalPages) {
@@ -43,8 +31,8 @@ if (currentPage > totalPages) {
 
 // Calculate current page data
 const startIndex = (currentPage - 1) * pageSize;
-const endIndex = Math.min(startIndex + pageSize, allSayings.length);
-const sayingsForCurrentPage = allSayings.slice(startIndex, endIndex);
+const endIndex = Math.min(startIndex + pageSize, sayingsData.length);
+const sayingsForCurrentPage = sayingsData.slice(startIndex, endIndex);
 
 // Create page object
 const page = {
@@ -52,7 +40,7 @@ const page = {
   start: startIndex,
   end: endIndex - 1,
   size: pageSize,
-  total: allSayings.length,
+  total: sayingsData.length,
   currentPage: currentPage,
   lastPage: totalPages,
   url: {
@@ -67,6 +55,5 @@ export const prerender = false;
 
 <MainLayout>
   <SayingList sayings={page.data} />
-
   {page.lastPage > 1 && <Pagination page={page} basePath="/sayings" />}
 </MainLayout>
