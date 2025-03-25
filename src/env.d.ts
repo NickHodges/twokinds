@@ -1,5 +1,4 @@
-import type { User } from '@auth/core/types';
-import type { Users } from 'astro:db';
+import type { Session } from '@auth/core/types';
 
 /// <reference path="../.astro/types.d.ts" />
 /// <reference types="astro/client" />
@@ -8,32 +7,41 @@ import type { Users } from 'astro:db';
 /// <reference path="./types/astro.d.ts" />
 
 interface ImportMetaEnv {
-  readonly TURSO_DB_AUTH_TOKEN: string;
+  // Database URLs
   readonly ASTRO_DATABASE_FILE: string;
+  readonly ASTRO_DB_REMOTE_URL: string;
+  readonly ASTRO_DB_APP_TOKEN: string;
+
+  // Auth Configuration
+  readonly AUTH_SECRET: string;
+  readonly AUTH_TRUST_HOST: boolean;
+  readonly NEXTAUTH_URL: string;
+  readonly AUTH_URL: string;
+
+  // OAuth Provider Credentials
+  readonly GITHUB_CLIENT_ID: string;
+  readonly GITHUB_CLIENT_SECRET: string;
+  readonly GOOGLE_CLIENT_ID: string;
+  readonly GOOGLE_CLIENT_SECRET: string;
+
+  // Public Variables (accessible in client-side code)
+  readonly PUBLIC_SITE_URL: string;
 }
 
-// Define proper types for session extensions
-interface ExtendedUser extends User {
-  sub?: string;
-  id?: string;
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
 }
 
-interface ExtendedSession {
-  user?: ExtendedUser;
-  sub?: string;
-  userId?: string;
-  account?: {
-    provider?: string;
+// Extend Astro's session type
+export interface ExtendedSession extends Session {
+  user?: Session['user'] & {
+    id: string;
   };
-  expires?: string;
 }
 
-// Add client directive types
-declare module 'astro:db' {
-  interface Tables {
-    users: Users;
+// Add session to Astro locals
+declare namespace App {
+  interface Locals {
+    session: ExtendedSession | null;
   }
 }

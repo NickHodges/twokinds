@@ -1,274 +1,136 @@
-import { db, Sayings, Types, Intros } from 'astro:db';
-import { eq } from 'drizzle-orm';
-import { getSession } from 'auth-astro/server';
-import authConfig from '../../../auth.config';
-import type { ExtendedSession } from '../../env';
+import { db, Sayings, Types } from 'astro:db';
 import type { APIRoute } from 'astro';
+import type { ExtendedSession } from '../../env';
 import { z } from 'zod';
 
-// Define the form schema for validation
-const formSchema = z.object({
-  intro: z.string().min(1, 'Introduction is required'),
-  typeChoice: z.enum(['existing', 'new']),
-  type: z.string().optional(),
-  newType: z.string().optional(),
-  firstKind: z
-    .string()
-    .min(3, 'First kind must be at least 3 characters')
-    .max(100, 'First kind cannot exceed 100 characters'),
-  secondKind: z
-    .string()
-    .min(3, 'Second kind must be at least 3 characters')
-    .max(100, 'Second kind cannot exceed 100 characters'),
-});
+// Define the form schema for validation - make newType conditional
+const formSchema = z.discriminatedUnion('typeChoice', [
+  // When typeChoice is 'existing'
+  z.object({
+    typeChoice: z.literal('existing'),
+    type: z.coerce.number().int().positive('Please select a type'),
+    intro: z.coerce.number().int().positive('Please select an introduction'),
+    firstKind: z
+      .string()
+      .min(3, 'Must be at least 3 characters')
+      .max(100, 'Must not exceed 100 characters'),
+    secondKind: z
+      .string()
+      .min(3, 'Must be at least 3 characters')
+      .max(100, 'Must not exceed 100 characters'),
+    newType: z.string().optional(), // No validation needed for this case
+  }),
+  // When typeChoice is 'new'
+  z.object({
+    typeChoice: z.literal('new'),
+    type: z.coerce.number().int().optional(),
+    intro: z.coerce.number().int().positive('Please select an introduction'),
+    firstKind: z
+      .string()
+      .min(3, 'Must be at least 3 characters')
+      .max(100, 'Must not exceed 100 characters'),
+    secondKind: z
+      .string()
+      .min(3, 'Must be at least 3 characters')
+      .max(100, 'Must not exceed 100 characters'),
+    newType: z.string().min(3, 'New type must be at least 3 characters'),
+  }),
+]);
 
-export const POST: APIRoute = async ({ request }) => {
+// Deprecated GET endpoint
+export const GET: APIRoute = async () => {
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: 'This endpoint is deprecated. Please use Astro Actions instead.',
+    }),
+    {
+      status: 410, // Gone
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
+};
+
+// Handle form submission via API
+export const POST: APIRoute = async ({ request, locals, redirect }) => {
   try {
-    // Get the form data
+    // Get form data from request
     const formData = await request.formData();
-    const formDataObject: Record<string, string | File> = {};
+    const formValues = Object.fromEntries(formData.entries());
+    console.log('Received form data:', formValues);
 
-    // Convert FormData to a plain object
-    for (const [key, value] of formData.entries()) {
-      formDataObject[key] = value;
-    }
+    // Convert to the expected format
+    const data = {
+      typeChoice: formValues.typeChoice as string,
+      type: formValues.type ? Number(formValues.type) : undefined,
+      intro: Number(formValues.intro),
+      firstKind: formValues.firstKind as string,
+      secondKind: formValues.secondKind as string,
+      newType: formValues.newType as string,
+    };
 
-    console.log('API: Form data received:', formDataObject);
-
-    // Parse and validate using zod
-    const parseResult = formSchema.safeParse(formDataObject);
+    // Parse and validate the input data
+    const parseResult = formSchema.safeParse(data);
     if (!parseResult.success) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Validation error: ${parseResult.error.message}`,
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
+      console.error('Validation errors:', parseResult.error);
+      return redirect(
+        `/create?error=${encodeURIComponent(parseResult.error.issues.map((i) => i.message).join(', '))}`,
+        302
       );
     }
 
-    const data = parseResult.data;
+    const body = parseResult.data;
+    console.log('Validated data:', body);
 
-    // Get user session
-    const session = (await getSession(request, authConfig)) as ExtendedSession | null;
-    const userId = session?.user?.id || 'system';
+    // Get session from locals
+    const session = locals.session as ExtendedSession | null;
+    console.log('API session:', session?.user);
 
-    // Validate intro exists
-    const intro = await db
-      .select()
-      .from(Intros)
-      .where(eq(Intros.id, parseInt(data.intro)))
-      .get();
-    if (!intro) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Selected introduction not found',
-        }),
-        {
-          status: 404,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+    if (!session?.user?.id) {
+      return redirect('/create?error=You must be logged in to create a saying', 302);
     }
 
-    let typeId: number | undefined;
+    // Process type selection
+    let typeId: number;
 
-    // Handle type based on selection
-    if (data.typeChoice === 'existing' && data.type) {
-      try {
-        // Verify existing type
-        const existingType = await db
-          .select()
-          .from(Types)
-          .where(eq(Types.id, parseInt(data.type)))
-          .get();
-        if (!existingType) {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: 'Selected type not found',
-            }),
-            {
-              status: 404,
-              headers: { 'Content-Type': 'application/json' },
-            }
-          );
-        }
-        typeId = existingType.id;
-        console.log('API: Using existing type with ID:', typeId);
-      } catch (existingTypeError) {
-        console.error('API: Error finding existing type:', existingTypeError);
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: `Error finding existing type: ${existingTypeError instanceof Error ? existingTypeError.message : 'Unknown error'}`,
-          }),
-          {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-          }
-        );
-      }
-    } else if (data.typeChoice === 'new' && data.newType) {
-      try {
-        // Create new type with explicit values and type checking
-        console.log('API: Creating new type:', data.newType);
-
-        // First insert the new type
-        const insertResult = await db
-          .insert(Types)
-          .values({
-            name: data.newType,
-            createdAt: new Date(),
-          })
-          .returning();
-
-        console.log('API: Insert result:', insertResult);
-
-        if (!insertResult || !Array.isArray(insertResult) || insertResult.length === 0) {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: 'Failed to create new type: No result returned',
-            }),
-            {
-              status: 500,
-              headers: { 'Content-Type': 'application/json' },
-            }
-          );
-        }
-
-        const newType = insertResult[0];
-
-        if (!newType || typeof newType !== 'object' || !('id' in newType)) {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: 'Failed to create new type: Invalid result structure',
-            }),
-            {
-              status: 500,
-              headers: { 'Content-Type': 'application/json' },
-            }
-          );
-        }
-
-        typeId = newType.id;
-        console.log('API: New type created with ID:', typeId);
-      } catch (typeError) {
-        console.error('API: Error creating new type:', typeError);
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: `Failed to create new type: ${typeError instanceof Error ? typeError.message : 'Unknown error'}`,
-          }),
-          {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-          }
-        );
-      }
-    } else {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Either select an existing type or create a new one',
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    // Ensure typeId is defined and is a number
-    if (typeof typeId !== 'number' || isNaN(typeId)) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Invalid type ID',
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    console.log('API: Creating new saying with type ID:', typeId);
-
-    try {
-      // Insert the new saying
-      const sayingInsertResult = await db
-        .insert(Sayings)
+    if (body.typeChoice === 'new') {
+      // Create a new type
+      const newTypeResult = await db
+        .insert(Types)
         .values({
-          intro: parseInt(data.intro),
-          type: typeId,
-          firstKind: data.firstKind,
-          secondKind: data.secondKind,
-          userId,
+          name: body.newType,
           createdAt: new Date(),
         })
         .returning();
 
-      if (
-        !sayingInsertResult ||
-        !Array.isArray(sayingInsertResult) ||
-        sayingInsertResult.length === 0
-      ) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'Failed to create new saying: No result returned',
-          }),
-          {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-          }
-        );
+      if (!newTypeResult || newTypeResult.length === 0) {
+        return redirect('/create?error=Failed to create new type', 302);
       }
 
-      const newSaying = sayingInsertResult[0];
-      console.log('API: New saying created:', newSaying);
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: newSaying,
-        }),
-        {
-          status: 201,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    } catch (insertError) {
-      console.error('API: Error inserting saying:', insertError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Error creating saying: ${insertError instanceof Error ? insertError.message : 'Unknown error'}`,
-        }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      typeId = newTypeResult[0].id;
+    } else {
+      // Use existing type
+      typeId = body.type;
     }
+
+    // Insert data into database
+    const values = {
+      intro: body.intro,
+      type: typeId,
+      firstKind: body.firstKind,
+      secondKind: body.secondKind,
+      userId: session.user.id,
+      createdAt: new Date(),
+    };
+
+    console.log('Inserting saying:', values);
+    const result = await db.insert(Sayings).values(values).returning();
+
+    // Redirect to success page
+    return redirect(`/create?success=true&id=${result[0].id}`, 302);
   } catch (error) {
-    console.error('API: Unhandled error:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to process request',
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    console.error('Error in create-saying API:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return redirect(`/create?error=${encodeURIComponent(errorMessage)}`, 302);
   }
 };

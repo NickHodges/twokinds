@@ -1,28 +1,8 @@
 ---
 import SayingCard from './SayingCard.astro';
 import EmptyState from './EmptyState.astro';
-import type { ExtendedSession } from '../env';
+import type { Saying } from '../types/saying';
 import { db, Likes, eq, and, count } from 'astro:db';
-
-interface Saying {
-  id: number;
-  introText: string;
-  typeName: string;
-  firstKind: string;
-  secondKind: string;
-  createdAt: Date;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface Props {
-  sayings: Saying[];
-  emptyStateText?: string;
-  emptyStateCallToAction?: {
-    text: string;
-    href: string;
-  };
-  session?: ExtendedSession | null;
-}
 
 const {
   sayings,
@@ -64,17 +44,18 @@ for (const saying of sayings) {
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
   {
     sayings.length > 0 ? (
-      sayings.map((saying) => (
+      sayings.map((saying: Saying) => (
         <SayingCard
           id={saying.id}
-          introText={saying.introText}
-          typeName={saying.typeName}
+          introText={saying.introText || saying.intro_data?.introText || ''}
+          typeName={saying.typeName || saying.type_data?.name || ''}
           firstKind={saying.firstKind}
           secondKind={saying.secondKind}
           createdAt={saying.createdAt}
           isLiked={likedStatus.get(saying.id) || false}
           totalLikes={totalLikes.get(saying.id) || 0}
           isAuthenticated={isAuthenticated}
+          canEdit={session?.user?.id === saying.userId}
         />
       ))
     ) : (

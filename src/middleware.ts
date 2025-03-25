@@ -40,7 +40,11 @@ const protectedRoutes = defineMiddleware(async (context, next) => {
 
     // Check if this is a protected route
     const isProtectedRoute =
-      pathname.startsWith('/admin') || pathname.startsWith('/dashboard') || pathname === '/profile';
+      pathname.startsWith('/admin') ||
+      pathname.startsWith('/dashboard') ||
+      pathname === '/profile' ||
+      pathname === '/create' ||
+      pathname.startsWith('/api/create-saying');
 
     logger.info('Is protected:', isProtectedRoute);
     logger.info('Has session:', !!context.locals.session);

@@ -1,8 +1,26 @@
-import { db, Users, sql } from 'astro:db';
-import type { ExtendedSession } from '../env';
+import { db, Users, sql, eq } from 'astro:db';
+import type { ExtendedSession, Session } from '../env';
 import { createLogger } from './logger';
 
 const logger = createLogger('User DB');
+
+export interface UserPreferences {
+  theme?: 'light' | 'dark' | 'system';
+  // Add other preferences as needed
+}
+
+export interface UserData {
+  id: string;
+  name: string;
+  email: string;
+  image: string | null;
+  provider: string;
+  lastLogin: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  role: string;
+  preferences: UserPreferences;
+}
 
 /**
  * Creates or updates a user in the database based on their session information
@@ -21,8 +39,8 @@ export async function upsertUser(session: ExtendedSession | null) {
 
   const { name, email, image } = session.user;
 
-  if (!userId) {
-    logger.error('No valid user identifier found in session. User:', {
+  if (!userId || !email) {
+    logger.error('No valid user identifier or email found in session. User:', {
       id: session.user.id,
       sub: session.user.sub,
       sessionSub: session.sub,
@@ -32,7 +50,10 @@ export async function upsertUser(session: ExtendedSession | null) {
     return null;
   }
 
-  logger.info('Upserting user:', { userId, email });
+  // Convert userId to string if it's a number
+  const userIdString = userId.toString();
+
+  logger.info('Upserting user:', { userId: userIdString, email });
 
   // Determine the provider from the session
   const provider = session.account?.provider?.toString() || 'unknown';
@@ -40,35 +61,32 @@ export async function upsertUser(session: ExtendedSession | null) {
   const now = new Date();
 
   try {
-    // Check if user exists
-    const existingUser = await db
-      .select()
-      .from(Users)
-      .where(sql`${Users.id} = ${userId}`)
-      .get();
+    // First check if user exists by email
+    const existingUserByEmail = await db.select().from(Users).where(eq(Users.email, email)).get();
 
-    if (existingUser) {
+    if (existingUserByEmail) {
       // Update existing user
       await db
         .update(Users)
         .set({
           name: name || null,
-          email: email || null,
           image: image || null,
           lastLogin: now,
           updatedAt: now,
           provider,
         })
-        .where(sql`${Users.id} = ${userId}`)
+        .where(eq(Users.email, email))
         .run();
+
+      return existingUserByEmail;
     } else {
       // Create new user
-      await db
+      const newUser = await db
         .insert(Users)
         .values({
-          id: userId,
+          id: userIdString,
           name: name || null,
-          email: email || null,
+          email: email,
           image: image || null,
           provider,
           lastLogin: now,
@@ -77,14 +95,11 @@ export async function upsertUser(session: ExtendedSession | null) {
           role: 'user',
           preferences: {},
         })
-        .run();
-    }
+        .returning()
+        .get();
 
-    return await db
-      .select()
-      .from(Users)
-      .where(sql`${Users.id} = ${userId}`)
-      .get();
+      return newUser;
+    }
   } catch (error) {
     logger.error('Error upserting user:', error);
     return null;
@@ -114,13 +129,9 @@ export async function getUserById(id: string) {
  * @param email The user's email
  * @returns The user object from the database
  */
-export async function getUserByEmail(email: string) {
+export async function getUserByEmail(email: string): Promise<UserData | null> {
   try {
-    return await db
-      .select()
-      .from(Users)
-      .where(sql`${Users.email} = ${email}`)
-      .get();
+    return await db.select().from(Users).where(eq(Users.email, email)).get();
   } catch (error) {
     logger.error('Error getting user by email:', error);
     return null;
@@ -134,24 +145,27 @@ export async function getUserByEmail(email: string) {
  * @returns The updated user object
  */
 export async function updateUserPreferences(
-  id: string,
-  preferences: { theme?: 'light' | 'dark' | 'system'; emailNotifications?: boolean }
-) {
+  userId: string,
+  preferences: UserPreferences
+): Promise<UserData | null> {
   try {
-    await db
+    const user = await db.select().from(Users).where(eq(Users.id, userId)).get();
+    if (!user) return null;
+
+    const updatedPreferences = { ...user.preferences, ...preferences };
+    const now = new Date();
+
+    const updatedUser = await db
       .update(Users)
       .set({
-        preferences,
-        updatedAt: new Date(),
+        preferences: updatedPreferences,
+        updatedAt: now,
       })
-      .where(sql`${Users.id} = ${id}`)
-      .run();
-
-    return await db
-      .select()
-      .from(Users)
-      .where(sql`${Users.id} = ${id}`)
+      .where(eq(Users.id, userId))
+      .returning()
       .get();
+
+    return updatedUser;
   } catch (error) {
     logger.error('Error updating user preferences:', error);
     return null;
@@ -164,24 +178,40 @@ export async function updateUserPreferences(
  * @param role The user's new role
  * @returns The updated user object
  */
-export async function updateUserRole(id: string, role: 'user' | 'admin') {
+export async function updateUserRole(
+  userId: string,
+  role: 'user' | 'admin'
+): Promise<UserData | null> {
   try {
-    await db
+    const updatedUser = await db
       .update(Users)
       .set({
         role,
         updatedAt: new Date(),
       })
-      .where(sql`${Users.id} = ${id}`)
-      .run();
-
-    return await db
-      .select()
-      .from(Users)
-      .where(sql`${Users.id} = ${id}`)
+      .where(eq(Users.id, userId))
+      .returning()
       .get();
+
+    return updatedUser;
   } catch (error) {
     logger.error('Error updating user role:', error);
+    return null;
+  }
+}
+
+export function getUserIdFromSession(session: Session | null): string | null {
+  if (!session?.user) return null;
+  const userId = session.user.id;
+  return userId ? userId.toString() : null;
+}
+
+export async function getUser(userId: string): Promise<UserData | null> {
+  try {
+    const user = await db.select().from(Users).where(eq(Users.id, userId)).get();
+    return user;
+  } catch (error) {
+    logger.error('Error getting user:', error);
     return null;
   }
 }

@@ -1,47 +1,39 @@
 import type { APIRoute } from 'astro';
-import { updateUserPreferences } from '../../../utils/user-db';
+import { getSession } from 'auth-astro/server';
+import authConfig from '../../../../auth.config';
+import { getUserIdFromSession, updateUserPreferences } from '../../../utils/user-db';
+import type { UserPreferences } from '../../../utils/user-db';
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  // Check if user is authenticated
-  if (!locals.session?.user?.id) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
+export const POST: APIRoute = async ({ request }) => {
   try {
-    // Parse the request body
-    const body = await request.json();
-    const { preferences } = body;
-
-    if (!preferences) {
-      return new Response(JSON.stringify({ error: 'Preferences are required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
+    const session = await getSession(request, authConfig);
+    if (!session?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
       });
     }
 
-    // Update the user's preferences
-    const updatedUser = await updateUserPreferences(locals.session.user.id, preferences);
+    const userId = getUserIdFromSession(session);
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Invalid user ID' }), {
+        status: 400,
+      });
+    }
+
+    const preferences = (await request.json()) as UserPreferences;
+    const updatedUser = await updateUserPreferences(userId, preferences);
 
     if (!updatedUser) {
-      return new Response(JSON.stringify({ error: 'Failed to update preferences' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
       });
     }
 
-    // Return the updated user
-    return new Response(JSON.stringify({ success: true, user: updatedUser }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ preferences: updatedUser.preferences }));
   } catch (error) {
-    console.error('Error updating preferences:', error);
+    console.error('Error updating user preferences:', error);
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
     });
   }
 };

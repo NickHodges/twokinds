@@ -1,102 +1,105 @@
 import type { APIRoute } from 'astro';
-import { db, Likes, Users, Sayings, eq, and } from 'astro:db';
+import { db, Likes, eq, and } from 'astro:db';
+import { getSession } from 'auth-astro/server';
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
   try {
-    const session = locals.session;
+    // Get the current user's session
+    const session = await getSession(request);
+
     if (!session?.user?.id) {
-      console.error('No user ID in session');
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'You must be logged in to like a saying',
+        }),
+        {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    const { sayingId } = await request.json();
-    if (!sayingId) {
-      console.error('No sayingId provided');
-      return new Response(JSON.stringify({ error: 'Missing sayingId' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    const userId = session.user.id;
+    let data;
 
-    console.log('Processing like request:', {
-      userId: session.user.id,
-      sayingId: sayingId,
-    });
-
-    // Verify user exists
-    const user = await db.select().from(Users).where(eq(Users.id, session.user.id)).get();
-
-    if (!user) {
-      // If user doesn't exist, create them
-      await db.insert(Users).values({
-        id: session.user.id,
-        name: session.user.name || null,
-        email: session.user.email || null,
-        image: session.user.image || null,
-        provider: 'github',
-        lastLogin: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-      console.log('Created new user:', session.user.id);
+    // Handle both JSON and form data
+    const contentType = request.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      data = await request.json();
     } else {
-      console.log('User found:', user.id);
+      const formData = await request.formData();
+      data = {
+        sayingId: Number(formData.get('sayingId')),
+        action: formData.get('action'),
+      };
     }
 
-    // Verify saying exists
-    const saying = await db.select().from(Sayings).where(eq(Sayings.id, sayingId)).get();
+    const { sayingId } = data;
 
-    if (!saying) {
-      console.error('Saying not found:', sayingId);
-      return new Response(JSON.stringify({ error: 'Saying not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    if (!sayingId) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Saying ID is required',
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    console.log('Saying found:', saying.id);
-
-    // Check if the user has already liked this saying
+    // Check if the like already exists
     const existingLike = await db
       .select()
       .from(Likes)
-      .where(and(eq(Likes.userId, session.user.id), eq(Likes.sayingId, sayingId)))
+      .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
       .get();
 
+    let liked = false;
+
     if (existingLike) {
-      console.log('Removing existing like:', existingLike.id);
-      // Unlike: Delete the like record
-      await db.delete(Likes).where(eq(Likes.id, existingLike.id));
-      return new Response(JSON.stringify({ liked: false }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      // Unlike if already liked
+      await db
+        .delete(Likes)
+        .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
+        .run();
+      liked = false;
     } else {
-      console.log('Creating new like for user', session.user.id, 'on saying', sayingId);
-      // Like: Create a new like record
-      const result = await db
+      // Like if not already liked
+      await db
         .insert(Likes)
         .values({
-          userId: session.user.id,
-          sayingId: sayingId,
+          sayingId,
+          userId,
           createdAt: new Date(),
         })
-        .returning();
-      console.log('Like created:', result);
+        .run();
+      liked = true;
+    }
 
-      return new Response(JSON.stringify({ liked: true }), {
+    return new Response(
+      JSON.stringify({
+        success: true,
+        liked,
+      }),
+      {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
-      });
-    }
+      }
+    );
   } catch (error) {
-    console.error('Error in like endpoint:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error('Error toggling like status:', error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'Failed to update like status',
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 };

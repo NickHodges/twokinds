@@ -1,12 +1,12 @@
 ---
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface Props {
-  sayingId: number;
-  initialLiked?: boolean;
-  totalLikes: number;
-  isAuthenticated: boolean;
-  class?: string;
-}
+/**
+ * @typedef {object} Props
+ * @property {number} sayingId - ID of the saying to like
+ * @property {boolean} [initialLiked=false] - Whether the saying is initially liked
+ * @property {number} totalLikes - Total number of likes
+ * @property {boolean} [isAuthenticated=false] - Whether the user is authenticated
+ * @property {string} [class] - Additional CSS classes
+ */
 
 const {
   sayingId,
@@ -19,14 +19,15 @@ const {
 
 {
   isAuthenticated ? (
-    <div
-      class="like-button-container"
+    <form
+      method="POST"
+      action="/api/like"
       data-saying-id={sayingId}
       data-total-likes={totalLikes}
       data-liked={initialLiked}
     >
       <button
-        type="button"
+        type="submit"
         class:list={[
           'flex items-center gap-1 rounded-full px-3 py-1.5 text-sm transition-colors',
           initialLiked
@@ -53,7 +54,7 @@ const {
         <span>{initialLiked ? 'Liked' : 'Like'}</span>
         <span class="ml-1">({totalLikes})</span>
       </button>
-    </div>
+    </form>
   ) : (
     <div class="flex items-center gap-1 rounded-full px-3 py-1.5 text-sm text-gray-600">
       <svg
@@ -77,66 +78,63 @@ const {
 }
 
 <script>
-  function initializeLikeButton(container: HTMLElement) {
-    const button = container.querySelector('button');
-    if (!button) return;
+  // Client-side enhancement
+  document.addEventListener('DOMContentLoaded', () => {
+    const forms = document.querySelectorAll<HTMLFormElement>('form[data-saying-id]');
 
-    button.addEventListener('click', async () => {
-      try {
-        button.disabled = true;
-        const sayingId = container.dataset.sayingId;
-        const totalLikesSpan = button.querySelector('span:last-child');
-        const currentTotalLikes = parseInt(container.dataset.totalLikes || '0');
+    forms.forEach((form) => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const button = form.querySelector('button');
+        if (!button) return;
 
-        const response = await fetch('/api/like', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ sayingId: Number(sayingId) }),
-        });
+        try {
+          button.disabled = true;
+          const sayingId = form.dataset.sayingId;
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to like/unlike');
+          const response = await fetch('/api/like', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ sayingId: Number(sayingId) }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to like/unlike');
+          }
+
+          const { liked } = await response.json();
+          form.dataset.liked = liked.toString();
+
+          // Update button appearance
+          const svg = button.querySelector('svg');
+          if (svg) svg.setAttribute('fill', liked ? 'currentColor' : 'none');
+
+          button.classList.toggle('bg-red-100', liked);
+          button.classList.toggle('text-red-600', liked);
+          button.classList.toggle('hover:bg-red-200', liked);
+          button.classList.toggle('bg-gray-100', !liked);
+          button.classList.toggle('text-gray-600', !liked);
+          button.classList.toggle('hover:bg-gray-200', !liked);
+
+          // Update text and like count
+          const [likeText, likeCount] = button.querySelectorAll('span');
+          if (likeText) likeText.textContent = liked ? 'Liked' : 'Like';
+
+          // Update the like count
+          let totalLikes = parseInt(form.dataset.totalLikes || '0');
+          totalLikes = liked ? totalLikes + 1 : totalLikes - 1;
+          form.dataset.totalLikes = totalLikes.toString();
+          if (likeCount) likeCount.textContent = `(${totalLikes})`;
+        } catch (error) {
+          console.error('Error toggling like:', error);
+          alert('Failed to update like status. Please try again.');
+        } finally {
+          button.disabled = false;
         }
-
-        const { liked } = await response.json();
-        container.dataset.liked = liked.toString();
-
-        // Update total likes count
-        const newTotalLikes = liked ? currentTotalLikes + 1 : currentTotalLikes - 1;
-        container.dataset.totalLikes = newTotalLikes.toString();
-        if (totalLikesSpan) {
-          totalLikesSpan.textContent = `(${newTotalLikes})`;
-        }
-
-        // Update button appearance
-        const svg = button.querySelector('svg');
-        if (svg) svg.setAttribute('fill', liked ? 'currentColor' : 'none');
-
-        const textSpan = button.querySelector('span:first-of-type');
-        if (textSpan) textSpan.textContent = liked ? 'Liked' : 'Like';
-
-        button.classList.toggle('bg-red-100', liked);
-        button.classList.toggle('text-red-600', liked);
-        button.classList.toggle('hover:bg-red-200', liked);
-        button.classList.toggle('bg-gray-100', !liked);
-        button.classList.toggle('text-gray-600', !liked);
-        button.classList.toggle('hover:bg-gray-200', !liked);
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to update like status. Please try again.');
-      } finally {
-        button.disabled = false;
-      }
+      });
     });
-  }
-
-  // Initialize all like buttons on the page
-  document.querySelectorAll('.like-button-container').forEach((container) => {
-    if (container instanceof HTMLElement) {
-      initializeLikeButton(container);
-    }
   });
 </script>

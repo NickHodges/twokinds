@@ -1,5 +1,6 @@
 ---
-import { db, Sayings, Intros, Leads, desc } from 'astro:db';
+import { db } from 'astro:db';
+import { Intros } from 'astro:db/schema';
 import MainLayout from '../../layouts/MainLayout.astro';
 import '../../styles/index.css';
 import SayingList from '../../components/SayingList.astro';
@@ -13,7 +14,7 @@ const currentPage = parseInt(pageParam || '1');
 
 // Validate page number
 if (isNaN(currentPage) || currentPage < 1) {
-  return Astro.redirect('/sayings');
+  return Astro.redirect('/404');
 }
 
 // Get all sayings with joins to get intro and lead texts
@@ -21,19 +22,14 @@ const sayingsData = await getAllSayings();
 
 // Fetch related data
 const intros = await db.select().from(Intros);
-const leads = await db.select().from(Leads);
 
 // Combine the data
 const allSayings = sayingsData.map((saying) => {
   const intro = intros.find((i) => i.id === saying.intro);
-  const firstLead = leads.find((l) => l.id === saying.firstLead);
-  const secondLead = leads.find((l) => l.id === saying.secondLead);
 
   return {
     ...saying,
     introText: intro?.introText || 'Unknown intro',
-    firstLeadText: firstLead?.leadText || 'Unknown lead',
-    secondLeadText: secondLead?.leadText || 'Unknown lead',
   };
 });
 
@@ -43,7 +39,7 @@ const totalPages = Math.ceil(allSayings.length / pageSize);
 
 // Redirect if page number is too high
 if (currentPage > totalPages) {
-  return Astro.redirect(totalPages > 0 ? `/sayings/${totalPages}` : '/sayings');
+  return Astro.redirect(totalPages > 0 ? `/sayings/${totalPages}` : '/404');
 }
 
 // Calculate current page data
