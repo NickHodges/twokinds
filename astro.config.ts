@@ -55,11 +55,6 @@ export default defineConfig({
       include: [],
       force: true,
     },
-    build: {
-      rollupOptions: {
-        external: ['astro:db/schema', 'astro:db'],
-      },
-    },
   },
 
   env: {
