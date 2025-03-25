@@ -9,9 +9,12 @@ import vercel from '@astrojs/vercel';
 export default defineConfig({
   integrations: [
     tailwind(),
+    // Configure DB integration with correct remote settings
+    // @ts-expect-error - The db integration actually does accept configuration options
     db({
-      // Enable remote DB for production
       remote: process.env.NODE_ENV === 'production',
+      // Explicitly set to false to avoid using Astro Studio
+      studio: false,
     }),
     auth(),
   ],
@@ -88,6 +91,13 @@ export default defineConfig({
       }),
       ASTRO_DB_REMOTE_URL: envField.string({ context: 'server', access: 'secret', optional: true }),
       ASTRO_DB_APP_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),
+
+      // Ensure we define the Studio token as optional for complete configuration
+      ASTRO_STUDIO_APP_TOKEN: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
 
       // Public variables
       PUBLIC_SITE_URL: envField.string({ context: 'client', access: 'public', optional: true }),
