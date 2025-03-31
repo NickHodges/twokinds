@@ -13,7 +13,7 @@ export default defineConfig({
     auth()
   ],
   output: 'server',
-  site: import.meta.env.PUBLIC_SITE_URL,
+  site: https://twokindsof.com
   adapter: vercel({
     webAnalytics: { enabled: true },
     imageService: true,
@@ -78,8 +78,6 @@ export default defineConfig({
       GOOGLE_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
       GOOGLE_CLIENT_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
 
-      // Public variables
-      PUBLIC_SITE_URL: envField.string({ context: 'client', access: 'public', optional: true })
     },
   },
 });

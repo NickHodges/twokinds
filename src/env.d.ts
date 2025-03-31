@@ -24,8 +24,6 @@ interface ImportMetaEnv {
   readonly GOOGLE_CLIENT_ID: string;
   readonly GOOGLE_CLIENT_SECRET: string;
 
-  // Public Variables (accessible in client-side code)
-  readonly PUBLIC_SITE_URL: string;
 }
 
 interface ImportMeta {
