@@ -3,20 +3,32 @@
  * @typedef {object} Props
  * @property {string} message - Message to display
  * @property {string | {text: string, href: string}} [callToAction] - Optional call to action text or object
+ * @property {boolean} [isDatabaseError] - Whether this is being shown due to a database error
+ * @property {string} [devMessage] - Alternative message to show in development mode
  */
-const { message, callToAction } = Astro.props;
+const { 
+  message, 
+  callToAction, 
+  isDatabaseError = false,
+  devMessage = "No items found. Try creating one!"
+} = Astro.props;
 
 // Determine the URL and text based on callToAction type
 const callToActionUrl = typeof callToAction === 'string' ? callToAction : callToAction?.href;
 const callToActionText = typeof callToAction === 'string' ? callToAction : callToAction?.text;
+
+// If this is a database error in production, show a different message
+const displayMessage = isDatabaseError && import.meta.env.PROD
+  ? "We're currently experiencing issues connecting to our database. Please try again later."
+  : isDatabaseError ? devMessage : message;
 ---
 
 <div
   class="col-span-full text-center p-12 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
 >
-  <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">{message}</h3>
+  <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">{displayMessage}</h3>
   {
-    callToAction && (
+    callToAction && (!isDatabaseError || !import.meta.env.PROD) && (
       <a
         href={callToActionUrl}
         class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900"

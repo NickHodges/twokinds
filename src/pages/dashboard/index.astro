@@ -3,6 +3,7 @@ import MainLayout from '../../layouts/MainLayout.astro';
 import '../../styles/index.css';
 import SayingList from '../../components/SayingList.astro';
 import Pagination from '../../components/Pagination.astro';
+import EmptyState from '../../components/EmptyState.astro';
 import { config } from '../../lib/config';
 import { getUserSayings } from '../../lib/db-service';
 import type { ExtendedSession } from '../../env';
@@ -61,10 +62,22 @@ const page = {
 
 <MainLayout>
   <div class="flex flex-col">
-    <div class="mt-4">
-      <SayingList sayings={page.data} session={session} />
-
-      {page.lastPage > 1 && <Pagination page={page} basePath="/dashboard" />}
+    <div class="mt-8 px-4">
+      <h1 class="text-3xl font-bold mb-6">Your Sayings</h1>
+      
+      {page.data.length > 0 ? (
+        <>
+          <SayingList sayings={page.data} session={session} />
+          {page.lastPage > 1 && <Pagination page={page} basePath="/dashboard" />}
+        </>
+      ) : (
+        <EmptyState
+          message="No Sayings Found"
+          callToAction={{ text: "Create a Saying", href: "/create" }}
+          isDatabaseError={true}
+          devMessage="You haven't created any sayings yet. Would you like to create one now?"
+        />
+      )}
     </div>
   </div>
 </MainLayout>

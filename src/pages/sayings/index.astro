@@ -4,6 +4,7 @@ import '../../styles/index.css';
 import SayingList from '../../components/SayingList.astro';
 import Pagination from '../../components/Pagination.astro';
 import Hero from '../../components/Hero.astro';
+import EmptyState from '../../components/EmptyState.astro';
 import { config } from '../../lib/config';
 import { getAllSayings } from '../../lib/db-service';
 import type { ExtendedSession } from '../../env';
@@ -56,9 +57,19 @@ const page = {
     <Hero session={session} />
 
     <div class="mt-4">
-      <SayingList sayings={page.data} session={session} />
-
-      {page.lastPage > 1 && <Pagination page={page} basePath="/sayings" />}
+      {page.data.length > 0 ? (
+        <>
+          <SayingList sayings={page.data} session={session} />
+          {page.lastPage > 1 && <Pagination page={page} basePath="/sayings" />}
+        </>
+      ) : (
+        <EmptyState
+          message="No sayings available"
+          callToAction={session ? { text: "Create a Saying", href: "/create" } : undefined}
+          isDatabaseError={true}
+          devMessage="No sayings found. Try creating one!"
+        />
+      )}
     </div>
   </div>
 </MainLayout>
