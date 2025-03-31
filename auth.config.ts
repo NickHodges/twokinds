@@ -91,7 +91,12 @@ export default defineConfig({
           }
 
           user.id = String(newUser.id); // Convert number to string for compatibility
-          console.log('New user created successfully:', newUser.id);
+          console.log('New user created successfully:', {
+            dbId: newUser.id,
+            dbIdType: typeof newUser.id,
+            assignedId: user.id,
+            assignedIdType: typeof user.id
+          });
         } else {
           // Update existing user's last login
           console.log('Updating existing user:', existingUser.id);
@@ -107,7 +112,12 @@ export default defineConfig({
             .run();
 
           user.id = String(existingUser.id); // Convert number to string for compatibility
-          console.log('User updated successfully:', existingUser.id);
+          console.log('User updated successfully:', {
+            dbId: existingUser.id,
+            dbIdType: typeof existingUser.id,
+            assignedId: user.id,
+            assignedIdType: typeof user.id
+          });
         }
 
         return true;

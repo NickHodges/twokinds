@@ -114,19 +114,37 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
     }
 
     // Insert data into database
-    // Convert user ID to numeric for database operations
-    const numericUserId = parseInt(session.user.id, 10);
+    // The session user ID might be from OAuth (UUID), but we need the numeric ID from our database
+    // Look up the user by email to get their database ID
+    console.log('Looking up user with email:', session.user.email);
     
-    if (isNaN(numericUserId)) {
-      return redirect('/create?error=Invalid user ID format', 302);
+    // Import what we need
+    const { eq, Users } = await import('astro:db');
+    
+    // Find the user by email
+    const dbUser = await db
+      .select()
+      .from(Users)
+      .where(eq(Users.email, session.user.email))
+      .get()
+      .catch(err => {
+        console.error('Error finding user by email:', err);
+        return null;
+      });
+    
+    if (!dbUser) {
+      console.error('User not found in database:', session.user.email);
+      return redirect('/create?error=User account not found in database', 302);
     }
+    
+    console.log('Found user in database:', dbUser.id);
     
     const values = {
       intro: body.intro,
       type: typeId,
       firstKind: body.firstKind,
       secondKind: body.secondKind,
-      userId: numericUserId,
+      userId: dbUser.id, // Use the numeric ID from our database
       createdAt: new Date(),
     };
 

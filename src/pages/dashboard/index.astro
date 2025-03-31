@@ -37,7 +37,8 @@ try {
     email: session.user.email
   });
   
-  const allSayings = await getUserSayings(session.user.id);
+  // Use email to ensure we find the right user in the database
+  const allSayings = await getUserSayings(session.user.email);
   console.log(`Found ${allSayings.length} sayings for user ${session.user.id}`);
 
   // Pagination

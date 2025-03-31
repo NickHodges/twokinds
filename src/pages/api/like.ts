@@ -20,14 +20,27 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Convert user ID to numeric for database operations
-    const numericUserId = parseInt(session.user.id, 10);
+    // Look up user by email to get database ID
+    const { Users } = await import('astro:db');
+    console.log('Looking up user with email:', session.user.email);
     
-    if (isNaN(numericUserId)) {
+    // Find the user by email
+    const dbUser = await db
+      .select()
+      .from(Users)
+      .where(eq(Users.email, session.user.email))
+      .get()
+      .catch(err => {
+        console.error('Error finding user by email:', err);
+        return null;
+      });
+    
+    if (!dbUser) {
+      console.error('User not found in database:', session.user.email);
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Invalid user ID format',
+          error: 'User account not found in database',
         }),
         {
           status: 400,
@@ -35,6 +48,9 @@ export const POST: APIRoute = async ({ request }) => {
         }
       );
     }
+    
+    const userId = dbUser.id;
+    console.log('Found user in database with ID:', userId);
     
     let data;
 
@@ -69,7 +85,7 @@ export const POST: APIRoute = async ({ request }) => {
     const existingLike = await db
       .select()
       .from(Likes)
-      .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, numericUserId)))
+      .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
       .get();
 
     let liked = false;
@@ -78,7 +94,7 @@ export const POST: APIRoute = async ({ request }) => {
       // Unlike if already liked
       await db
         .delete(Likes)
-        .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, numericUserId)))
+        .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
         .run();
       liked = false;
     } else {
@@ -87,7 +103,7 @@ export const POST: APIRoute = async ({ request }) => {
         .insert(Likes)
         .values({
           sayingId,
-          userId: numericUserId,
+          userId: userId,
           createdAt: new Date(),
         })
         .run();

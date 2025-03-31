@@ -146,43 +146,67 @@ export async function getAllSayings(): Promise<Saying[]> {
   }
 }
 
-export async function getUserSayings(userId: string | number): Promise<Saying[]> {
+export async function getUserSayings(userIdOrEmail: string | number): Promise<Saying[]> {
   try {
-    console.log('getUserSayings called with userId:', userId, 'type:', typeof userId);
+    console.log('getUserSayings called with:', userIdOrEmail, 'type:', typeof userIdOrEmail);
     
-    if (!userId) {
-      console.error('No user ID provided');
+    if (!userIdOrEmail) {
+      console.error('No user ID or email provided');
       return [];
     }
 
-    // Ensure we have a numeric ID for database queries
-    // Auth.js may pass user IDs as strings, convert to number
-    let numericUserId: number;
+    // Find the right database user ID
+    let dbUserId: number | null = null;
     
-    if (typeof userId === 'string') {
-      // If it's already a number as string (e.g. "1")
-      if (/^\d+$/.test(userId)) {
-        numericUserId = parseInt(userId, 10);
+    if (typeof userIdOrEmail === 'number') {
+      // If it's already a number, use it directly
+      dbUserId = userIdOrEmail;
+    } else if (typeof userIdOrEmail === 'string') {
+      if (/^\d+$/.test(userIdOrEmail)) {
+        // If it's a numeric string (e.g., "1"), convert to number
+        dbUserId = parseInt(userIdOrEmail, 10);
+      } else if (userIdOrEmail.includes('@')) {
+        // If it's an email, look up the user
+        console.log('Looking up user by email:', userIdOrEmail);
+        const dbUser = await db
+          .select()
+          .from(Users)
+          .where(eq(Users.email, userIdOrEmail))
+          .get()
+          .catch(err => {
+            console.error('Error finding user by email:', err);
+            return null;
+          });
+          
+        if (dbUser) {
+          dbUserId = dbUser.id;
+          console.log('Found user by email with ID:', dbUserId);
+        } else {
+          console.error('User not found by email:', userIdOrEmail);
+        }
       } else {
-        // If we have a non-numeric ID (uuid or other OAuth ID format)
-        console.error(`Non-numeric user ID format: ${userId}`);
-        return [];
+        // It's probably a UUID from OAuth, try to look up by session ID in Users table
+        console.log('Looking up user by session ID in provider ID:', userIdOrEmail);
+        // We don't have a provider ID column, so we'll need to use email from the session
       }
-    } else {
-      numericUserId = userId;
     }
     
-    console.log('Using numericUserId:', numericUserId);
+    if (dbUserId === null) {
+      console.error('Could not determine database user ID');
+      return [];
+    }
+    
+    console.log('Using database user ID:', dbUserId);
     
     // Get all sayings for the user
     const rawSayings = await db
       .select()
       .from(Sayings)
-      .where(eq(Sayings.userId, numericUserId))
+      .where(eq(Sayings.userId, dbUserId))
       .orderBy(desc(Sayings.createdAt))
       .all()  // Use all() instead of get() to get multiple results
       .catch(err => {
-        console.error(`Error fetching sayings for user ${numericUserId}:`, err);
+        console.error(`Error fetching sayings for user ${dbUserId}:`, err);
         return [];
       });
 
