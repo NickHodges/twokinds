@@ -38,15 +38,19 @@ try {
     email: session.user.email
   });
   
-  // Get the numeric database ID for this user
-  const userDbId = await getUserDbId(session.user);
+  // Use the database user ID if available from middleware, otherwise look it up
+  let userDbId = Astro.locals.dbUser?.id;
   
   if (!userDbId) {
-    console.error('Could not find database ID for user:', session.user.email);
-    throw new Error('User not found in database');
+    userDbId = await getUserDbId(session.user);
+    
+    if (!userDbId) {
+      console.error('Could not find database ID for user:', session.user.email);
+      throw new Error('User not found in database');
+    }
   }
   
-  console.log('Found database ID for user:', userDbId);
+  console.log('Using database ID for user:', userDbId);
   
   // Use the numeric ID from our database
   const allSayings = await getUserSayings(userDbId);

@@ -23,14 +23,30 @@ const auth = defineMiddleware(async ({ locals, request }, next) => {
 
       // If user is logged in, save their information to the database
       if (session?.user) {
-        logger.info('Upserting user:', session.user.email);
-        try {
-          const user = await upsertUser(session);
-          // Optionally store the database user in locals for easy access
-          locals.dbUser = user;
-        } catch (dbError) {
-          // Log but continue - don't let database errors break authentication
-          logger.error('Database error during upsert:', dbError);
+        if (!session.user.email) {
+          logger.warn('User session has no email address:', session.user);
+          // Continue without upsert
+        } else {
+          logger.info('Upserting user:', session.user.email);
+          try {
+            const user = await upsertUser(session);
+            
+            if (user) {
+              // Store the database user in locals for easy access
+              locals.dbUser = user;
+              
+              // Also add the database ID to the session user
+              if (session.user) {
+                session.user.dbId = user.id;
+                logger.info('Updated session with database ID:', user.id);
+              }
+            } else {
+              logger.warn('Failed to upsert user, but continuing with session');
+            }
+          } catch (dbError) {
+            // Log but continue - don't let database errors break authentication
+            logger.error('Database error during upsert:', dbError);
+          }
         }
       }
     } catch (authError) {

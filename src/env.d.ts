@@ -34,6 +34,7 @@ interface ImportMeta {
 export interface ExtendedSession extends Session {
   user?: Session['user'] & {
     id: string;
+    dbId?: number; // Added numeric database ID
   };
 }
 
@@ -41,5 +42,6 @@ export interface ExtendedSession extends Session {
 declare namespace App {
   interface Locals {
     session: ExtendedSession | null;
+    dbUser?: { id: number } | null; // Database user with numeric ID
   }
 }
