@@ -6,11 +6,24 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>Two Kinds of People</title>
-    <link rel="stylesheet" href="/src/styles/layout.css" />
+    <!-- Import CSS properly using Astro's import mechanism -->
+    <style is:global>
+      @import '../styles/layout.css';
+    </style>
     <script
       async
       src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9957327027530940"
       crossorigin="anonymous"></script>
+      
+    <!-- Vercel Web Analytics (production only) -->
+    {import.meta.env.PROD && (
+      <>
+        <script is:inline>
+          window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+        </script>
+        <script defer src="/_vercel/insights/script.js"></script>
+      </>
+    )}
 
     <!-- Theme script (must be in the head) -->
     <script is:inline>
