@@ -56,8 +56,92 @@ export async function getUserDbId(user: User | { id?: string | number, email?: s
         });
       
       if (dbUser) {
+        // Check if the ID is valid
+        if (dbUser.id === null || dbUser.id === undefined) {
+          logger.error('Found user but ID is null or undefined. Attempting to fix...');
+          
+          try {
+            // Try to fix by recreating the user
+            // First delete the user with null ID
+            await db
+              .delete(Users)
+              .where(eq(Users.email, user.email))
+              .run();
+              
+            // Then create a new user with proper autoincrement ID
+            const now = new Date();
+            const newUser = await db
+              .insert(Users)
+              .values({
+                name: dbUser.name || user.name || '',
+                email: user.email,
+                image: dbUser.image || '',
+                provider: dbUser.provider || 'oauth',
+                role: dbUser.role || 'user',
+                lastLogin: now,
+                createdAt: now,
+                updatedAt: now,
+                preferences: dbUser.preferences || {},
+              })
+              .returning()
+              .get();
+              
+            logger.info('Fixed user with null ID. New ID:', newUser.id);
+            return newUser.id;
+          } catch (fixError) {
+            logger.error('Failed to fix user with null ID:', fixError);
+            return null;
+          }
+        }
+        
         logger.info('Found user by email with database ID:', dbUser.id);
         return dbUser.id;
+      } else {
+        // User doesn't exist, create it
+        logger.info('User not found by email, creating new user');
+        try {
+          const now = new Date();
+          const newUser = await db
+            .insert(Users)
+            .values({
+              name: user.name || '',
+              email: user.email,
+              image: user.image || '',
+              provider: 'oauth',
+              role: 'user',
+              lastLogin: now,
+              createdAt: now,
+              updatedAt: now,
+              preferences: {},
+            })
+            .returning()
+            .get();
+            
+          logger.info('Created new user with ID:', newUser.id);
+          return newUser.id;
+        } catch (createError) {
+          logger.error('Error creating user during lookup:', createError);
+          
+          // Check if it's a unique constraint violation (user was created in a race condition)
+          if (createError.code === 'SQLITE_CONSTRAINT_UNIQUE' || 
+              (createError.message && createError.message.includes('UNIQUE constraint failed'))) {
+            
+            // Try one more time to get the user that was likely just created
+            const conflictUser = await db
+              .select()
+              .from(Users)
+              .where(eq(Users.email, user.email))
+              .get()
+              .catch(() => null);
+              
+            if (conflictUser && conflictUser.id !== null && conflictUser.id !== undefined) {
+              logger.info('Found user after conflict with ID:', conflictUser.id);
+              return conflictUser.id;
+            }
+          }
+          
+          return null;
+        }
       }
     }
     
@@ -97,7 +181,48 @@ export async function upsertUser(session: ExtendedSession): Promise<{ id: number
       });
     
     if (existingUser) {
-      // Update existing user
+      // Check if the existing user has a valid ID
+      if (existingUser.id === null || existingUser.id === undefined) {
+        logger.error('Existing user has null ID:', existingUser);
+        
+        // Try to recreate the user with a proper ID
+        try {
+          // First delete the user with null ID if possible
+          await db
+            .delete(Users)
+            .where(eq(Users.email, user.email))
+            .run()
+            .catch(err => {
+              logger.error('Error deleting user with null ID:', err);
+            });
+          
+          // Then create a new user record
+          const now = new Date();
+          const recreatedUser = await db
+            .insert(Users)
+            .values({
+              name: user.name || existingUser.name || '',
+              email: user.email,
+              image: user.image || existingUser.image || '',
+              provider: existingUser.provider || 'oauth',
+              role: existingUser.role || 'user',
+              lastLogin: now,
+              createdAt: now,
+              updatedAt: now,
+              preferences: existingUser.preferences || {},
+            })
+            .returning()
+            .get();
+          
+          logger.info('Recreated user with valid ID:', recreatedUser.id);
+          return { id: recreatedUser.id };
+        } catch (recreateErr) {
+          logger.error('Failed to recreate user with valid ID:', recreateErr);
+          return null;
+        }
+      }
+      
+      // Update existing user with valid ID
       logger.info('Updating existing user:', existingUser.id);
       
       await db

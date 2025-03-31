@@ -9,6 +9,7 @@ import { getUserSayings } from '../../lib/db-service';
 import { getUserDbId } from '../../utils/user-db';
 import type { ExtendedSession } from '../../env';
 import type { Saying } from '../../types/saying';
+import { db, Users, eq } from 'astro:db';
 
 // Don't prerender so we always get fresh data
 export const prerender = false;
@@ -42,10 +43,89 @@ try {
   let userDbId = Astro.locals.dbUser?.id;
   
   if (!userDbId) {
-    userDbId = await getUserDbId(session.user);
+    try {
+      userDbId = await getUserDbId(session.user);
+      
+      if (!userDbId) {
+        // Try one more time with forced recreation
+        console.warn('First attempt to get user ID failed, trying with forced recreation');
+        
+        // Make a direct database call to find and fix the user
+        const existingUser = await db
+          .select()
+          .from(Users)
+          .where(eq(Users.email, session.user.email))
+          .get()
+          .catch(() => null);
+          
+        if (existingUser) {
+          // User exists but has a null ID - try to fix
+          if (existingUser.id === null || existingUser.id === undefined) {
+            console.warn('Found user with null ID, attempting to fix');
+            
+            // Delete the null ID user first
+            await db
+              .delete(Users)
+              .where(eq(Users.email, session.user.email))
+              .run()
+              .catch(err => {
+                console.error('Error deleting user with null ID:', err);
+              });
+              
+            // Create a new user with proper ID
+            const now = new Date();
+            const newUser = await db
+              .insert(Users)
+              .values({
+                name: session.user.name || '',
+                email: session.user.email,
+                image: session.user.image || '',
+                provider: 'oauth',
+                role: 'user',
+                lastLogin: now,
+                createdAt: now,
+                updatedAt: now,
+                preferences: {},
+              })
+              .returning()
+              .get();
+              
+            userDbId = newUser.id;
+            console.log('Fixed user with null ID. New ID:', userDbId);
+          } else {
+            userDbId = existingUser.id;
+          }
+        } else {
+          // User doesn't exist at all, create it
+          const now = new Date();
+          const newUser = await db
+            .insert(Users)
+            .values({
+              name: session.user.name || '',
+              email: session.user.email,
+              image: session.user.image || '',
+              provider: 'oauth',
+              role: 'user',
+              lastLogin: now,
+              createdAt: now,
+              updatedAt: now,
+              preferences: {},
+            })
+            .returning()
+            .get();
+            
+          userDbId = newUser.id;
+          console.log('Created new user with ID:', userDbId);
+        }
+      }
+    } catch (error) {
+      console.error('Error getting/creating user ID:', error);
+    }
     
     if (!userDbId) {
-      console.error('Could not find database ID for user:', session.user.email);
+      console.error('Could not find or create database ID for user:', session.user.email);
+      // Instead of throwing an error, show an empty list with appropriate message
+      sayingsForCurrentPage = [];
       throw new Error('User not found in database');
     }
   }

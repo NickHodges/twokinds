@@ -55,6 +55,106 @@ export const GET: APIRoute = async () => {
   );
 };
 
+/**
+ * Force create user - An emergency function to ensure user creation works
+ * 
+ * This function attempts multiple strategies to ensure a user exists in the database
+ * with a valid ID, using aggressive retry and error handling.
+ */
+async function forceCreateUser(userEmail: string, userName?: string | null, userImage?: string | null): Promise<number | null> {
+  logger.info('FORCE CREATING USER:', userEmail);
+  
+  try {
+    // First, attempt to find the user
+    let dbUser = await db
+      .select()
+      .from(Users)
+      .where(eq(Users.email, userEmail))
+      .get()
+      .catch(err => {
+        logger.error('Error in initial user lookup:', err);
+        return null;
+      });
+      
+    // If user exists and has a valid ID, use that
+    if (dbUser && typeof dbUser.id === 'number' && dbUser.id > 0) {
+      logger.info('User already exists with valid ID:', dbUser.id);
+      return dbUser.id;
+    }
+    
+    // If user exists but has invalid ID, delete it
+    if (dbUser) {
+      logger.warn('Found user with invalid ID, deleting:', dbUser);
+      await db
+        .delete(Users)
+        .where(eq(Users.email, userEmail))
+        .run()
+        .catch(err => {
+          logger.error('Failed to delete user with invalid ID:', err);
+        });
+    }
+    
+    // Now create a fresh user
+    logger.info('Creating brand new user record');
+    const now = new Date();
+    const newUser = await db
+      .insert(Users)
+      .values({
+        name: userName || '',
+        email: userEmail,
+        image: userImage || '',
+        provider: 'oauth',
+        role: 'user',
+        lastLogin: now,
+        createdAt: now,
+        updatedAt: now,
+        preferences: {},
+      })
+      .returning()
+      .get()
+      .catch(err => {
+        // Check if it's a unique constraint - user might have been created in parallel
+        if (err.code === 'SQLITE_CONSTRAINT_UNIQUE' || 
+            (err.message && err.message.includes('UNIQUE constraint failed'))) {
+          logger.warn('User already created in parallel process');
+          return null;
+        }
+        logger.error('Error creating fresh user:', err);
+        return null;
+      });
+      
+    if (newUser && newUser.id) {
+      logger.info('Successfully created fresh user with ID:', newUser.id);
+      return newUser.id;
+    }
+    
+    // If we reach here, the creation might have failed due to a race condition
+    // Try one more lookup to find the potentially created user
+    logger.info('Performing final lookup');
+    dbUser = await db
+      .select()
+      .from(Users)
+      .where(eq(Users.email, userEmail))
+      .get()
+      .catch(err => {
+        logger.error('Error in final user lookup:', err);
+        return null;
+      });
+      
+    if (dbUser && typeof dbUser.id === 'number' && dbUser.id > 0) {
+      logger.info('Found user in final lookup with ID:', dbUser.id);
+      return dbUser.id;
+    }
+    
+    // All strategies failed
+    logger.error('All user creation strategies failed');
+    return null;
+  } catch (error) {
+    logger.error('Catastrophic error in forceCreateUser:', error);
+    return null;
+  }
+}
+
 // Handle form submission via API
 export const POST: APIRoute = async ({ request, locals, redirect }) => {
   try {
@@ -122,7 +222,6 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
       typeId = body.type;
     }
 
-    // Insert data into database
     // First check if we already have the user ID in locals
     let userId: number | null = null;
     
@@ -136,109 +235,33 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
       userId = session.user.dbId;
       logger.info('Using dbId from session:', userId);
     }
-    // Option 3: Try to look up by email directly
-    else if (session.user.email) {
-      logger.info('Looking up user by email:', session.user.email);
-      
-      try {
-        const dbUser = await db
-          .select()
-          .from(Users)
-          .where(eq(Users.email, session.user.email))
-          .get();
-          
-        if (dbUser) {
-          userId = dbUser.id;
-          logger.info('Found user by direct email lookup:', userId);
-        }
-      } catch (dbError) {
-        logger.error('Error finding user by email:', dbError);
-      }
-    }
-    // Option 4: Try getUserDbId as a last resort
-    if (!userId) {
-      logger.info('Trying getUserDbId utility...');
-      userId = await getUserDbId(session.user);
-      if (userId) {
-        logger.info('Found user ID with getUserDbId:', userId);
-      }
-    }
-    
-    // If we still don't have a user ID, check once more if the user exists by email
-    // before trying to create the user (to avoid UNIQUE constraint violations)
+
+    // If we still don't have userId and we have an email, use our emergency function
     if (!userId && session.user.email) {
-      logger.info('Double-checking if user exists by email:', session.user.email);
-      try {
-        // Try to find user one more time
-        const existingUser = await db
-          .select()
-          .from(Users)
-          .where(eq(Users.email, session.user.email))
-          .get();
-          
-        if (existingUser) {
-          // User found on second check, use this ID
-          userId = existingUser.id;
-          logger.info('Found user on double-check with ID:', userId);
+      logger.info('No user ID found through normal channels, using emergency function');
+      userId = await forceCreateUser(
+        session.user.email,
+        session.user.name,
+        session.user.image
+      );
+      
+      if (userId) {
+        logger.info('Emergency user creation succeeded with ID:', userId);
+        
+        // Update the session and locals with the new user ID
+        session.user.dbId = userId;
+        if (!locals.dbUser) {
+          locals.dbUser = { id: userId };
         } else {
-          // User truly doesn't exist, now try to create them
-          logger.info('Creating new user for:', session.user.email);
-          try {
-            const now = new Date();
-            const newUser = await db
-              .insert(Users)
-              .values({
-                name: session.user.name || '',
-                email: session.user.email,
-                image: session.user.image || '',
-                provider: 'oauth',
-                role: 'user',
-                lastLogin: now,
-                createdAt: now,
-                updatedAt: now,
-                preferences: {},
-              })
-              .returning()
-              .get();
-              
-            if (newUser) {
-              userId = newUser.id;
-              logger.info('Created new user with ID:', userId);
-            }
-          } catch (createError) {
-            // Handle the UNIQUE constraint specifically
-            if (createError.code === 'SQLITE_CONSTRAINT_UNIQUE' || 
-                (createError.message && createError.message.includes('UNIQUE constraint failed'))) {
-              
-              logger.info('User was created in a parallel process, trying to fetch again');
-              
-              // User was likely created in a race condition - try to get it again
-              const conflictUser = await db
-                .select()
-                .from(Users)
-                .where(eq(Users.email, session.user.email))
-                .get();
-                
-              if (conflictUser) {
-                userId = conflictUser.id;
-                logger.info('Successfully retrieved user after conflict with ID:', userId);
-              } else {
-                logger.error('Could not find user after UNIQUE constraint error');
-              }
-            } else {
-              logger.error('Error creating user:', createError);
-            }
-          }
+          locals.dbUser.id = userId;
         }
-      } catch (lookupError) {
-        logger.error('Error in double-check lookup:', lookupError);
       }
     }
     
     // Final check - if we still don't have a user ID, we can't continue
     if (!userId) {
-      logger.error('User not found in database and could not be created:', session.user.email);
-      return redirect('/create?error=Could not find or create user account', 302);
+      logger.error('Emergency user creation FAILED, absolute last resort failed:', session.user.email);
+      return redirect('/create?error=Could not find or create user account - please contact support', 302);
     }
     
     logger.info('Using user ID for saying creation:', userId);

@@ -4,16 +4,32 @@ import authConfig from '../auth.config';
 import type { ExtendedSession } from './env';
 import { upsertUser } from './utils/user-db';
 import { createLogger } from './utils/logger';
+import { fixUserDatabase } from './db/scripts/fix-users';
 
 // Import development seed to run automatically in dev mode
 import './db/development-seed';
 
 const logger = createLogger('Middleware');
 
+// Keep track of if we've run the database repair
+let hasRunDatabaseRepair = false;
+
 // Auth middleware to handle sessions
 const auth = defineMiddleware(async ({ locals, request }, next) => {
   try {
     logger.info('Getting session...');
+    
+    // Run database repair once per server start
+    if (!hasRunDatabaseRepair) {
+      try {
+        logger.info('Running database repair to fix user IDs...');
+        await fixUserDatabase();
+        hasRunDatabaseRepair = true;
+        logger.info('Database repair completed');
+      } catch (repairError) {
+        logger.error('Error during database repair:', repairError);
+      }
+    }
     
     // Wrap in try/catch to prevent authentication errors from breaking the app
     try {
