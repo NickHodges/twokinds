@@ -81,9 +81,36 @@ This application is configured to deploy on Vercel:
 1. Push your code to a Git repository (GitHub, GitLab, etc.)
 2. Import the project on Vercel's website
 3. Vercel will automatically detect the Astro project and deploy it
-4. Make sure to configure the necessary environment variables in the Vercel dashboard
+4. Configure the following environment variables in the Vercel dashboard:
+
+   **Required environment variables:**
+   
+   - `AUTH_SECRET` - Secret for authentication (generate using `openssl rand -hex 32`)
+   - `AUTH_TRUST_HOST` - Set to `true`
+   - `NEXTAUTH_URL` - Set to your Vercel deployment URL (e.g., https://your-app.vercel.app)
+   - `AUTH_URL` - Same as NEXTAUTH_URL
+   - `GITHUB_CLIENT_ID` - GitHub OAuth client ID
+   - `GITHUB_CLIENT_SECRET` - GitHub OAuth client secret
+   - `GOOGLE_CLIENT_ID` - Google OAuth client ID
+   - `GOOGLE_CLIENT_SECRET` - Google OAuth client secret
+   - `PUBLIC_SITE_URL` - Same as NEXTAUTH_URL
+   
+   **For remote database (recommended for production):**
+   
+   - `ASTRO_PRODUCTION_DB_TYPE` - Set to `remote`
+   - `ASTRO_DB_REMOTE_URL` - Your remote database URL
+   - `ASTRO_DB_APP_TOKEN` - Your remote database access token
 
 The application uses the Vercel adapter which handles all the serverless deployment configuration automatically.
+
+**Troubleshooting Vercel Deployment:**
+
+If you encounter errors in your Vercel deployment:
+
+1. Check the build logs for any errors related to missing environment variables
+2. Verify that all required environment variables are set in the Vercel dashboard
+3. Check that the database connection is working correctly
+4. Ensure your OAuth providers (GitHub, Google) are correctly configured with the right callback URLs
 
 ### Deploying to Other Environments
 
