@@ -1,6 +1,5 @@
 import { db, Sayings, Intros, Types, Likes, eq, desc, and, count } from 'astro:db';
 import type { Saying } from '../types/saying';
-import type { DBSaying, DBIntro, DBType } from '../types/db';
 
 /**
  * Get a complete saying with all related data by ID
@@ -47,45 +46,41 @@ export async function getSayingById(id: number) {
 export async function getAllSayings(): Promise<Saying[]> {
   const rawSayings = await db.select().from(Sayings).orderBy(desc(Sayings.createdAt));
 
-  const sayings = rawSayings.map((saying) => ({
-    id: saying.id.toString(),
-    intro: saying.intro.toString(),
-    type: saying.type.toString(),
-    firstKind: saying.firstKind,
-    secondKind: saying.secondKind,
-    userId: saying.userId,
-    createdAt: saying.createdAt,
-  })) as DBSaying[];
-
   // Get the related data for each saying
   const sayingsWithData = await Promise.all(
-    sayings.map(async (saying) => {
+    rawSayings.map(async (saying) => {
       const [intro, type] = await Promise.all([
         db
           .select()
           .from(Intros)
-          .where(eq(Intros.id, Number(saying.intro)))
-          .get() as Promise<DBIntro | undefined>,
+          .where(eq(Intros.id, saying.intro))
+          .get(),
         db
           .select()
           .from(Types)
-          .where(eq(Types.id, Number(saying.type)))
-          .get() as Promise<DBType | undefined>,
+          .where(eq(Types.id, saying.type))
+          .get(),
       ]);
 
       return {
-        ...saying,
+        id: String(saying.id),
+        intro: String(saying.intro),
+        type: String(saying.type),
+        firstKind: saying.firstKind,
+        secondKind: saying.secondKind,
+        userId: String(saying.userId),
+        createdAt: saying.createdAt,
         introText: intro?.introText || '',
         typeName: type?.name || '',
         intro_data: intro
           ? {
-              id: intro.id.toString(),
+              id: String(intro.id),
               introText: intro.introText,
             }
           : undefined,
         type_data: type
           ? {
-              id: type.id.toString(),
+              id: String(type.id),
               name: type.name,
             }
           : undefined,
@@ -101,29 +96,19 @@ export async function getUserSayings(userId: string): Promise<Saying[]> {
   const rawSayings = await db
     .select()
     .from(Sayings)
-    .where(eq(Sayings.userId, userId))
+    .where(eq(Sayings.userId, Number(userId)))
     .orderBy(Sayings.createdAt);
 
-  const userSayings = rawSayings.map((saying) => ({
-    id: saying.id.toString(),
-    intro: saying.intro.toString(),
-    type: saying.type.toString(),
-    firstKind: saying.firstKind,
-    secondKind: saying.secondKind,
-    userId: saying.userId,
-    createdAt: saying.createdAt,
-  })) as DBSaying[];
-
   // Get liked status and total likes for each saying
-  const likedStatus = new Map<string, boolean>();
-  const totalLikes = new Map<string, number>();
+  const likedStatus = new Map<number, boolean>();
+  const totalLikes = new Map<number, number>();
 
-  for (const saying of userSayings) {
+  for (const saying of rawSayings) {
     // Get total likes for this saying
     const likesResult = await db
       .select({ value: count() })
       .from(Likes)
-      .where(eq(Likes.sayingId, Number(saying.id)))
+      .where(eq(Likes.sayingId, saying.id))
       .get();
     totalLikes.set(saying.id, likesResult?.value || 0);
 
@@ -131,40 +116,46 @@ export async function getUserSayings(userId: string): Promise<Saying[]> {
     const like = await db
       .select()
       .from(Likes)
-      .where(and(eq(Likes.userId, userId), eq(Likes.sayingId, Number(saying.id))))
+      .where(and(eq(Likes.userId, Number(userId)), eq(Likes.sayingId, saying.id)))
       .get();
     likedStatus.set(saying.id, !!like);
   }
 
   // Then, get the related data for each saying
   const sayingsWithData = await Promise.all(
-    userSayings.map(async (saying) => {
+    rawSayings.map(async (saying) => {
       const [intro, type] = await Promise.all([
         db
           .select()
           .from(Intros)
-          .where(eq(Intros.id, Number(saying.intro)))
-          .get() as Promise<DBIntro | undefined>,
+          .where(eq(Intros.id, saying.intro))
+          .get(),
         db
           .select()
           .from(Types)
-          .where(eq(Types.id, Number(saying.type)))
-          .get() as Promise<DBType | undefined>,
+          .where(eq(Types.id, saying.type))
+          .get(),
       ]);
 
       return {
-        ...saying,
+        id: String(saying.id),
+        intro: String(saying.intro),
+        type: String(saying.type),
+        firstKind: saying.firstKind,
+        secondKind: saying.secondKind,
+        userId: String(saying.userId),
+        createdAt: saying.createdAt,
         introText: intro?.introText || '',
         typeName: type?.name || '',
         intro_data: intro
           ? {
-              id: intro.id.toString(),
+              id: String(intro.id),
               introText: intro.introText,
             }
           : undefined,
         type_data: type
           ? {
-              id: type.id.toString(),
+              id: String(type.id),
               name: type.name,
             }
           : undefined,

@@ -1,56 +1,36 @@
 import { defineConfig, envField } from 'astro/config';
 import db from '@astrojs/db';
 import auth from 'auth-astro';
-import vercel from '@astrojs/vercel';
+import tailwind from '@astrojs/tailwind';
+import node from '@astrojs/node';
+import { fileURLToPath } from 'url';
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [db(), auth()],
+  integrations: [
+    tailwind(),
+    db({
+      // Set the database mode based on environment
+      remote: process.env.NODE_ENV === 'production' ? 
+        (process.env.ASTRO_PRODUCTION_DB_TYPE === 'local' ? false : true) : false
+    }),
+    auth()
+  ],
   output: 'server',
   site: import.meta.env.PUBLIC_SITE_URL,
-  db: {
-    url: import.meta.env.ASTRO_DB_REMOTE_URL,
-    token: import.meta.env.ASTRO_DB_APP_TOKEN,
-    file: import.meta.env.ASTRO_DATABASE_FILE,
-  },
+  adapter: node({
+    mode: 'standalone'
+  }),
   server: {
     // Configuration to fix WebSocket issues in WSL
     host: '0.0.0.0',
   },
-  // Add Node.js adapter for server-side rendering
-  adapter: vercel(),
-
-  env: {
-    schema: {
-      ASTRO_DATABASE_FILE: envField.string({ context: 'server', access: 'secret', optional: true }),
-      ASTRO_DB_REMOTE_URL: envField.string({
-        context: 'server',
-        access: 'secret',
-        optional: false,
-      }),
-      ASTRO_DB_APP_TOKEN: envField.string({ context: 'server', access: 'secret', optional: false }),
-      // Auth.js Configuration
-      AUTH_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
-      AUTH_TRUST_HOST: envField.string({ context: 'server', access: 'secret', optional: false }),
-      NEXTAUTH_URL: envField.string({ context: 'server', access: 'secret', optional: false }),
-      AUTH_URL: envField.string({ context: 'server', access: 'secret', optional: false }),
-      // OAuth Provider Credentials
-      GITHUB_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
-      GITHUB_CLIENT_SECRET: envField.string({
-        context: 'server',
-        access: 'secret',
-        optional: false,
-      }),
-      GOOGLE_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
-      GOOGLE_CLIENT_SECRET: envField.string({
-        context: 'server',
-        access: 'secret',
-        optional: false,
-      }),
-    },
-  },
-
   vite: {
+    resolve: {
+      alias: {
+        'auth:config': fileURLToPath(new URL('./.auth/config.ts', import.meta.url))
+      }
+    },
     server: {
       hmr: {
         // Force WebSocket connection to use the same hostname
@@ -76,6 +56,29 @@ export default defineConfig({
     optimizeDeps: {
       include: [],
       force: true,
+    },
+  },
+  env: {
+    schema: {
+      // Database configuration
+      ASTRO_DATABASE_FILE: envField.string({ context: 'server', access: 'public', default: '.astro/db.sqlite' }),
+      ASTRO_DB_REMOTE_URL: envField.string({ context: 'server', access: 'secret', optional: true }),
+      ASTRO_DB_APP_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),
+      
+      // Auth.js Configuration
+      AUTH_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
+      AUTH_TRUST_HOST: envField.boolean({ context: 'server', access: 'secret', default: true }),
+      NEXTAUTH_URL: envField.string({ context: 'server', access: 'secret', optional: false }),
+      AUTH_URL: envField.string({ context: 'server', access: 'secret', optional: false }),
+      
+      // OAuth Provider Credentials
+      GITHUB_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
+      GITHUB_CLIENT_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
+      GOOGLE_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
+      GOOGLE_CLIENT_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
+      
+      // Public variables
+      PUBLIC_SITE_URL: envField.string({ context: 'client', access: 'public', optional: true })
     },
   },
 });

@@ -28,8 +28,12 @@ export default [
     },
     languageOptions: {
       globals: {
-        ...globals.browser,
-        ...globals.node,
+        ...Object.fromEntries(
+          Object.entries(globals.browser).map(([key]) => [key.trim(), true])
+        ),
+        ...Object.fromEntries(
+          Object.entries(globals.node).map(([key]) => [key.trim(), true])
+        ),
       },
       parser: tsParser,
       ecmaVersion: 2022,

@@ -1,0 +1,54 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import { createLogger } from '../../utils/logger';
+import type { ExtendedSession } from '../../env';
+
+const logger = createLogger('DashboardCatchAll');
+
+// Don't prerender so we always get fresh data
+export const prerender = false;
+
+// Log for debugging
+logger.info('Catch-all route accessed', Astro.params);
+logger.info('URL path:', Astro.url.pathname);
+
+// Get the path parameter
+const { path } = Astro.params;
+
+// Get current user's session
+const session = Astro.locals.session as ExtendedSession | null;
+
+// Redirect if not logged in
+if (!session?.user) {
+  return Astro.redirect('/auth/signin');
+}
+
+// Redirect to the main dashboard for any path
+if (path === 'hello') {
+  logger.info(`Redirecting from ${path} to main dashboard`);
+  return Astro.redirect('/dashboard/');
+}
+
+// Handle other paths
+logger.info(`Redirecting from ${path} to main dashboard`);
+return Astro.redirect('/dashboard/');
+---
+
+<MainLayout>
+  <div class="flex flex-col items-center justify-center p-8 text-center">
+    <h1 class="text-3xl font-bold mb-6">Redirecting...</h1>
+    <p class="mb-8">You should be redirected to the dashboard shortly.</p>
+    
+    <a 
+      href="/dashboard" 
+      class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+    >
+      Go to Dashboard
+    </a>
+  </div>
+
+  <script>
+    // Redirect to dashboard via client-side as fallback
+    window.location.href = '/dashboard';
+  </script>
+</MainLayout>

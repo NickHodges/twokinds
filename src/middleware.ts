@@ -5,6 +5,9 @@ import type { ExtendedSession } from './env';
 import { upsertUser } from './utils/user-db';
 import { createLogger } from './utils/logger';
 
+// Import development seed to run automatically in dev mode
+import './db/development-seed';
+
 const logger = createLogger('Middleware');
 
 // Auth middleware to handle sessions

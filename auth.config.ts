@@ -1,11 +1,32 @@
 import { defineConfig } from 'auth-astro';
 import GitHub from '@auth/core/providers/github';
 import Google from '@auth/core/providers/google';
+import Credentials from '@auth/core/providers/credentials';
 import { db, Users, eq } from 'astro:db';
-import { v4 as uuidv4 } from 'uuid';
 
 export default defineConfig({
   providers: [
+    // Development Credentials Provider - only for development
+    process.env.NODE_ENV === 'development' 
+    ? Credentials({
+      name: 'Development Login',
+      credentials: {
+        email: { label: "Email", type: "email" },
+        name: { label: "Name", type: "text" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email) return null;
+        
+        // Create a mock user for development
+        return {
+          id: "1",
+          name: credentials.name || "Dev User",
+          email: credentials.email,
+          image: "https://avatars.githubusercontent.com/u/1?v=4",
+        };
+      },
+    })
+    : null,
     GitHub({
       clientId: import.meta.env.GITHUB_CLIENT_ID,
       clientSecret: import.meta.env.GITHUB_CLIENT_SECRET,
@@ -14,7 +35,7 @@ export default defineConfig({
       clientId: import.meta.env.GOOGLE_CLIENT_ID,
       clientSecret: import.meta.env.GOOGLE_CLIENT_SECRET,
     }),
-  ],
+  ].filter(Boolean),
   secret: import.meta.env.AUTH_SECRET,
   trustHost: import.meta.env.AUTH_TRUST_HOST ?? true,
   debug: process.env.NODE_ENV !== 'production', // Only enable debug in development
@@ -40,15 +61,13 @@ export default defineConfig({
         const existingUser = await db.select().from(Users).where(eq(Users.email, user.email)).get();
 
         if (!existingUser) {
-          // Create new user with a UUID
+          // Create new user with auto-incrementing ID
           const now = new Date();
-          const userId = uuidv4(); // Generate a new UUID
-          console.log('Creating new user with ID:', userId);
+          console.log('Creating new user');
 
           const newUser = await db
             .insert(Users)
             .values({
-              id: userId,
               name: user.name || '',
               email: user.email,
               image: user.image || '',
@@ -67,7 +86,7 @@ export default defineConfig({
             return false;
           }
 
-          user.id = newUser.id;
+          user.id = String(newUser.id); // Convert number to string for compatibility
           console.log('New user created successfully:', newUser.id);
         } else {
           // Update existing user's last login
@@ -78,11 +97,12 @@ export default defineConfig({
               lastLogin: new Date(),
               name: user.name || existingUser.name,
               image: user.image || existingUser.image,
+              updatedAt: new Date(),
             })
             .where(eq(Users.id, existingUser.id))
             .run();
 
-          user.id = existingUser.id;
+          user.id = String(existingUser.id); // Convert number to string for compatibility
           console.log('User updated successfully:', existingUser.id);
         }
 
@@ -94,7 +114,11 @@ export default defineConfig({
     },
     async redirect({ url, baseUrl }) {
       console.log('Redirect callback', { url, baseUrl });
-      // Always redirect to home page after sign-in or sign-out
+      // Check specific URLs and handle them
+      if (url.startsWith(`${baseUrl}/dashboard`)) {
+        return `${baseUrl}/dashboard`;
+      }
+      // Default redirect to home page
       return '/';
     },
     async session({ session, token }) {

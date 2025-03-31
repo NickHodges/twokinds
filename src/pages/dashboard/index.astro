@@ -11,6 +11,10 @@ import type { Saying } from '../../types/saying';
 // Don't prerender so we always get fresh data
 export const prerender = false;
 
+// Log the URL to help with debugging
+console.log('Dashboard route accessed with URL:', Astro.url.toString());
+console.log('Request headers:', Astro.request.headers);
+
 // Get current user's session
 const session = Astro.locals.session as ExtendedSession | null;
 
@@ -50,7 +54,7 @@ const page = {
   lastPage: totalPages,
   url: {
     prev: null,
-    next: totalPages > 1 ? `/dashboard/2` : null,
+    next: totalPages > 1 ? `/dashboard/page/2` : null,
   },
 };
 ---
@@ -64,3 +68,10 @@ const page = {
     </div>
   </div>
 </MainLayout>
+
+<script>
+  // If we're at /dashboard/hello, redirect to the proper dashboard URL
+  if (window.location.pathname === '/dashboard/hello') {
+    window.location.pathname = '/dashboard/';
+  }
+</script>

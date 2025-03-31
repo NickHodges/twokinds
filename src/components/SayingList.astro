@@ -17,26 +17,39 @@ const {
 const isAuthenticated = !!session?.user;
 
 // Get liked status and total likes for each saying
-const likedStatus = new Map<number, boolean>();
-const totalLikes = new Map<number, number>();
+const likedStatus = new Map<string, boolean>();
+const totalLikes = new Map<string, number>();
 
 for (const saying of sayings) {
+  // Convert ID from string to number for database queries
+  const sayingId = Number(saying.id);
+  
   // Get total likes for this saying
-  const likesResult = await db
-    .select({ value: count() })
-    .from(Likes)
-    .where(eq(Likes.sayingId, saying.id))
-    .get();
-  totalLikes.set(saying.id, likesResult?.value || 0);
+  if (Number.isFinite(sayingId)) {
+    const likesResult = await db
+      .select({ value: count() })
+      .from(Likes)
+      .where(eq(Likes.sayingId, sayingId))
+      .get();
+    totalLikes.set(saying.id, likesResult?.value || 0);
+  } else {
+    totalLikes.set(saying.id, 0);
+  }
 
   // Get liked status if user is authenticated
   if (session?.user?.id) {
-    const like = await db
-      .select()
-      .from(Likes)
-      .where(and(eq(Likes.userId, session.user.id), eq(Likes.sayingId, saying.id)))
-      .get();
-    likedStatus.set(saying.id, !!like);
+    const userId = Number(session.user.id);
+    // Ensure we have valid finite numbers before querying
+    if (Number.isFinite(userId) && Number.isFinite(sayingId)) {
+      const like = await db
+        .select()
+        .from(Likes)
+        .where(and(eq(Likes.userId, userId), eq(Likes.sayingId, sayingId)))
+        .get();
+      likedStatus.set(saying.id, !!like);
+    } else {
+      likedStatus.set(saying.id, false);
+    }
   }
 }
 ---

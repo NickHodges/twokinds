@@ -1,37 +1,42 @@
 export interface DBUser {
-  id: string;
+  id: number;
   name: string;
   email: string;
   image: string;
+  provider: string;
   role: string;
+  lastLogin: Date;
+  preferences: Record<string, unknown>;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface DBSaying {
-  id: string;
-  intro: string;
-  type: string;
+  id: number;
+  intro: number;
+  type: number;
   firstKind: string;
   secondKind: string;
-  userId: string;
+  userId: number;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface DBIntro {
-  id: string;
+  id: number;
   introText: string;
   createdAt: Date;
 }
 
 export interface DBType {
-  id: string;
+  id: number;
   name: string;
   createdAt: Date;
 }
 
 export interface DBLike {
-  id: string;
-  userId: string;
-  sayingId: string;
+  id: number;
+  userId: number;
+  sayingId: number;
   createdAt: Date;
 }

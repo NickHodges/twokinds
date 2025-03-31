@@ -40,7 +40,8 @@ Astro.props satisfies Props;
                     Your Profile
                   </a>
                   <a
-                    href="/dashboard"
+                    id="dashboard-link"
+                    href="/dashboard/"
                     class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     Dashboard
@@ -68,6 +69,19 @@ Astro.props satisfies Props;
     }
   </Auth>
 </div>
+
+<script>
+  // Fix dashboard link to ensure it goes to the correct URL
+  document.addEventListener('DOMContentLoaded', () => {
+    const dashboardLink = document.getElementById('dashboard-link');
+    if (dashboardLink) {
+      dashboardLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = '/dashboard/';
+      });
+    }
+  });
+</script>
 
 <style>
   :global(.auth-astro-sign-in-button),
