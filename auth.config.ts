@@ -126,17 +126,42 @@ export default defineConfig({
       return '/';
     },
     async session({ session, token }) {
-      console.log('Session callback', { session, token });
+      console.log('Session callback before modification', { 
+        sessionUserId: session?.user?.id,
+        sessionUserIdType: session?.user?.id ? typeof session.user.id : null,
+        tokenId: token.id,
+        tokenIdType: token.id ? typeof token.id : null
+      });
+      
       if (session.user) {
+        // Assign token ID to session user ID
         session.user.id = token.id as string;
+        
+        console.log('Session after modification', {
+          userId: session.user.id,
+          userIdType: typeof session.user.id
+        });
       }
+      
       return session;
     },
     async jwt({ token, user }) {
-      console.log('JWT callback', { token, user });
+      console.log('JWT callback', { 
+        tokenBefore: { ...token }, 
+        user: user ? { id: user.id, idType: typeof user.id } : null 
+      });
+      
       if (user) {
+        // Store numeric ID in JWT token
         token.id = user.id;
+        
+        // Log the token after modification
+        console.log('JWT token after modification:', { 
+          id: token.id, 
+          idType: typeof token.id 
+        });
       }
+      
       return token;
     },
   },

@@ -31,7 +31,14 @@ let currentPage = 1;
 
 // Get user's sayings with joins to get intro and type data
 try {
+  console.log('Dashboard - user session:', {
+    id: session.user.id,
+    type: typeof session.user.id,
+    email: session.user.email
+  });
+  
   const allSayings = await getUserSayings(session.user.id);
+  console.log(`Found ${allSayings.length} sayings for user ${session.user.id}`);
 
   // Pagination
   const pageSize = config.pagination.sayingsPerPage;
@@ -74,7 +81,7 @@ const page = {
         <EmptyState
           message="No Sayings Found"
           callToAction={{ text: "Create a Saying", href: "/create" }}
-          isDatabaseError={true}
+          isDatabaseError={false} /* Changed to false since it's not an error - just empty */
           devMessage="You haven't created any sayings yet. Would you like to create one now?"
         />
       )}

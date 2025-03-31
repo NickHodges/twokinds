@@ -20,7 +20,22 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    const userId = session.user.id;
+    // Convert user ID to numeric for database operations
+    const numericUserId = parseInt(session.user.id, 10);
+    
+    if (isNaN(numericUserId)) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Invalid user ID format',
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+    
     let data;
 
     // Handle both JSON and form data
@@ -35,13 +50,13 @@ export const POST: APIRoute = async ({ request }) => {
       };
     }
 
-    const { sayingId } = data;
+    const sayingId = Number(data.sayingId);
 
-    if (!sayingId) {
+    if (!sayingId || isNaN(sayingId)) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Saying ID is required',
+          error: 'Valid saying ID is required',
         }),
         {
           status: 400,
@@ -54,7 +69,7 @@ export const POST: APIRoute = async ({ request }) => {
     const existingLike = await db
       .select()
       .from(Likes)
-      .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
+      .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, numericUserId)))
       .get();
 
     let liked = false;
@@ -63,7 +78,7 @@ export const POST: APIRoute = async ({ request }) => {
       // Unlike if already liked
       await db
         .delete(Likes)
-        .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
+        .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, numericUserId)))
         .run();
       liked = false;
     } else {
@@ -72,7 +87,7 @@ export const POST: APIRoute = async ({ request }) => {
         .insert(Likes)
         .values({
           sayingId,
-          userId,
+          userId: numericUserId,
           createdAt: new Date(),
         })
         .run();

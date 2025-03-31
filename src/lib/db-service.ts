@@ -146,21 +146,45 @@ export async function getAllSayings(): Promise<Saying[]> {
   }
 }
 
-export async function getUserSayings(userId: string): Promise<Saying[]> {
+export async function getUserSayings(userId: string | number): Promise<Saying[]> {
   try {
-    // Validate userId to prevent potential issues with Number conversion
-    const userIdNum = Number(userId);
-    if (!userId || !Number.isFinite(userIdNum)) {
-      console.error(`Invalid user ID: ${userId}`);
+    console.log('getUserSayings called with userId:', userId, 'type:', typeof userId);
+    
+    if (!userId) {
+      console.error('No user ID provided');
       return [];
     }
 
-    // First, get all sayings for the user
+    // Ensure we have a numeric ID for database queries
+    // Auth.js may pass user IDs as strings, convert to number
+    let numericUserId: number;
+    
+    if (typeof userId === 'string') {
+      // If it's already a number as string (e.g. "1")
+      if (/^\d+$/.test(userId)) {
+        numericUserId = parseInt(userId, 10);
+      } else {
+        // If we have a non-numeric ID (uuid or other OAuth ID format)
+        console.error(`Non-numeric user ID format: ${userId}`);
+        return [];
+      }
+    } else {
+      numericUserId = userId;
+    }
+    
+    console.log('Using numericUserId:', numericUserId);
+    
+    // Get all sayings for the user
     const rawSayings = await db
       .select()
       .from(Sayings)
-      .where(eq(Sayings.userId, userIdNum))
-      .orderBy(Sayings.createdAt);
+      .where(eq(Sayings.userId, numericUserId))
+      .orderBy(desc(Sayings.createdAt))
+      .all()  // Use all() instead of get() to get multiple results
+      .catch(err => {
+        console.error(`Error fetching sayings for user ${numericUserId}:`, err);
+        return [];
+      });
 
     // Get liked status and total likes for each saying
     const likedStatus = new Map<number, boolean>();
@@ -180,8 +204,16 @@ export async function getUserSayings(userId: string): Promise<Saying[]> {
         const like = await db
           .select()
           .from(Likes)
-          .where(and(eq(Likes.userId, Number(userId)), eq(Likes.sayingId, saying.id)))
-          .get();
+          .where(and(
+            eq(Likes.userId, numericUserId), 
+            eq(Likes.sayingId, saying.id)
+          ))
+          .get()
+          .catch(err => {
+            console.error(`Error getting like status for saying ${saying.id}:`, err);
+            return null;
+          });
+        
         likedStatus.set(saying.id, !!like);
       } catch (likeError) {
         console.error(`Error getting likes for saying ${saying.id}:`, likeError);

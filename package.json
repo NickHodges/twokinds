@@ -19,6 +19,7 @@
     "setup": "npm run db:push && npm run db:seed",
     "seed-turso": "node seed-turso.mjs",
     "seed-remote": "cross-env NODE_ENV=production node seed-remote.mjs",
+    "migrate:userid": "astro db execute db/migrate-user-id.ts",
     "lint": "eslint . --ext .ts,.astro",
     "lint:fix": "eslint . --ext .ts,.astro --fix",
     "format": "prettier --write .",

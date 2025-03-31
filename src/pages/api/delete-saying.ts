@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 // Define the request schema for validation
 const requestSchema = z.object({
-  sayingId: z.string().min(1, 'Saying ID is required'),
+  sayingId: z.coerce.number().int().positive('Valid saying ID is required'),
 });
 
 export const POST: APIRoute = async ({ request }) => {
@@ -64,7 +64,10 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    if (saying.userId !== session.user.id) {
+    // Convert session user ID to number for comparison
+    const numericUserId = parseInt(session.user.id, 10);
+    
+    if (saying.userId !== numericUserId) {
       return new Response(
         JSON.stringify({
           success: false,

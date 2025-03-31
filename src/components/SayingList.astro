@@ -38,15 +38,33 @@ for (const saying of sayings) {
 
   // Get liked status if user is authenticated
   if (session?.user?.id) {
-    const userId = Number(session.user.id);
-    // Ensure we have valid finite numbers before querying
-    if (Number.isFinite(userId) && Number.isFinite(sayingId)) {
-      const like = await db
-        .select()
-        .from(Likes)
-        .where(and(eq(Likes.userId, userId), eq(Likes.sayingId, sayingId)))
-        .get();
-      likedStatus.set(saying.id, !!like);
+    const userIdString = session.user.id.toString();
+    const isNumericId = /^\d+$/.test(userIdString);
+    
+    // Ensure the sayingId is a valid number
+    if (Number.isFinite(sayingId)) {
+      try {
+        let like;
+        if (isNumericId) {
+          // For numeric user IDs
+          like = await db
+            .select()
+            .from(Likes)
+            .where(and(eq(Likes.userId, Number(userIdString)), eq(Likes.sayingId, sayingId)))
+            .get();
+        } else {
+          // For string user IDs (like UUIDs from OAuth)
+          like = await db
+            .select()
+            .from(Likes)
+            .where(and(eq(Likes.userId, userIdString), eq(Likes.sayingId, sayingId)))
+            .get();
+        }
+        likedStatus.set(saying.id, !!like);
+      } catch (error) {
+        console.error(`Error checking like status for saying ${saying.id}:`, error);
+        likedStatus.set(saying.id, false);
+      }
     } else {
       likedStatus.set(saying.id, false);
     }

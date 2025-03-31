@@ -114,12 +114,19 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
     }
 
     // Insert data into database
+    // Convert user ID to numeric for database operations
+    const numericUserId = parseInt(session.user.id, 10);
+    
+    if (isNaN(numericUserId)) {
+      return redirect('/create?error=Invalid user ID format', 302);
+    }
+    
     const values = {
       intro: body.intro,
       type: typeId,
       firstKind: body.firstKind,
       secondKind: body.secondKind,
-      userId: session.user.id,
+      userId: numericUserId,
       createdAt: new Date(),
     };
 
