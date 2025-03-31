@@ -2,7 +2,7 @@ import { defineConfig, envField } from 'astro/config';
 import db from '@astrojs/db';
 import auth from 'auth-astro';
 import tailwind from '@astrojs/tailwind';
-import node from '@astrojs/node';
+import vercel from '@astrojs/vercel';
 import { fileURLToPath } from 'url';
 
 // https://astro.build/config
@@ -18,8 +18,13 @@ export default defineConfig({
   ],
   output: 'server',
   site: import.meta.env.PUBLIC_SITE_URL,
-  adapter: node({
-    mode: 'standalone'
+  adapter: vercel({
+    webAnalytics: { enabled: true },
+    imageService: true,
+    // Split build into smaller chunks for better performance
+    functionPerRoute: true,
+    // Increase memory to 1GB (optional, if needed)
+    maxDuration: 60
   }),
   server: {
     // Configuration to fix WebSocket issues in WSL

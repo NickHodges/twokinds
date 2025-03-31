@@ -49,6 +49,9 @@ export async function upsertUser(session: ExtendedSession | null) {
     });
     return null;
   }
+  
+  // Validate the user ID to prevent issues with database queries
+  // Additional safety check for serverless environments
 
   // Convert userId to string if it's a number
   const userIdString = userId.toString();

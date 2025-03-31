@@ -14,21 +14,34 @@ const logger = createLogger('Middleware');
 const auth = defineMiddleware(async ({ locals, request }, next) => {
   try {
     logger.info('Getting session...');
-    const session = (await getSession(request, authConfig)) as ExtendedSession | null;
-    logger.info('Session:', session ? 'Found' : 'Not found');
-    locals.session = session;
+    
+    // Wrap in try/catch to prevent authentication errors from breaking the app
+    try {
+      const session = (await getSession(request, authConfig)) as ExtendedSession | null;
+      logger.info('Session:', session ? 'Found' : 'Not found');
+      locals.session = session;
 
-    // If user is logged in, save their information to the database
-    if (session?.user) {
-      logger.info('Upserting user:', session.user.email);
-      const user = await upsertUser(session);
-      // Optionally store the database user in locals for easy access
-      locals.dbUser = user;
+      // If user is logged in, save their information to the database
+      if (session?.user) {
+        logger.info('Upserting user:', session.user.email);
+        try {
+          const user = await upsertUser(session);
+          // Optionally store the database user in locals for easy access
+          locals.dbUser = user;
+        } catch (dbError) {
+          // Log but continue - don't let database errors break authentication
+          logger.error('Database error during upsert:', dbError);
+        }
+      }
+    } catch (authError) {
+      logger.error('Authentication error:', authError);
+      // Continue without session if there's an auth error
+      locals.session = null;
     }
 
     return next();
   } catch (error) {
-    logger.error('Error:', error);
+    logger.error('Critical middleware error:', error);
     // Continue without session if there's an error
     locals.session = null;
     return next();
@@ -47,21 +60,25 @@ const protectedRoutes = defineMiddleware(async (context, next) => {
       pathname.startsWith('/dashboard') ||
       pathname === '/profile' ||
       pathname === '/create' ||
-      pathname.startsWith('/api/create-saying');
+      pathname.startsWith('/edit-saying') ||
+      pathname.startsWith('/api/create-saying') ||
+      pathname.startsWith('/api/delete-saying') ||
+      pathname.startsWith('/api/user');
 
     logger.info('Is protected:', isProtectedRoute);
     logger.info('Has session:', !!context.locals.session);
 
     if (isProtectedRoute && !context.locals.session) {
-      logger.info('Redirecting to home - unauthorized');
-      return context.redirect('/?error=unauthorized');
+      logger.info('Redirecting to signin - unauthorized');
+      return context.redirect('/auth/signin?callbackUrl=' + encodeURIComponent(pathname));
     }
 
     return next();
   } catch (error) {
-    logger.error('Error:', error);
-    // Redirect to home page with error if there's an issue
-    return context.redirect('/?error=server_error');
+    logger.error('Error in protected routes middleware:', error);
+    // In a serverless environment, better to continue than redirect on error
+    // This makes the app more resilient
+    return next();
   }
 });
 

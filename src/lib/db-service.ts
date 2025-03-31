@@ -92,11 +92,18 @@ export async function getAllSayings(): Promise<Saying[]> {
 }
 
 export async function getUserSayings(userId: string): Promise<Saying[]> {
+  // Validate userId to prevent potential issues with Number conversion
+  const userIdNum = Number(userId);
+  if (!userId || !Number.isFinite(userIdNum)) {
+    console.error(`Invalid user ID: ${userId}`);
+    return [];
+  }
+
   // First, get all sayings for the user
   const rawSayings = await db
     .select()
     .from(Sayings)
-    .where(eq(Sayings.userId, Number(userId)))
+    .where(eq(Sayings.userId, userIdNum))
     .orderBy(Sayings.createdAt);
 
   // Get liked status and total likes for each saying
