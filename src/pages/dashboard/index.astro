@@ -6,6 +6,7 @@ import Pagination from '../../components/Pagination.astro';
 import EmptyState from '../../components/EmptyState.astro';
 import { config } from '../../lib/config';
 import { getUserSayings } from '../../lib/db-service';
+import { getUserDbId } from '../../utils/user-db';
 import type { ExtendedSession } from '../../env';
 import type { Saying } from '../../types/saying';
 
@@ -37,9 +38,19 @@ try {
     email: session.user.email
   });
   
-  // Use email to ensure we find the right user in the database
-  const allSayings = await getUserSayings(session.user.email);
-  console.log(`Found ${allSayings.length} sayings for user ${session.user.id}`);
+  // Get the numeric database ID for this user
+  const userDbId = await getUserDbId(session.user);
+  
+  if (!userDbId) {
+    console.error('Could not find database ID for user:', session.user.email);
+    throw new Error('User not found in database');
+  }
+  
+  console.log('Found database ID for user:', userDbId);
+  
+  // Use the numeric ID from our database
+  const allSayings = await getUserSayings(userDbId);
+  console.log(`Found ${allSayings.length} sayings for user`);
 
   // Pagination
   const pageSize = config.pagination.sayingsPerPage;
@@ -82,7 +93,7 @@ const page = {
         <EmptyState
           message="No Sayings Found"
           callToAction={{ text: "Create a Saying", href: "/create" }}
-          isDatabaseError={false} /* Changed to false since it's not an error - just empty */
+          isDatabaseError={false}
           devMessage="You haven't created any sayings yet. Would you like to create one now?"
         />
       )}

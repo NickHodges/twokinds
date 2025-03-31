@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { db, Likes, eq, and } from 'astro:db';
 import { getSession } from 'auth-astro/server';
+import { getUserDbId } from '../../utils/user-db';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -20,27 +21,14 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Look up user by email to get database ID
-    const { Users } = await import('astro:db');
-    console.log('Looking up user with email:', session.user.email);
+    // Get the user's database ID using our utility
+    const userId = await getUserDbId(session.user);
     
-    // Find the user by email
-    const dbUser = await db
-      .select()
-      .from(Users)
-      .where(eq(Users.email, session.user.email))
-      .get()
-      .catch(err => {
-        console.error('Error finding user by email:', err);
-        return null;
-      });
-    
-    if (!dbUser) {
-      console.error('User not found in database:', session.user.email);
+    if (!userId) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'User account not found in database',
+          error: 'User not found in database',
         }),
         {
           status: 400,
@@ -49,7 +37,6 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
     
-    const userId = dbUser.id;
     console.log('Found user in database with ID:', userId);
     
     let data;

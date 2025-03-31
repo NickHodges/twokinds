@@ -1,6 +1,7 @@
 import { db, Sayings, Types } from 'astro:db';
 import type { APIRoute } from 'astro';
 import type { ExtendedSession } from '../../env';
+import { getUserDbId } from '../../utils/user-db';
 import { z } from 'zod';
 
 // Define the form schema for validation - make newType conditional
@@ -114,37 +115,22 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
     }
 
     // Insert data into database
-    // The session user ID might be from OAuth (UUID), but we need the numeric ID from our database
-    // Look up the user by email to get their database ID
-    console.log('Looking up user with email:', session.user.email);
+    // Get the user's database ID using our utility
+    const userId = await getUserDbId(session.user);
     
-    // Import what we need
-    const { eq, Users } = await import('astro:db');
-    
-    // Find the user by email
-    const dbUser = await db
-      .select()
-      .from(Users)
-      .where(eq(Users.email, session.user.email))
-      .get()
-      .catch(err => {
-        console.error('Error finding user by email:', err);
-        return null;
-      });
-    
-    if (!dbUser) {
+    if (!userId) {
       console.error('User not found in database:', session.user.email);
       return redirect('/create?error=User account not found in database', 302);
     }
     
-    console.log('Found user in database:', dbUser.id);
+    console.log('Found user in database with ID:', userId);
     
     const values = {
       intro: body.intro,
       type: typeId,
       firstKind: body.firstKind,
       secondKind: body.secondKind,
-      userId: dbUser.id, // Use the numeric ID from our database
+      userId: userId, // Use the numeric ID from our database
       createdAt: new Date(),
     };
 
