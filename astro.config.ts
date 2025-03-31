@@ -9,7 +9,13 @@ import { fileURLToPath } from 'url';
 export default defineConfig({
   integrations: [
     tailwind(),
-    db(),
+    db({
+      // Configure database mode based on environment
+      // By default, use local SQLite for development and testing
+      // And remote DB for production when ASTRO_DB_REMOTE_URL is set
+      remote: process.env.NODE_ENV === 'production' ? 
+        (process.env.ASTRO_PRODUCTION_DB_TYPE === 'local' ? false : true) : false
+    }),
     auth()
   ],
   output: 'server',

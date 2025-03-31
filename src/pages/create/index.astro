@@ -15,9 +15,30 @@ if (!session) {
   return Astro.redirect('/auth/signin?redirect=/create');
 }
 
-// Fetch data from database
-const introsData = (await db.select().from(Intros)) as IntroType[];
-const typesData = (await db.select().from(Types)) as SayingType[];
+// Fetch data from database with error handling
+let introsData: IntroType[] = [];
+let typesData: SayingType[] = [];
+
+try {
+  // Try to fetch from database
+  introsData = (await db.select().from(Intros)) as IntroType[];
+  typesData = (await db.select().from(Types)) as SayingType[];
+} catch (dbError) {
+  console.error('Error fetching database data:', dbError);
+  
+  // Provide fallback data if the database connection fails
+  introsData = [
+    { id: 1, introText: 'There are two kinds of', createdAt: new Date() },
+    { id: 2, introText: 'In this world, there are two kinds of', createdAt: new Date() },
+    { id: 3, introText: 'You can divide everything into two kinds of', createdAt: new Date() }
+  ];
+  
+  typesData = [
+    { id: 1, name: 'people', createdAt: new Date() },
+    { id: 2, name: 'developers', createdAt: new Date() },
+    { id: 3, name: 'programmers', createdAt: new Date() }
+  ];
+}
 
 // Map data to the format expected by the NewSayingForm component
 const intros = introsData.map((intro) => ({

@@ -70,23 +70,39 @@ export const server = {
           action === 'unlike' || (action === undefined && existingLike.length > 0);
 
         if (shouldLike && existingLike.length === 0) {
-          // Add the like
-          await db.insert(Likes).values({
-            sayingId,
-            userId,
-            createdAt: new Date(),
-          });
-          return {
-            success: true,
-            action: 'liked',
-          };
+          try {
+            // Add the like
+            await db.insert(Likes).values({
+              sayingId,
+              userId,
+              createdAt: new Date(),
+            });
+            return {
+              success: true,
+              action: 'liked',
+            };
+          } catch (dbError) {
+            console.error('Database error adding like:', dbError);
+            return {
+              success: false,
+              error: 'Unable to like this saying at the moment. Please try again later.',
+            };
+          }
         } else if (shouldUnlike && existingLike.length > 0) {
-          // Remove the like
-          await db.delete(Likes).where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)));
-          return {
-            success: true,
-            action: 'unliked',
-          };
+          try {
+            // Remove the like
+            await db.delete(Likes).where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)));
+            return {
+              success: true,
+              action: 'unliked',
+            };
+          } catch (dbError) {
+            console.error('Database error removing like:', dbError);
+            return {
+              success: false,
+              error: 'Unable to unlike this saying at the moment. Please try again later.',
+            };
+          }
         } else {
           // No change needed
           return {
@@ -202,16 +218,33 @@ export const server = {
           secondKind: secondKind,
           userId: session.user.id,
           createdAt: new Date(),
+          updatedAt: new Date(), // Ensure updatedAt is set
         };
 
         console.log('Inserting saying:', values);
-        const result = await db.insert(Sayings).values(values).returning();
-
-        // Return redirect with success
-        const redirectUrl = url
-          ? `${url.origin}/create?success=true&id=${result[0].id}`
-          : `/create?success=true&id=${result[0].id}`;
-        return Response.redirect(redirectUrl, 302);
+        
+        try {
+          const result = await db.insert(Sayings).values(values).returning();
+          
+          // Return redirect with success
+          const redirectUrl = url
+            ? `${url.origin}/create?success=true&id=${result[0].id}`
+            : `/create?success=true&id=${result[0].id}`;
+          return Response.redirect(redirectUrl, 302);
+        } catch (dbError) {
+          console.error('Database error when inserting saying:', dbError);
+          
+          // If we're in production and having database issues, provide a more user-friendly error
+          if (process.env.NODE_ENV === 'production') {
+            const redirectUrl = url
+              ? `${url.origin}/create?error=${encodeURIComponent('Unable to save your saying at this time. Please try again later.')}`
+              : `/create?error=${encodeURIComponent('Service temporarily unavailable')}`;
+            return Response.redirect(redirectUrl, 302);
+          }
+          
+          // In development, show the actual error for debugging
+          throw dbError;
+        }
       } catch (error) {
         console.error('Error saving saying:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
