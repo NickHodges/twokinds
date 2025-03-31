@@ -13,14 +13,9 @@ export default defineConfig({
     auth()
   ],
   output: 'server',
-  site: https://twokindsof.com
+  site: 'https://twokindsof.com',
   adapter: vercel({
     webAnalytics: { enabled: true },
-    imageService: true,
-    // Split build into smaller chunks for better performance
-    functionPerRoute: true,
-    // Increase memory to 1GB (optional, if needed)
-    maxDuration: 60
   }),
   server: {
     // Configuration to fix WebSocket issues in WSL
