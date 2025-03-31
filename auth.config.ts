@@ -3,11 +3,15 @@ import GitHub from '@auth/core/providers/github';
 import Google from '@auth/core/providers/google';
 import Credentials from '@auth/core/providers/credentials';
 import { db, Users, eq } from 'astro:db';
+import { AUTH_SECRET, AUTH_TRUST_HOST, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } from 'astro:env/server';
+
+// Determine environment using vite's import.meta.env for consistency
+const isDevelopment = import.meta.env.DEV;
 
 export default defineConfig({
   providers: [
     // Development Credentials Provider - only for development
-    process.env.NODE_ENV === 'development' 
+    isDevelopment
     ? Credentials({
       name: 'Development Login',
       credentials: {
@@ -28,17 +32,17 @@ export default defineConfig({
     })
     : null,
     GitHub({
-      clientId: import.meta.env.GITHUB_CLIENT_ID,
-      clientSecret: import.meta.env.GITHUB_CLIENT_SECRET,
+      clientId: GITHUB_CLIENT_ID,
+      clientSecret: GITHUB_CLIENT_SECRET,
     }),
     Google({
-      clientId: import.meta.env.GOOGLE_CLIENT_ID,
-      clientSecret: import.meta.env.GOOGLE_CLIENT_SECRET,
+      clientId: GOOGLE_CLIENT_ID,
+      clientSecret: GOOGLE_CLIENT_SECRET,
     }),
   ].filter(Boolean),
-  secret: import.meta.env.AUTH_SECRET,
-  trustHost: import.meta.env.AUTH_TRUST_HOST ?? true,
-  debug: process.env.NODE_ENV !== 'production', // Only enable debug in development
+  secret: AUTH_SECRET,
+  trustHost: AUTH_TRUST_HOST,
+  debug: isDevelopment, // Only enable debug in development
   session: {
     strategy: 'jwt',
     maxAge: 60 * 60, // 1 hour instead of the default 30 days

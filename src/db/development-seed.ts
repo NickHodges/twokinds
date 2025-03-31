@@ -40,7 +40,8 @@ export async function setupDevData() {
 }
 
 // Run automatically in development
-if (process.env.NODE_ENV === 'development') {
+// Using Astro's built-in environment detection
+if (import.meta.env.DEV) {
   logger.info('Development environment detected, checking database...');
   setTimeout(() => {
     setupDevData()

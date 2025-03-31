@@ -85,6 +85,8 @@ This application is configured to deploy on Vercel:
 
    **Required environment variables:**
    
+   These environment variables are defined in `astro.config.ts` using the Astro's EnvFields type-safe system. You'll need to set the following in your Vercel environment settings:
+   
    - `AUTH_SECRET` - Secret for authentication (generate using `openssl rand -hex 32`)
    - `AUTH_TRUST_HOST` - Set to `true`
    - `NEXTAUTH_URL` - Set to your Vercel deployment URL (e.g., https://your-app.vercel.app)
@@ -100,6 +102,16 @@ This application is configured to deploy on Vercel:
    - `ASTRO_PRODUCTION_DB_TYPE` - Set to `remote`
    - `ASTRO_DB_REMOTE_URL` - Your remote database URL
    - `ASTRO_DB_APP_TOKEN` - Your remote database access token
+   
+   The project uses Astro's environment variable system which provides type safety and proper access control between server and client code. Environment variables are imported with the correct context:
+   
+   ```typescript
+   // For server-side variables (most auth and database variables)
+   import { VARIABLE_NAME } from 'astro:env/server';
+   
+   // For client-side variables (public variables)
+   import { PUBLIC_VARIABLE_NAME } from 'astro:env/client';
+   ```
 
 The application uses the Vercel adapter which handles all the serverless deployment configuration automatically.
 

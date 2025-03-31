@@ -1,48 +1,129 @@
-# Astro Starter Kit: Basics
+# TwoKinds
 
-```sh
-npm create astro@latest -- --template basics
-```
+A modern web application for creating and sharing "two kinds of people" statements, built with Astro, Tailwind CSS, and Astro:DB.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/basics)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/basics)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/basics/devcontainer.json)
+## About
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+TwoKinds is a platform where users can create, share, and interact with "There are two kinds of people in the world..." statements. Users can create custom statements, browse existing ones, and interact through likes.
 
-![just-the-basics](https://github.com/withastro/astro/assets/2244813/a0a5533c-a856-4198-8470-2d67b1d7c554)
+## Features
 
-## 🚀 Project Structure
+- **Server-Side Rendering**: Fast page loads with Astro's SSR capabilities
+- **User Authentication**: Secure sign-in via auth-astro with GitHub and Google providers
+- **Type Safety**: Full TypeScript implementation with strict typing
+- **Content Creation**: Create and share your own "two kinds of people" statements
+- **Social Interaction**: Like functionality with Astro Actions
+- **Responsive Design**: Mobile-first UI built with Tailwind CSS and Shadcn UI
+- **Dark Mode Support**: Theme toggle with client-side persistence
 
-Inside of your Astro project, you'll see the following folders and files:
+## Technology Stack
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src/
-│   ├── layouts/
-│   │   └── Layout.astro
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
+- **Framework**: [Astro](https://docs.astro.build/)
+- **Database**: [Astro:DB](https://docs.astro.build/en/guides/astro-db/) with Turso integration
+- **Authentication**: [auth-astro](https://www.npmjs.com/package/auth-astro)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components**: [Shadcn UI](https://ui.shadcn.com/)
+- **Form Handling**: [Astro Actions](https://docs.astro.build/en/guides/server-side-rendering/#actions)
+- **Deployment**: Vercel with Astro's Vercel adapter
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+## Getting Started
 
-## 🧞 Commands
+### Prerequisites
 
-All commands are run from the root of the project, from a terminal:
+- Node.js (v18.x or later)
+- npm (v9.x or later)
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/twokinds.git
+   cd twokinds
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Set up environment variables:
+   Contact the project owner to set up the required environment variables
+
+4. Set up the database:
+   ```bash
+   npm run astro db push
+   npm run astro db seed
+   ```
+
+5. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+## Development
+
+### Available Commands
+
+All commands are run from the root of the project:
 
 | Command                   | Action                                           |
 | :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+| `npm run dev`             | Start development server                         |
+| `npm run build`           | Build for production                             |
+| `npm run preview`         | Preview production build                         |
+| `npm run astro`           | Run Astro CLI commands                           |
+| `npm run lint`            | Run ESLint to check code                         |
+| `npm run lint:fix`        | Run ESLint and fix issues automatically          |
+| `npm run format`          | Run Prettier to format code                      |
+| `npm run format:check`    | Check code formatting with Prettier              |
+| `npm run astro db push`   | Push schema changes to the database              |
+| `npm run astro db seed`   | Seed the database with sample data               |
+| `npm run production:test` | Test production build with local database        |
 
-## 👀 Want to learn more?
+## Project Structure
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+```
+/
+├── db/               # Database schema and seed files
+├── public/           # Static assets (favicon, etc.)
+├── src/
+│   ├── actions/      # Astro Actions for form processing
+│   ├── components/   # Reusable Astro components
+│   ├── db/           # Development database utilities
+│   ├── layouts/      # Page layout templates
+│   ├── lib/          # Shared utilities and API wrappers
+│   ├── pages/        # All page routes
+│   ├── styles/       # Global CSS files
+│   ├── types/        # TypeScript type definitions
+│   └── utils/        # Helper utilities
+├── astro.config.ts   # Astro configuration
+└── tailwind.config.ts # Tailwind CSS configuration
+```
+
+## Code Style Guidelines
+
+- TypeScript with strict typing
+- Astro components (.astro) preferred over React (.tsx)
+- Interfaces for all implementations
+- ZOD for validation and type definitions
+- No use of `any` type
+- CSS in dedicated files using Tailwind utilities
+- Components follow single responsibility principle
+
+## Production Deployment
+
+For production deployment, refer to [PRODUCTION-TESTING.md](./PRODUCTION-TESTING.md).
+
+This application is configured for deployment on Vercel using the Astro Vercel adapter in serverless mode. Environment variables must be properly configured in the Vercel dashboard before deployment.
+
+## Environment Variables
+
+This project uses Astro:Env for environment variables. Variables are defined in the schema section of `astro.config.ts` and imported into files using:
+
+```typescript
+// For server-side variables
+import { VARIABLE_NAME } from 'astro:env/server';
+
+// For client-side variables
+import { PUBLIC_VARIABLE_NAME } from 'astro:env/client';
+```

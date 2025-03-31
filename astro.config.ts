@@ -9,11 +9,7 @@ import { fileURLToPath } from 'url';
 export default defineConfig({
   integrations: [
     tailwind(),
-    db({
-      // Set the database mode based on environment
-      remote: process.env.NODE_ENV === 'production' ? 
-        (process.env.ASTRO_PRODUCTION_DB_TYPE === 'local' ? false : true) : false
-    }),
+    db(),
     auth()
   ],
   output: 'server',
@@ -69,19 +65,19 @@ export default defineConfig({
       ASTRO_DATABASE_FILE: envField.string({ context: 'server', access: 'public', default: '.astro/db.sqlite' }),
       ASTRO_DB_REMOTE_URL: envField.string({ context: 'server', access: 'secret', optional: true }),
       ASTRO_DB_APP_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),
-      
+
       // Auth.js Configuration
       AUTH_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
       AUTH_TRUST_HOST: envField.boolean({ context: 'server', access: 'secret', default: true }),
       NEXTAUTH_URL: envField.string({ context: 'server', access: 'secret', optional: false }),
       AUTH_URL: envField.string({ context: 'server', access: 'secret', optional: false }),
-      
+
       // OAuth Provider Credentials
       GITHUB_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
       GITHUB_CLIENT_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
       GOOGLE_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
       GOOGLE_CLIENT_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
-      
+
       // Public variables
       PUBLIC_SITE_URL: envField.string({ context: 'client', access: 'public', optional: true })
     },
