@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development astro dev --verbose && npm run db:seed",
+    "dev": "cross-env NODE_ENV=development astro dev --port 4321 && npm run db:seed",
     "dev:prod": "cross-env NODE_ENV=production astro dev --verbose",
     "build": "cross-env NODE_ENV=production ASTRO_DATABASE_FILE=.astro/prod-db.sqlite astro build --no-remote",
     "build:local": "cross-env NODE_ENV=production ASTRO_PRODUCTION_DB_TYPE=local ASTRO_DATABASE_FILE=.astro/prod-db.sqlite astro build",

@@ -164,33 +164,74 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
       }
     }
     
-    // If we still don't have a user ID, create the user
+    // If we still don't have a user ID, check once more if the user exists by email
+    // before trying to create the user (to avoid UNIQUE constraint violations)
     if (!userId && session.user.email) {
-      logger.info('Creating new user for:', session.user.email);
+      logger.info('Double-checking if user exists by email:', session.user.email);
       try {
-        const now = new Date();
-        const newUser = await db
-          .insert(Users)
-          .values({
-            name: session.user.name || '',
-            email: session.user.email,
-            image: session.user.image || '',
-            provider: 'oauth',
-            role: 'user',
-            lastLogin: now,
-            createdAt: now,
-            updatedAt: now,
-            preferences: {},
-          })
-          .returning()
+        // Try to find user one more time
+        const existingUser = await db
+          .select()
+          .from(Users)
+          .where(eq(Users.email, session.user.email))
           .get();
           
-        if (newUser) {
-          userId = newUser.id;
-          logger.info('Created new user with ID:', userId);
+        if (existingUser) {
+          // User found on second check, use this ID
+          userId = existingUser.id;
+          logger.info('Found user on double-check with ID:', userId);
+        } else {
+          // User truly doesn't exist, now try to create them
+          logger.info('Creating new user for:', session.user.email);
+          try {
+            const now = new Date();
+            const newUser = await db
+              .insert(Users)
+              .values({
+                name: session.user.name || '',
+                email: session.user.email,
+                image: session.user.image || '',
+                provider: 'oauth',
+                role: 'user',
+                lastLogin: now,
+                createdAt: now,
+                updatedAt: now,
+                preferences: {},
+              })
+              .returning()
+              .get();
+              
+            if (newUser) {
+              userId = newUser.id;
+              logger.info('Created new user with ID:', userId);
+            }
+          } catch (createError) {
+            // Handle the UNIQUE constraint specifically
+            if (createError.code === 'SQLITE_CONSTRAINT_UNIQUE' || 
+                (createError.message && createError.message.includes('UNIQUE constraint failed'))) {
+              
+              logger.info('User was created in a parallel process, trying to fetch again');
+              
+              // User was likely created in a race condition - try to get it again
+              const conflictUser = await db
+                .select()
+                .from(Users)
+                .where(eq(Users.email, session.user.email))
+                .get();
+                
+              if (conflictUser) {
+                userId = conflictUser.id;
+                logger.info('Successfully retrieved user after conflict with ID:', userId);
+              } else {
+                logger.error('Could not find user after UNIQUE constraint error');
+              }
+            } else {
+              logger.error('Error creating user:', createError);
+            }
+          }
         }
-      } catch (createError) {
-        logger.error('Error creating user:', createError);
+      } catch (lookupError) {
+        logger.error('Error in double-check lookup:', lookupError);
       }
     }
     
