@@ -8,8 +8,8 @@ const formSchema = z.discriminatedUnion('typeChoice', [
   // When typeChoice is 'existing'
   z.object({
     typeChoice: z.literal('existing'),
-    type: z.coerce.number().int().positive('Please select a type'),
-    intro: z.coerce.number().int().positive('Please select an introduction'),
+    type: z.number().int().positive('Please select a type'),
+    intro: z.number().int().positive('Please select an introduction'),
     firstKind: z
       .string()
       .min(3, 'Must be at least 3 characters')
@@ -23,8 +23,8 @@ const formSchema = z.discriminatedUnion('typeChoice', [
   // When typeChoice is 'new'
   z.object({
     typeChoice: z.literal('new'),
-    type: z.coerce.number().int().optional(),
-    intro: z.coerce.number().int().positive('Please select an introduction'),
+    type: z.number().int().optional(),
+    intro: z.number().int().positive('Please select an introduction'),
     firstKind: z
       .string()
       .min(3, 'Must be at least 3 characters')

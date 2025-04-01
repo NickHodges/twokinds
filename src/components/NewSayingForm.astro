@@ -4,16 +4,16 @@ import ActionButtons from './ActionButtons.astro';
 
 export interface Props {
   intros: {
-    id: string;
+    id: number;
     introText: string;
   }[];
   types: {
-    id: string;
+    id: number;
     typeName: string;
   }[];
   error?: string;
   success?: string;
-  newSayingId?: string;
+  newSayingId?: number;
 }
 
 const { intros = [], types = [], error, success, newSayingId } = Astro.props;

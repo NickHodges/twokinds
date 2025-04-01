@@ -21,25 +21,25 @@ const typesData = (await db.select().from(Types)) as SayingType[];
 
 // Map data to the format expected by the NewSayingForm component
 const intros = introsData.map((intro) => ({
-  id: intro.id.toString(),
+  id: Number(intro.id),
   introText: intro.introText,
 }));
 
 const types = typesData.map((type) => ({
-  id: type.id.toString(),
+  id: Number(type.id),
   typeName: type.name,
 }));
 
 // Initialize success/error values
 let success = '';
 let error = '';
-let newSayingId: string | undefined = undefined;
+let newSayingId: number | undefined = undefined;
 
 // Handle form submission result from action redirect
 if (Astro.url.searchParams.has('success')) {
   success = Astro.url.searchParams.get('success') === 'true' ? 'true' : '';
   if (success && Astro.url.searchParams.has('id')) {
-    newSayingId = Astro.url.searchParams.get('id') || undefined;
+    newSayingId = Number(Astro.url.searchParams.get('id')) || undefined;
   }
 }
 
