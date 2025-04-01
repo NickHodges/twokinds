@@ -13,11 +13,26 @@ const client = createClient({
 async function testConnection() {
   try {
     console.log('Testing database connection...');
-    const result = await client.execute('SELECT 1');
-    console.log('Connection successful!');
-    console.log('Result:', result);
+
+    // Test Users table
+    const usersResult = await client.execute('SELECT * FROM Users');
+    console.log('\nUsers:', usersResult.rows);
+
+    // Test Intros table
+    const introsResult = await client.execute('SELECT * FROM Intros');
+    console.log('\nIntros:', introsResult.rows);
+
+    // Test Types table
+    const typesResult = await client.execute('SELECT * FROM Types');
+    console.log('\nTypes:', typesResult.rows);
+
+    // Test Sayings table
+    const sayingsResult = await client.execute('SELECT * FROM Sayings');
+    console.log('\nSayings:', sayingsResult.rows);
+
+    console.log('\nConnection successful! All tables are accessible.');
   } catch (error) {
-    console.error('Connection failed:', error);
+    console.error('Error:', error);
   }
 }
 

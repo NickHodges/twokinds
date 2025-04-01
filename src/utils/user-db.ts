@@ -145,7 +145,7 @@ export async function getUserByEmail(email: string): Promise<UserData | null> {
  * @returns The updated user object
  */
 export async function updateUserPreferences(
-  userId: string,
+  userId: number,
   preferences: UserPreferences
 ): Promise<UserData | null> {
   try {
@@ -179,7 +179,7 @@ export async function updateUserPreferences(
  * @returns The updated user object
  */
 export async function updateUserRole(
-  userId: string,
+  userId: number,
   role: 'user' | 'admin'
 ): Promise<UserData | null> {
   try {
@@ -206,7 +206,7 @@ export function getUserIdFromSession(session: Session | null): string | null {
   return userId ? userId.toString() : null;
 }
 
-export async function getUser(userId: string): Promise<UserData | null> {
+export async function getUser(userId: number): Promise<UserData | null> {
   try {
     const user = await db.select().from(Users).where(eq(Users.id, userId)).get();
     return user;

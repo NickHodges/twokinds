@@ -1,7 +1,8 @@
 import { defineConfig } from 'auth-astro';
 import GitHub from '@auth/core/providers/github';
 import Google from '@auth/core/providers/google';
-import { v4 as uuidv4 } from 'uuid';
+import { db, Users } from 'astro:db';
+import { eq } from 'drizzle-orm';
 
 export default defineConfig({
   providers: [
@@ -35,12 +36,37 @@ export default defineConfig({
       }
 
       try {
-        // Generate a UUID for the user
-        user.id = uuidv4();
-        console.log('User assigned mock ID:', user.id);
+        // Check if user already exists
+        const existingUser = await db.select().from(Users).where(eq(Users.email, user.email)).get();
 
-        // In a real implementation, we would save this to the database
-        // The DB functionality will be added when deployed to production
+        if (existingUser) {
+          // Update last login
+          await db
+            .update(Users)
+            .set({ lastLogin: new Date(), updatedAt: new Date() })
+            .where(eq(Users.id, existingUser.id));
+          user.id = existingUser.id;
+        } else {
+          // Create new user
+          const newUser = await db
+            .insert(Users)
+            .values({
+              name: user.name || '',
+              email: user.email,
+              image: user.image,
+              provider: account?.provider || 'unknown',
+              lastLogin: new Date(),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              role: 'user',
+              preferences: {},
+            })
+            .returning();
+
+          user.id = newUser[0].id;
+        }
+
+        console.log('User ID assigned:', user.id);
         return true;
       } catch (error) {
         console.error('Error in signIn callback:', error);
@@ -55,7 +81,7 @@ export default defineConfig({
     async session({ session, token }) {
       console.log('Session callback', { session, token });
       if (session.user) {
-        session.user.id = token.id as string;
+        session.user.id = token.id as number;
       }
       return session;
     },

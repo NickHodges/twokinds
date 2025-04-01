@@ -6,8 +6,12 @@ const Users = defineTable({
     name: column.text(),
     email: column.text(),
     image: column.text(),
-    role: column.text({ default: 'user' }),
+    provider: column.text(),
+    lastLogin: column.date(),
     createdAt: column.date({ default: new Date() }),
+    updatedAt: column.date({ default: new Date() }),
+    role: column.text({ default: 'user' }),
+    preferences: column.json({ default: {} }),
   },
 });
 

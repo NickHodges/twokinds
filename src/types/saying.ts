@@ -4,7 +4,7 @@ export interface Saying {
   type: number;
   firstKind: string;
   secondKind: string;
-  userId: string;
+  userId: number;
   createdAt: Date;
   introText?: string;
   typeName?: string;
@@ -17,7 +17,7 @@ export interface Saying {
     name: string;
   };
   user?: {
-    id: string;
+    id: number;
     name: string;
     email: string;
   };

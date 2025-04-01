@@ -1,5 +1,6 @@
 import type { Saying } from '../types/saying';
 import type { DBSaying, DBIntro, DBType } from '../types/db';
+import { db, Sayings, Intros, Types, Likes, eq, and, desc, count } from 'astro:db';
 
 // Create a wrapper function that safely handles the database queries
 // This will handle potential import issues in serverless environments
@@ -15,7 +16,20 @@ async function safeDbQuery<T>(queryFn: () => Promise<T>, fallbackValue: T): Prom
       console.warn('Database module not available in this environment, using fallback data');
       return fallbackValue;
     }
-    console.error('Error executing database query:', error);
+
+    // Enhanced error reporting for database errors
+    if (error instanceof Error) {
+      console.error('Database Error Details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        // Log the full error object to see all available properties
+        fullError: error,
+        // Log the error as JSON to see all properties
+        errorJson: JSON.stringify(error, Object.getOwnPropertyNames(error), 2),
+      });
+    }
+
     return fallbackValue;
   }
 }
@@ -28,10 +42,6 @@ async function safeDbQuery<T>(queryFn: () => Promise<T>, fallbackValue: T): Prom
  */
 export async function getSayingById(id: number) {
   return safeDbQuery(async () => {
-    // In a real implementation, these imports would be at the top of the file
-    // We're moving them inside the function to handle potential import errors
-    const { db, Sayings, Intros, Types, eq } = await import('astro:db');
-
     // Get the saying record
     const sayingResults = await db.select().from(Sayings).where(eq(Sayings.id, id));
 
@@ -65,63 +75,46 @@ export async function getSayingById(id: number) {
  */
 export async function getAllSayings(): Promise<Saying[]> {
   return safeDbQuery(async () => {
-    // Import DB modules within the function for better error handling
-    const { db, Sayings, Intros, Types, eq, desc } = await import('astro:db');
+    // First, get all sayings
+    const sayings = await db.select().from(Sayings).orderBy(desc(Sayings.createdAt));
 
-    const rawSayings = await db.select().from(Sayings).orderBy(desc(Sayings.createdAt));
+    // Get all intros and types in one query each
+    const intros = await db.select().from(Intros);
+    const types = await db.select().from(Types);
 
-    // No need to convert to string and back to number
-    const sayings = rawSayings.map((saying) => ({
-      id: saying.id,
-      intro: saying.intro,
-      type: saying.type,
-      firstKind: saying.firstKind,
-      secondKind: saying.secondKind,
-      userId: saying.userId,
-      createdAt: saying.createdAt,
-    })) as DBSaying[];
+    // Create maps for quick lookups
+    const introMap = new Map(intros.map((intro) => [intro.id, intro]));
+    const typeMap = new Map(types.map((type) => [type.id, type]));
 
-    // Get the related data for each saying
-    const sayingsWithData = await Promise.all(
-      sayings.map(async (saying) => {
-        const [intro, type] = await Promise.all([
-          db.select().from(Intros).where(eq(Intros.id, saying.intro)).get() as Promise<
-            DBIntro | undefined
-          >,
-          db.select().from(Types).where(eq(Types.id, saying.type)).get() as Promise<
-            DBType | undefined
-          >,
-        ]);
+    // Log any missing relationships
+    for (const saying of sayings) {
+      if (!introMap.has(saying.intro)) {
+        console.error(`Missing intro for saying ${saying.id}: intro=${saying.intro}`);
+      }
+      if (!typeMap.has(saying.type)) {
+        console.error(`Missing type for saying ${saying.id}: type=${saying.type}`);
+      }
+    }
 
-        return {
-          ...saying,
-          introText: intro?.introText || '',
-          typeName: type?.name || '',
-          intro_data: intro
-            ? {
-                id: intro.id,
-                introText: intro.introText,
-              }
-            : undefined,
-          type_data: type
-            ? {
-                id: type.id,
-                name: type.name,
-              }
-            : undefined,
-        };
-      })
-    );
-
-    return sayingsWithData;
+    // Combine the data
+    return sayings.map((saying) => ({
+      ...saying,
+      introText: introMap.get(saying.intro)?.introText || '',
+      typeName: typeMap.get(saying.type)?.name || '',
+      intro_data: {
+        id: saying.intro,
+        introText: introMap.get(saying.intro)?.introText || '',
+      },
+      type_data: {
+        id: saying.type,
+        name: typeMap.get(saying.type)?.name || '',
+      },
+    }));
   }, []);
 }
 
-export async function getUserSayings(userId: string): Promise<Saying[]> {
+export async function getUserSayings(userId: number): Promise<Saying[]> {
   return safeDbQuery(async () => {
-    // Import DB modules within the function for better error handling
-    const { db, Sayings, Intros, Types, Likes, eq, and, count } = await import('astro:db');
-
     // First, get all sayings for the user
     const rawSayings = await db
       .select()
@@ -180,13 +173,13 @@ export async function getUserSayings(userId: string): Promise<Saying[]> {
           typeName: type?.name || '',
           intro_data: intro
             ? {
-                id: intro.id.toString(),
+                id: intro.id,
                 introText: intro.introText,
               }
             : undefined,
           type_data: type
             ? {
-                id: type.id.toString(),
+                id: type.id,
                 name: type.name,
               }
             : undefined,
