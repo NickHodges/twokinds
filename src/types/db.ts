@@ -8,9 +8,9 @@ export interface DBUser {
 }
 
 export interface DBSaying {
-  id: string;
-  intro: string;
-  type: string;
+  id: number;
+  intro: number;
+  type: number;
   firstKind: string;
   secondKind: string;
   userId: string;
@@ -18,13 +18,13 @@ export interface DBSaying {
 }
 
 export interface DBIntro {
-  id: string;
+  id: number;
   introText: string;
   createdAt: Date;
 }
 
 export interface DBType {
-  id: string;
+  id: number;
   name: string;
   createdAt: Date;
 }

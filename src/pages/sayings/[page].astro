@@ -3,6 +3,7 @@ import MainLayout from '../../layouts/MainLayout.astro';
 import '../../styles/index.css';
 import SayingList from '../../components/SayingList.astro';
 import Pagination from '../../components/Pagination.astro';
+import Hero from '../../components/Hero.astro';
 import { config } from '../../lib/config';
 import { getAllSayings } from '../../lib/db-service';
 
@@ -49,11 +50,15 @@ const page = {
   },
 };
 
+// Get authentication session
+const session = Astro.locals.session;
+
 // Don't prerender so we always get fresh data
 export const prerender = false;
 ---
 
-<MainLayout>
-  <SayingList sayings={page.data} />
+<MainLayout title={`Sayings - Page ${currentPage}`}>
+  {currentPage === 1 && <Hero session={session} />}
+  <SayingList sayings={page.data} session={session} />
   {page.lastPage > 1 && <Pagination page={page} basePath="/sayings" />}
 </MainLayout>

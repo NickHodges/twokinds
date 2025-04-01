@@ -1,17 +1,33 @@
 ---
 import '../styles/index.css';
-import AuthLayout from '../layouts/AuthLayout.astro';
+import MainLayout from '../layouts/MainLayout.astro';
+import Hero from '../components/Hero.astro';
+import SayingList from '../components/SayingList.astro';
+import { getAllSayings } from '../lib/db-service';
+import { config } from '../lib/config';
 
-// Redirect to the paginated sayings page
+// Get the most recent sayings for the homepage
+const sayingsData = await getAllSayings();
+const recentSayings = sayingsData.slice(0, config.pagination.sayingsPerPage);
+
+// Don't prerender so we always get fresh data
 export const prerender = false;
-
-// Server-side redirect
-return Astro.redirect('/sayings');
 ---
 
-<AuthLayout>
-  <main>
-    <h1>Welcome to the App</h1>
-    <!-- Your existing content -->
-  </main>
-</AuthLayout>
+<MainLayout title="Two Kinds of People - Home">
+  <Hero session={Astro.locals.session} />
+
+  <div class="mt-8">
+    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Recent Sayings</h2>
+    <SayingList sayings={recentSayings} session={Astro.locals.session} />
+
+    <div class="text-center mt-8">
+      <a
+        href="/sayings"
+        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+      >
+        View All Sayings →
+      </a>
+    </div>
+  </div>
+</MainLayout>

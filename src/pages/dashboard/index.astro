@@ -3,6 +3,8 @@ import MainLayout from '../../layouts/MainLayout.astro';
 import '../../styles/index.css';
 import SayingList from '../../components/SayingList.astro';
 import Pagination from '../../components/Pagination.astro';
+import Hero from '../../components/Hero.astro';
+import PageHeader from '../../components/PageHeader.astro';
 import { config } from '../../lib/config';
 import { getUserSayings } from '../../lib/db-service';
 import type { ExtendedSession } from '../../env';
@@ -55,8 +57,10 @@ const page = {
 };
 ---
 
-<MainLayout>
-  <div class="flex flex-col">
+<MainLayout title="Your Dashboard">
+  <Hero session={session} />
+  <div class="max-w-6xl mx-auto">
+    <PageHeader title="Your Sayings" subtitle="Manage sayings you've created" />
     <div class="mt-4">
       <SayingList sayings={page.data} session={session} />
 

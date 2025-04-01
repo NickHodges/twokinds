@@ -70,10 +70,11 @@ export async function getAllSayings(): Promise<Saying[]> {
 
     const rawSayings = await db.select().from(Sayings).orderBy(desc(Sayings.createdAt));
 
+    // No need to convert to string and back to number
     const sayings = rawSayings.map((saying) => ({
-      id: saying.id.toString(),
-      intro: saying.intro.toString(),
-      type: saying.type.toString(),
+      id: saying.id,
+      intro: saying.intro,
+      type: saying.type,
       firstKind: saying.firstKind,
       secondKind: saying.secondKind,
       userId: saying.userId,
@@ -84,16 +85,12 @@ export async function getAllSayings(): Promise<Saying[]> {
     const sayingsWithData = await Promise.all(
       sayings.map(async (saying) => {
         const [intro, type] = await Promise.all([
-          db
-            .select()
-            .from(Intros)
-            .where(eq(Intros.id, Number(saying.intro)))
-            .get() as Promise<DBIntro | undefined>,
-          db
-            .select()
-            .from(Types)
-            .where(eq(Types.id, Number(saying.type)))
-            .get() as Promise<DBType | undefined>,
+          db.select().from(Intros).where(eq(Intros.id, saying.intro)).get() as Promise<
+            DBIntro | undefined
+          >,
+          db.select().from(Types).where(eq(Types.id, saying.type)).get() as Promise<
+            DBType | undefined
+          >,
         ]);
 
         return {
@@ -102,13 +99,13 @@ export async function getAllSayings(): Promise<Saying[]> {
           typeName: type?.name || '',
           intro_data: intro
             ? {
-                id: intro.id.toString(),
+                id: intro.id,
                 introText: intro.introText,
               }
             : undefined,
           type_data: type
             ? {
-                id: type.id.toString(),
+                id: type.id,
                 name: type.name,
               }
             : undefined,
@@ -132,10 +129,11 @@ export async function getUserSayings(userId: string): Promise<Saying[]> {
       .where(eq(Sayings.userId, userId))
       .orderBy(Sayings.createdAt);
 
+    // Maintain number types from the database
     const userSayings = rawSayings.map((saying) => ({
-      id: saying.id.toString(),
-      intro: saying.intro.toString(),
-      type: saying.type.toString(),
+      id: saying.id,
+      intro: saying.intro,
+      type: saying.type,
       firstKind: saying.firstKind,
       secondKind: saying.secondKind,
       userId: saying.userId,
@@ -143,15 +141,15 @@ export async function getUserSayings(userId: string): Promise<Saying[]> {
     })) as DBSaying[];
 
     // Get liked status and total likes for each saying
-    const likedStatus = new Map<string, boolean>();
-    const totalLikes = new Map<string, number>();
+    const likedStatus = new Map<number, boolean>();
+    const totalLikes = new Map<number, number>();
 
     for (const saying of userSayings) {
       // Get total likes for this saying
       const likesResult = await db
         .select({ value: count() })
         .from(Likes)
-        .where(eq(Likes.sayingId, Number(saying.id)))
+        .where(eq(Likes.sayingId, saying.id))
         .get();
       totalLikes.set(saying.id, likesResult?.value || 0);
 
@@ -159,7 +157,7 @@ export async function getUserSayings(userId: string): Promise<Saying[]> {
       const like = await db
         .select()
         .from(Likes)
-        .where(and(eq(Likes.userId, userId), eq(Likes.sayingId, Number(saying.id))))
+        .where(and(eq(Likes.userId, userId), eq(Likes.sayingId, saying.id)))
         .get();
       likedStatus.set(saying.id, !!like);
     }
@@ -168,16 +166,12 @@ export async function getUserSayings(userId: string): Promise<Saying[]> {
     const sayingsWithData = await Promise.all(
       userSayings.map(async (saying) => {
         const [intro, type] = await Promise.all([
-          db
-            .select()
-            .from(Intros)
-            .where(eq(Intros.id, Number(saying.intro)))
-            .get() as Promise<DBIntro | undefined>,
-          db
-            .select()
-            .from(Types)
-            .where(eq(Types.id, Number(saying.type)))
-            .get() as Promise<DBType | undefined>,
+          db.select().from(Intros).where(eq(Intros.id, saying.intro)).get() as Promise<
+            DBIntro | undefined
+          >,
+          db.select().from(Types).where(eq(Types.id, saying.type)).get() as Promise<
+            DBType | undefined
+          >,
         ]);
 
         return {
