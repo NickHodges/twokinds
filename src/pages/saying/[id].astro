@@ -4,7 +4,6 @@ import '../../styles/index.css';
 import { getSayingById } from '../../lib/db-service';
 import PageHeader from '../../components/PageHeader.astro';
 import SayingDisplay from '../../components/SayingDisplay.astro';
-import ActionButtons from '../../components/ActionButtons.astro';
 import NotificationBanner from '../../components/NotificationBanner.astro';
 import { db, Likes, eq, and, count } from 'astro:db';
 import type { ExtendedSession } from '../../env';
@@ -73,10 +72,6 @@ export const prerender = false;
               isAuthenticated={isAuthenticated}
             />
           </div>
-
-          <ActionButtons
-            buttons={[{ text: 'View all sayings', href: '/sayings', primary: true }]}
-          />
         </div>
       )
     }
