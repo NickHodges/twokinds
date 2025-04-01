@@ -1,7 +1,7 @@
 import { defineAction } from 'astro:actions';
 import { z } from 'zod';
 import { db, Sayings, Types, Likes, and, eq } from 'astro:db';
-import { getSession } from 'auth-astro/server';
+import type { ExtendedSession } from '../env';
 
 // Define Zod schema for sign-in validation
 const SignInSchema = z.object({
@@ -13,17 +13,19 @@ const SignInSchema = z.object({
 export const NewSayingSchema = z.discriminatedUnion('typeChoice', [
   z.object({
     typeChoice: z.literal('existing'),
-    type: z.string().min(1, 'Please select a type'),
-    intro: z.string().min(1, 'Please select an introduction'),
+    type: z.coerce.number().int().positive('Please select a type'),
+    intro: z.coerce.number().int().positive('Please select an introduction'),
     firstKind: z.string().min(3).max(100),
     secondKind: z.string().min(3).max(100),
+    newType: z.string().optional(),
   }),
   z.object({
     typeChoice: z.literal('new'),
     newType: z.string().min(2).max(50, 'Type name must be between 2 and 50 characters'),
-    intro: z.string().min(1, 'Please select an introduction'),
+    intro: z.coerce.number().int().positive('Please select an introduction'),
     firstKind: z.string().min(3).max(100),
     secondKind: z.string().min(3).max(100),
+    type: z.coerce.number().int().positive().optional(),
   }),
 ]);
 
@@ -33,218 +35,167 @@ const ToggleLikeSchema = z.object({
   action: z.enum(['like', 'unlike']).optional(),
 });
 
-// Export server object with actions as required by Astro 4.15+
+// Zod schema for deleting a saying
+const DeleteSayingSchema = z.object({
+  sayingId: z.coerce.number().int().positive(),
+});
+
+// Export server object with actions
 export const server = {
-  // Export action for toggling likes
+  // Action for toggling likes
   toggleLike: defineAction({
-    name: 'toggleLike',
     accept: 'form',
     input: ToggleLikeSchema,
+    handler: async (input, { locals }) => {
+      const session = locals.session as ExtendedSession | null;
+      if (!session?.user?.id) {
+        return { success: false, error: 'You must be logged in to like a saying' };
+      }
+      const userId = session.user.id;
+      const { sayingId, action } = input;
 
-    // Handle form toggling a like
-    async handler({ request }) {
       try {
-        const session = await getSession(request);
-        if (!session?.user?.id) {
-          return {
-            success: false,
-            error: 'You must be logged in to like a saying',
-          };
-        }
-
-        const userId = session.user.id;
-        const formData = await request.formData();
-        const sayingId = Number(formData.get('sayingId'));
-        const action = formData.get('action') as 'like' | 'unlike' | undefined;
-
-        // Check if the like already exists
         const existingLike = await db
           .select()
           .from(Likes)
           .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
-          .limit(1);
+          .get();
 
-        // Determine if we need to like or unlike
-        const shouldLike = action === 'like' || (action === undefined && existingLike.length === 0);
-        const shouldUnlike =
-          action === 'unlike' || (action === undefined && existingLike.length > 0);
+        const shouldLike = action === 'like' || (action === undefined && !existingLike);
+        const shouldUnlike = action === 'unlike' || (action === undefined && !!existingLike);
 
-        if (shouldLike && existingLike.length === 0) {
-          // Add the like
+        if (shouldLike && !existingLike) {
           await db.insert(Likes).values({
             sayingId,
             userId,
             createdAt: new Date(),
           });
-          return {
-            success: true,
-            action: 'liked',
-          };
-        } else if (shouldUnlike && existingLike.length > 0) {
-          // Remove the like
+          return { success: true, action: 'liked' };
+        } else if (shouldUnlike && existingLike) {
           await db.delete(Likes).where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)));
-          return {
-            success: true,
-            action: 'unliked',
-          };
+          return { success: true, action: 'unliked' };
         } else {
-          // No change needed
-          return {
-            success: true,
-            action: shouldLike ? 'already-liked' : 'already-unliked',
-          };
+          return { success: true, action: shouldLike ? 'already-liked' : 'already-unliked' };
         }
       } catch (error) {
         console.error('Error updating like status:', error);
-        return {
-          success: false,
-          error: 'Failed to update like status',
-        };
+        return { success: false, error: 'Failed to update like status' };
       }
     },
   }),
 
-  // Export action for submitting sayings
+  // Action for submitting sayings
   submitSaying: defineAction({
-    name: 'submitSaying',
     accept: 'form',
+    input: NewSayingSchema,
+    handler: async (input, { locals, url }) => {
+      const session = locals.session as ExtendedSession | null;
+      const redirectBase = url?.origin || '';
 
-    // Handle the form submission
-    async handler({ request, cookies, url }) {
+      if (!session?.user?.id) {
+        return new Response(null, {
+          status: 302,
+          headers: {
+            Location: `${redirectBase}/create?error=${encodeURIComponent('You must be logged in to create a saying')}`,
+          },
+        });
+      }
+      const userId = session.user.id;
+
       try {
-        // Use the request object from the context
-        let session;
-        try {
-          session = await getSession(request);
-        } catch (error) {
-          // Fallback to cookies if request doesn't work
-          console.error('Error getting session from request:', error);
-          const headers = new Headers();
-          for (const [name, value] of Object.entries(cookies || {})) {
-            headers.append('Cookie', `${name}=${value}`);
-          }
+        let typeId: number;
 
-          session = await getSession({ headers });
-        }
-
-        if (!session?.user?.id) {
-          const redirectUrl = url
-            ? `${url.origin}/create?error=${encodeURIComponent('You must be logged in to create a saying')}`
-            : '/create?error=AuthRequired';
-          return Response.redirect(redirectUrl, 302);
-        }
-
-        // Get form data
-        const formData = await request.formData();
-        console.log('Form data:', Object.fromEntries(formData.entries()));
-
-        // Process form data
-        const typeChoice = formData.get('typeChoice') as string;
-        const type = formData.get('type') as string;
-        const intro = formData.get('intro') as string;
-        const firstKind = formData.get('firstKind') as string;
-        const secondKind = formData.get('secondKind') as string;
-        const newType = formData.get('newType') as string;
-
-        // Basic validation
-        if (!intro || !firstKind || !secondKind) {
-          const redirectUrl = url
-            ? `${url.origin}/create?error=${encodeURIComponent('Missing required fields')}`
-            : '/create?error=MissingFields';
-          return Response.redirect(redirectUrl, 302);
-        }
-
-        if (typeChoice === 'existing' && !type) {
-          const redirectUrl = url
-            ? `${url.origin}/create?error=${encodeURIComponent('Please select a type')}`
-            : '/create?error=TypeRequired';
-          return Response.redirect(redirectUrl, 302);
-        }
-
-        if (typeChoice === 'new' && (!newType || newType.length < 2)) {
-          const redirectUrl = url
-            ? `${url.origin}/create?error=${encodeURIComponent('Please enter a valid new type name (at least 2 characters)')}`
-            : '/create?error=InvalidTypeLength';
-          return Response.redirect(redirectUrl, 302);
-        }
-
-        // Process type selection
-        let typeId;
-
-        if (typeChoice === 'new') {
-          // Create a new type
+        if (input.typeChoice === 'new') {
           const newTypeResult = await db
             .insert(Types)
-            .values({
-              name: newType,
-              createdAt: new Date(),
-            })
+            .values({ name: input.newType, createdAt: new Date() })
             .returning();
-
           if (!newTypeResult || newTypeResult.length === 0) {
-            const redirectUrl = url
-              ? `${url.origin}/create?error=${encodeURIComponent('Failed to create new type')}`
-              : '/create?error=TypeCreationFailed';
-            return Response.redirect(redirectUrl, 302);
+            return new Response(null, {
+              status: 302,
+              headers: {
+                Location: `${redirectBase}/create?error=${encodeURIComponent('Failed to create new type')}`,
+              },
+            });
           }
-
           typeId = newTypeResult[0].id;
         } else {
-          // Use existing type
-          typeId = type;
+          typeId = input.type;
         }
 
-        // Insert data into database
         const values = {
-          intro: intro,
+          intro: input.intro,
           type: typeId,
-          firstKind: firstKind,
-          secondKind: secondKind,
-          userId: session.user.id,
+          firstKind: input.firstKind,
+          secondKind: input.secondKind,
+          userId: userId,
           createdAt: new Date(),
         };
 
         console.log('Inserting saying:', values);
         const result = await db.insert(Sayings).values(values).returning();
 
-        // Return redirect with success
-        const redirectUrl = url
-          ? `${url.origin}/create?success=true&id=${result[0].id}`
-          : `/create?success=true&id=${result[0].id}`;
-        return Response.redirect(redirectUrl, 302);
+        return new Response(null, {
+          status: 302,
+          headers: { Location: `${redirectBase}/create?success=true&id=${result[0].id}` },
+        });
       } catch (error) {
         console.error('Error saving saying:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        const redirectUrl = url
-          ? `${url.origin}/create?error=${encodeURIComponent(errorMessage)}`
-          : `/create?error=${encodeURIComponent(errorMessage)}`;
-        return Response.redirect(redirectUrl, 302);
+        return new Response(null, {
+          status: 302,
+          headers: { Location: `${redirectBase}/create?error=${encodeURIComponent(errorMessage)}` },
+        });
       }
     },
   }),
 
-  // Export action for sign-in
+  // Action for sign-in
   signIn: defineAction({
-    name: 'signIn',
     accept: 'form',
     input: SignInSchema,
-
-    handler: async (body) => {
+    handler: async (input, { url }) => {
+      const { provider, callbackUrl = '/' } = input;
+      const redirectBase = url?.origin || '';
       try {
-        const { provider, callbackUrl = '/' } = body;
-
-        // Auth-astro will handle the redirect
-        return {
-          success: true,
-          redirect: `/api/auth/signin/${provider}?callbackUrl=${encodeURIComponent(callbackUrl)}`,
-        };
+        const redirectUrl = `${redirectBase}/api/auth/signin/${provider}?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+        return new Response(null, { status: 302, headers: { Location: redirectUrl } });
       } catch (error) {
-        console.error('Error during sign-in:', error);
-        return {
-          success: false,
-          error: 'Authentication failed',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        };
+        console.error('Error during sign-in action:', error);
+        const errorRedirectUrl = `${redirectBase}/auth/error?error=SignInActionFailed`;
+        return new Response(null, { status: 302, headers: { Location: errorRedirectUrl } });
+      }
+    },
+  }),
+
+  // Action for deleting sayings
+  deleteSaying: defineAction({
+    accept: 'form',
+    input: DeleteSayingSchema,
+    handler: async (input, { locals }) => {
+      const session = locals.session as ExtendedSession | null;
+      if (!session?.user?.id) {
+        return { success: false, error: 'Authentication required.' };
+      }
+      const userId = session.user.id;
+      const { sayingId } = input;
+
+      try {
+        const saying = await db.select().from(Sayings).where(eq(Sayings.id, sayingId)).get();
+        if (!saying) {
+          return { success: false, error: 'Saying not found.' };
+        }
+        if (saying.userId !== userId) {
+          return { success: false, error: 'Authorization failed.' };
+        }
+        await db.delete(Likes).where(eq(Likes.sayingId, sayingId));
+        await db.delete(Sayings).where(eq(Sayings.id, sayingId));
+        console.log(`Saying ${sayingId} deleted successfully by user ${userId}`);
+        return { success: true };
+      } catch (error) {
+        console.error('Error deleting saying:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        return { success: false, error: `Failed to delete saying: ${errorMessage}` };
       }
     },
   }),
