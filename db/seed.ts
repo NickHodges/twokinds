@@ -5,7 +5,6 @@ export default async function seed() {
   const [systemUser] = await db
     .insert(Users)
     .values({
-      id: 'system',
       name: 'System',
       email: 'system@twokindsof.com',
       provider: 'system',
@@ -59,7 +58,7 @@ export default async function seed() {
       intro: intro3.id,
       type: type3.id,
       firstKind: 'have ice makers',
-      secondKind: 'don\'t have ice makers',
+      secondKind: "don't have ice makers",
       userId: systemUser.id,
       createdAt: new Date(),
     },

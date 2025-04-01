@@ -43,11 +43,10 @@ async function getSystemUser() {
   if (systemUsers.length === 0) {
     const now = new Date().toISOString();
     const { rows: newUser } = await client.execute(
-      `INSERT INTO Users (id, name, email, provider, lastLogin, createdAt, updatedAt, role, preferences)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO Users (name, email, provider, lastLogin, createdAt, updatedAt, role, preferences)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        RETURNING *`,
       [
-        'system-user-' + Date.now(),
         'System User',
         'system@twokindsof.com',
         'system',
@@ -68,6 +67,8 @@ async function getSystemUser() {
 // Function to seed Intros
 async function seedIntros(intros) {
   console.log('Seeding Intros...');
+  const introMap = new Map(); // Map to store old ID -> new ID
+
   for (const intro of intros) {
     const { rows: existingIntros } = await client.execute(
       'SELECT * FROM Intros WHERE introText = ?',
@@ -75,12 +76,17 @@ async function seedIntros(intros) {
     );
 
     if (existingIntros.length === 0) {
-      await client.execute(
-        'INSERT INTO Intros (introText, createdAt) VALUES (?, ?)',
+      const { rows: newIntro } = await client.execute(
+        'INSERT INTO Intros (introText, createdAt) VALUES (?, ?) RETURNING *',
         [intro.introText, new Date().toISOString()]
       );
+      introMap.set(intro.id, newIntro[0].id);
+    } else {
+      introMap.set(intro.id, existingIntros[0].id);
     }
   }
+
+  return introMap;
 }
 
 // Function to seed Types
@@ -94,6 +100,8 @@ async function seedTypes() {
     { name: 'Personality' },
   ];
 
+  const typeMap = new Map(); // Map to store name -> ID
+
   for (const type of types) {
     const { rows: existingTypes } = await client.execute(
       'SELECT * FROM Types WHERE name = ?',
@@ -101,12 +109,17 @@ async function seedTypes() {
     );
 
     if (existingTypes.length === 0) {
-      await client.execute(
-        'INSERT INTO Types (name, createdAt) VALUES (?, ?)',
+      const { rows: newType } = await client.execute(
+        'INSERT INTO Types (name, createdAt) VALUES (?, ?) RETURNING *',
         [type.name, new Date().toISOString()]
       );
+      typeMap.set(type.name, newType[0].id);
+    } else {
+      typeMap.set(type.name, existingTypes[0].id);
     }
   }
+
+  return typeMap;
 }
 
 // Main function to seed the database
@@ -122,20 +135,8 @@ async function seedDatabase() {
     const seedData = await getSeedData();
 
     // Seed Intros and Types first
-    await seedIntros(seedData.intros);
-    await seedTypes();
-
-    // Get the Animals type ID
-    const { rows: animalsTypes } = await client.execute(
-      'SELECT * FROM Types WHERE name = ?',
-      ['Animals']
-    );
-
-    if (animalsTypes.length === 0) {
-      throw new Error('Animals type not found');
-    }
-
-    const animalsType = animalsTypes[0];
+    const introMap = await seedIntros(seedData.intros);
+    const typeMap = await seedTypes();
 
     // Seed Sayings
     console.log('Seeding Sayings...');
@@ -150,8 +151,8 @@ async function seedDatabase() {
         await client.execute(
           'INSERT INTO Sayings (intro, type, firstKind, secondKind, userId, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
           [
-            saying.intro,
-            animalsType.id,
+            introMap.get(saying.intro),
+            typeMap.get('Lifestyle'), // Default to Lifestyle type
             saying.firstKind,
             saying.secondKind,
             systemUser.id,
