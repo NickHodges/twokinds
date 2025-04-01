@@ -22,12 +22,20 @@ export default defineConfig({
     : node({
         mode: 'standalone',
       }),
-  integrations: [react(), tailwind(), db(), auth()],
+  integrations: [auth(), react(), tailwind(), db()],
+  // Add specific configuration for DB in server environments
+  server: {
+    host: true,
+  },
   vite: {
-    build: {
-      rollupOptions: {
-        external: ['astro:db', 'astro:db/schema'],
-      },
+    // Ensure optimizeDeps includes astro:db
+    optimizeDeps: {
+      include: [],
+      exclude: ['astro:db', 'astro:db/schema', 'auth-astro'],
+    },
+    // Make sure we don't externalize astro:db - it needs to be processed by Vite
+    ssr: {
+      noExternal: ['astro:db', 'astro:db/schema', 'auth-astro'],
     },
   },
 });
