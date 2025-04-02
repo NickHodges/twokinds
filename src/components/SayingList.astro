@@ -21,7 +21,7 @@ const {
 };
 
 const isAuthenticated = !!session?.user;
-const userRole = session?.user?.role;
+const userRole = session?.user?.role; // Restore role variable
 
 // Get liked status and total likes for each saying
 const likedStatus = new Map<number, boolean>();
@@ -54,8 +54,7 @@ for (const saying of sayings) {
       sayings.map((saying: Saying) => {
         const isOwner = session?.user?.id === saying.userId;
         const isAdmin = userRole === 'admin';
-        const canEdit = isOwner || isAdmin; // Calculate canEdit here
-
+        const canEdit = isOwner || isAdmin;
         return (
           <SayingCard
             id={saying.id}

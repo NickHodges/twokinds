@@ -40,7 +40,7 @@ const DeleteSayingSchema = z.object({
   sayingId: z.coerce.number().int().positive(),
 });
 
-// Zod schema for updating a saying (similar to NewSayingSchema but includes sayingId)
+// Restore UpdateSayingSchema
 const UpdateSayingSchema = z.discriminatedUnion('typeChoice', [
   z.object({
     sayingId: z.coerce.number().int().positive(),
@@ -58,7 +58,7 @@ const UpdateSayingSchema = z.discriminatedUnion('typeChoice', [
     intro: z.coerce.number().int().positive('Please select an introduction'),
     firstKind: z.string().min(3).max(100),
     secondKind: z.string().min(3).max(100),
-    type: z.coerce.number().int().positive().optional(), // No validation needed when creating new
+    type: z.coerce.number().int().positive().optional(),
   }),
 ]);
 
@@ -112,15 +112,16 @@ export const server = {
     input: NewSayingSchema,
     handler: async (input, context) => {
       const session = context.locals.session as ExtendedSession | null;
-      const redirectBase = context.url?.origin || '';
+      // Use context.url for origin if needed, but return objects
+      // const redirectBase = context.url?.origin || '';
+
       if (!session?.user?.id) {
-        return context.redirect(
-          `${redirectBase}/create?error=${encodeURIComponent('You must be logged in to create a saying')}`
-        );
+        // Return error object
+        return { success: false, error: 'You must be logged in to create a saying' };
       }
-      const userId = session.user.id;
+
+      let typeId = 0;
       try {
-        let typeId: number;
         if (input.typeChoice === 'new') {
           const existingType = await db
             .select({ id: Types.id })
@@ -135,34 +136,37 @@ export const server = {
               .values({ name: input.newType, createdAt: new Date() })
               .returning({ id: Types.id });
             if (!newTypeResult || newTypeResult.length === 0) {
-              return context.redirect(
-                `${redirectBase}/create?error=${encodeURIComponent('Failed to create new type')}`
-              );
+              // Return error object
+              return { success: false, error: 'Failed to create new type' };
             }
             typeId = newTypeResult[0].id;
           }
         } else {
           typeId = input.type;
         }
+
         if (!typeId) {
-          return context.redirect(
-            `${redirectBase}/create?error=${encodeURIComponent('Invalid type selected or created')}`
-          );
+          // Return error object
+          return { success: false, error: 'Invalid type selected or created' };
         }
+
         const values = {
           intro: input.intro,
           type: typeId,
           firstKind: input.firstKind,
           secondKind: input.secondKind,
-          userId: userId,
+          userId: session.user.id,
           createdAt: new Date(),
+          updatedAt: new Date(),
         };
-        const result = await db.insert(Sayings).values(values).returning();
-        return context.redirect(`${redirectBase}/create?success=true&id=${result[0].id}`);
+        const result = await db.insert(Sayings).values(values).returning({ id: Sayings.id });
+        // Return success object
+        return { success: true, createdId: result[0].id };
       } catch (error) {
         console.error('Error saving saying:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        return context.redirect(`${redirectBase}/create?error=${encodeURIComponent(errorMessage)}`);
+        // Return error object
+        return { success: false, error: errorMessage };
       }
     },
   }),
@@ -171,14 +175,33 @@ export const server = {
   signIn: defineAction({
     accept: 'form',
     input: SignInSchema,
-    handler: async (input, context) => {
-      const { provider, callbackUrl = '/' } = input;
-      const redirectBase = context.url?.origin || '';
+    handler: async ({ provider, callbackUrl }, context) => {
+      const session = context.locals.session as ExtendedSession | null;
+      // const redirectBase = context.url?.origin || ''; // Not needed
+
+      if (session?.user) {
+        console.log('User already signed in');
+        // Consider returning a specific object or redirecting on client-side
+        return { success: false, error: 'Already signed in' };
+      }
+
       try {
-        const redirectUrl = `${redirectBase}/api/auth/signin/${provider}?callbackUrl=${encodeURIComponent(callbackUrl)}`;
-        return context.redirect(redirectUrl);
+        // Instead of redirecting server-side, rely on Auth.js/Astro integration
+        // which often handles this flow or provides client-side hooks.
+        // The act of calling signIn from Auth.js should initiate the redirect.
+        // For now, we return an object indicating the provider chosen.
+        // The front-end might need to react to this.
+        // Alternatively, the form action itself might trigger the Auth.js redirect.
+        console.log(`Initiating sign in with ${provider}, callback: ${callbackUrl}`);
+        // Auth.js should handle the actual redirect when configured properly.
+        // Returning an object here might be redundant if the form post directly triggers auth.
+        return { success: true, provider: provider }; // Indicate success/provider
+
+        // Original code attempted server-side redirect:
+        // const redirectUrl = `${redirectBase}/api/auth/signin/${provider}?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+        // return context.redirect(redirectUrl);
       } catch (error) {
-        console.error('Error during sign-in action:', error);
+        console.error('Error during sign-in action initiation:', error);
         return { success: false, error: 'Authentication initiation failed' };
       }
     },
@@ -190,14 +213,12 @@ export const server = {
     input: DeleteSayingSchema,
     handler: async (input, { locals }) => {
       const session = locals.session as ExtendedSession | null;
-
       if (!session?.user?.id) {
         return { success: false, error: 'Authentication required.' };
       }
       const userId = session.user.id;
-      const userRole = session.user.role;
+      const userRole = session.user.role; // Restore role check
       const { sayingId } = input;
-
       try {
         const saying = await db
           .select({ ownerId: Sayings.userId })
@@ -207,16 +228,15 @@ export const server = {
         if (!saying) {
           return { success: false, error: 'Saying not found.' };
         }
-
+        // Restore admin check
         if (saying.ownerId !== userId && userRole !== 'admin') {
           return { success: false, error: 'Authorization failed.' };
         }
-
         await db.delete(Likes).where(eq(Likes.sayingId, sayingId));
         await db.delete(Sayings).where(eq(Sayings.id, sayingId));
         console.log(
           `Saying ${sayingId} deleted successfully by user ${userId} (Role: ${userRole})`
-        );
+        ); // Restore role log
         return { success: true };
       } catch (error) {
         console.error('Error deleting saying:', error);
@@ -226,19 +246,17 @@ export const server = {
     },
   }),
 
-  // Action for updating sayings
+  // Restore updateSaying action
   updateSaying: defineAction({
     accept: 'form',
     input: UpdateSayingSchema,
     handler: async (input, context) => {
+      // Use context for consistency, even if not using redirect
       const session = context.locals.session as ExtendedSession | null;
-      const redirectBase = context.url?.origin || '';
-      const errorRedirectUrl = `${redirectBase}/edit-saying/${input.sayingId}?error=`;
+      // Removed redirectBase/errorRedirectUrl as we return objects
 
       if (!session?.user?.id) {
-        return context.redirect(
-          `${errorRedirectUrl}${encodeURIComponent('Authentication required')}`
-        );
+        return { success: false, error: 'Authentication required' };
       }
       const userId = session.user.id;
       const userRole = session.user.role;
@@ -250,13 +268,11 @@ export const server = {
           .where(eq(Sayings.id, input.sayingId))
           .get();
         if (!saying) {
-          return context.redirect(`${errorRedirectUrl}${encodeURIComponent('Saying not found')}`);
+          return { success: false, error: 'Saying not found' };
         }
-
+        // Restore admin check
         if (saying.ownerId !== userId && userRole !== 'admin') {
-          return context.redirect(
-            `${errorRedirectUrl}${encodeURIComponent('Authorization failed')}`
-          );
+          return { success: false, error: 'Authorization failed' };
         }
 
         let finalTypeId = 0;
@@ -274,20 +290,15 @@ export const server = {
               .values({ name: input.newType, createdAt: new Date() })
               .returning({ id: Types.id });
             if (!newTypeResult || newTypeResult.length === 0) {
-              return context.redirect(
-                `${errorRedirectUrl}${encodeURIComponent('Failed to create new type')}`
-              );
+              return { success: false, error: 'Failed to create new type' };
             }
             finalTypeId = newTypeResult[0].id;
           }
         } else {
           finalTypeId = input.type;
         }
-
         if (!finalTypeId) {
-          return context.redirect(
-            `${errorRedirectUrl}${encodeURIComponent('Invalid type selected or created')}`
-          );
+          return { success: false, error: 'Invalid type selected or created' };
         }
 
         await db
@@ -299,13 +310,14 @@ export const server = {
             secondKind: input.secondKind,
           })
           .where(eq(Sayings.id, input.sayingId));
-
         console.log(`Saying ${input.sayingId} updated by user ${userId} (Role: ${userRole})`);
-        return context.redirect('/dashboard?success=saying-updated');
+        // Return success object
+        return { success: true, updatedId: input.sayingId };
       } catch (error) {
         console.error('Error updating saying:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        return context.redirect(`${errorRedirectUrl}${encodeURIComponent(errorMessage)}`);
+        // Return error object
+        return { success: false, error: errorMessage };
       }
     },
   }),

@@ -1,18 +1,17 @@
 ---
 import MainLayout from '../../layouts/MainLayout.astro';
 import { db, Intros, Types } from 'astro:db';
-import { actions } from 'astro:actions';
 import type { ExtendedSession } from '../../env';
 import { getSayingById } from '../../lib/db-service';
+import { actions } from 'astro:actions';
 
 const session = Astro.locals.session as ExtendedSession | null;
+const userRole = session?.user?.role;
 
-// Protected page
 if (!session?.user?.id) {
   return Astro.redirect('/?error=unauthorized');
 }
 
-// Get the ID from the URL
 const { id } = Astro.params;
 const sayingId = parseInt(id || '0');
 
@@ -20,29 +19,15 @@ if (!sayingId) {
   return Astro.redirect('/dashboard?error=invalid-id');
 }
 
-// Fetch the saying
 const saying = await getSayingById(sayingId);
 
-// If no saying found, redirect
-if (!saying) {
-  return Astro.redirect('/dashboard?error=not-found');
+if (!saying || (saying.userId !== session.user.id && userRole !== 'admin')) {
+  return Astro.redirect('/dashboard?error=not-found-or-unauthorized');
 }
 
-// Check authorization: owner OR admin
-const isOwner = saying.userId === session.user.id;
-const isAdmin = session.user.role === 'admin';
-
-if (!isOwner && !isAdmin) {
-  return Astro.redirect('/dashboard?error=unauthorized');
-}
-
-// Fetch all available intros for the dropdown
 const intros = await db.select().from(Intros).orderBy(Intros.introText);
-
-// Fetch all available types for the dropdown
 const types = await db.select().from(Types).orderBy(Types.name);
 
-// Get any error or success messages from URL
 const url = new URL(Astro.request.url);
 const errorMessage = url.searchParams.get('error');
 const successMessage = url.searchParams.get('success');
@@ -52,9 +37,7 @@ const successMessage = url.searchParams.get('success');
   <div class="max-w-2xl mx-auto">
     <div class="mb-8">
       <h1 class="text-3xl font-bold mb-2">Edit Your Saying</h1>
-      <p class="text-gray-600 dark:text-gray-400">
-        Update your saying below. All fields are required.
-      </p>
+      <p class="text-gray-600 dark:text-gray-400">Update the saying details below.</p>
     </div>
 
     {
@@ -67,22 +50,22 @@ const successMessage = url.searchParams.get('success');
     {
       successMessage && (
         <div class="mb-6 p-4 bg-green-100 border border-green-200 text-green-700 rounded-md">
-          <p>{successMessage}</p>
+          <p>
+            {successMessage === 'saying-updated' ? 'Saying updated successfully!' : successMessage}
+          </p>
         </div>
       )
     }
 
     <form
-      action={actions.updateSaying}
       method="POST"
+      action={actions.updateSaying}
       class="space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
     >
       <input type="hidden" name="sayingId" value={sayingId} />
 
       <div>
-        <label for="intro" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-          Introduction
-        </label>
+        <label for="intro">Introduction</label>
         <select
           id="intro"
           name="intro"
@@ -101,9 +84,7 @@ const successMessage = url.searchParams.get('success');
 
       <div>
         <fieldset class="mb-4">
-          <legend class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-            Type
-          </legend>
+          <legend>Type</legend>
           <div class="space-y-2">
             <div class="flex items-center">
               <input
@@ -131,9 +112,7 @@ const successMessage = url.searchParams.get('success');
       </div>
 
       <div id="existingTypeContainer">
-        <label for="type" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-          Select Type
-        </label>
+        <label for="type">Select Type</label>
         <select
           id="type"
           name="type"
@@ -150,12 +129,7 @@ const successMessage = url.searchParams.get('success');
       </div>
 
       <div id="newTypeContainer" class="hidden">
-        <label
-          for="newType"
-          class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          New Type Name
-        </label>
+        <label for="newType">New Type Name</label>
         <input
           type="text"
           id="newType"
@@ -166,12 +140,7 @@ const successMessage = url.searchParams.get('success');
       </div>
 
       <div>
-        <label
-          for="firstKind"
-          class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          First Kind (Those who...)
-        </label>
+        <label for="firstKind">First Kind</label>
         <input
           type="text"
           id="firstKind"
@@ -183,12 +152,7 @@ const successMessage = url.searchParams.get('success');
       </div>
 
       <div>
-        <label
-          for="secondKind"
-          class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          Second Kind (Those who...)
-        </label>
+        <label for="secondKind">Second Kind</label>
         <input
           type="text"
           id="secondKind"
@@ -215,34 +179,33 @@ const successMessage = url.searchParams.get('success');
       </div>
     </form>
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const typeExistingRadio = document.getElementById('typeExisting') as HTMLInputElement;
+      const typeNewRadio = document.getElementById('typeNew') as HTMLInputElement;
+      const existingTypeContainer = document.getElementById('existingTypeContainer');
+      const newTypeContainer = document.getElementById('newTypeContainer');
+      const typeSelect = document.getElementById('type') as HTMLSelectElement;
+      const newTypeInput = document.getElementById('newType') as HTMLInputElement;
+
+      function updateTypeFields() {
+        if (typeExistingRadio?.checked) {
+          existingTypeContainer?.classList.remove('hidden');
+          newTypeContainer?.classList.add('hidden');
+          if (typeSelect) typeSelect.required = true;
+          if (newTypeInput) newTypeInput.required = false;
+        } else {
+          existingTypeContainer?.classList.add('hidden');
+          newTypeContainer?.classList.remove('hidden');
+          if (typeSelect) typeSelect.required = false;
+          if (newTypeInput) newTypeInput.required = true;
+        }
+      }
+
+      typeExistingRadio?.addEventListener('change', updateTypeFields);
+      typeNewRadio?.addEventListener('change', updateTypeFields);
+      updateTypeFields();
+    });
+  </script>
 </MainLayout>
-
-<script>
-  // Handle type choice radio buttons
-  const typeExistingRadio = document.getElementById('typeExisting') as HTMLInputElement;
-  const typeNewRadio = document.getElementById('typeNew') as HTMLInputElement;
-  const existingTypeContainer = document.getElementById('existingTypeContainer');
-  const newTypeContainer = document.getElementById('newTypeContainer');
-  const typeSelect = document.getElementById('type') as HTMLSelectElement;
-  const newTypeInput = document.getElementById('newType') as HTMLInputElement;
-
-  function updateTypeFields() {
-    if (typeExistingRadio?.checked) {
-      existingTypeContainer?.classList.remove('hidden');
-      newTypeContainer?.classList.add('hidden');
-      if (typeSelect) typeSelect.required = true;
-      if (newTypeInput) newTypeInput.required = false;
-    } else {
-      existingTypeContainer?.classList.add('hidden');
-      newTypeContainer?.classList.remove('hidden');
-      if (typeSelect) typeSelect.required = false;
-      if (newTypeInput) newTypeInput.required = true;
-    }
-  }
-
-  typeExistingRadio?.addEventListener('change', updateTypeFields);
-  typeNewRadio?.addEventListener('change', updateTypeFields);
-
-  // Initial update
-  updateTypeFields();
-</script>

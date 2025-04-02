@@ -32,14 +32,13 @@ interface ImportMeta {
 export interface ExtendedSession extends Session {
   user?: Session['user'] & {
     id: number;
-    role?: string;
   };
 }
 
 // Add session to Astro locals
 declare namespace App {
   interface Locals {
-    session: ExtendedSession | null;
+    session: Session | null;
   }
 }
 
@@ -50,9 +49,9 @@ declare module '@auth/core/types' {
    */
   interface Session {
     user?: {
-      id: number; // Use number for database ID
+      id: number;
       role?: string;
-    } & Session['user']; // Combine with default user properties (name, email, image)
+    } & Session['user'];
   }
 
   /**
@@ -61,7 +60,6 @@ declare module '@auth/core/types' {
    */
   interface User {
     role?: string;
-    // id is often added dynamically or via adapter, base User might not have it
   }
 }
 
@@ -70,10 +68,8 @@ declare module '@auth/core/jwt' {
    * Extend the built-in JWT types
    */
   interface JWT {
-    id?: number; // Use number for database ID
+    id?: number;
     role?: string;
-    // Keep other standard JWT claims like name, email, picture if needed
-    // These might be added automatically by providers
     name?: string | null;
     email?: string | null;
     picture?: string | null;
