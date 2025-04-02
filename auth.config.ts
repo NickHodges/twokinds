@@ -1,8 +1,18 @@
 import { defineConfig } from 'auth-astro';
 import GitHub from '@auth/core/providers/github';
 import Google from '@auth/core/providers/google';
-import { db, Users } from 'astro:db';
-import { eq } from 'drizzle-orm';
+import { db, Users, eq } from 'astro:db';
+import type { DBUser } from './src/types/db';
+
+async function getDbUser(email: string): Promise<DBUser | undefined> {
+  if (!email) return undefined;
+  try {
+    return await db.select().from(Users).where(eq(Users.email, email)).get();
+  } catch (error) {
+    console.error('Error fetching DB user:', error);
+    return undefined;
+  }
+}
 
 export default defineConfig({
   providers: [
@@ -28,27 +38,32 @@ export default defineConfig({
   },
   callbacks: {
     async signIn({ user, account }) {
-      console.log('signIn callback triggered', { user, account });
-
+      console.log('signIn callback triggered', {
+        userEmail: user.email,
+        provider: account?.provider,
+      });
       if (!user.email) {
-        console.error('No email provided by OAuth provider');
-        return false;
+        console.error('No email found for user during sign in.');
+        return false; // Abort sign in
       }
 
       try {
-        // Check if user already exists
-        const existingUser = await db.select().from(Users).where(eq(Users.email, user.email)).get();
+        const dbUser = await getDbUser(user.email);
 
-        if (existingUser) {
-          // Update last login
+        if (dbUser) {
+          // User exists, update last login and image if needed
           await db
             .update(Users)
-            .set({ lastLogin: new Date(), updatedAt: new Date() })
-            .where(eq(Users.id, existingUser.id));
-          user.id = existingUser.id;
+            .set({
+              lastLogin: new Date(),
+              updatedAt: new Date(),
+              image: user.image ?? dbUser.image,
+            })
+            .where(eq(Users.id, dbUser.id));
+          console.log(`Existing user ${user.email} signed in.`);
         } else {
-          // Create new user
-          const newUser = await db
+          // User doesn't exist, create them
+          const newUserResult = await db
             .insert(Users)
             .values({
               name: user.name || '',
@@ -58,39 +73,53 @@ export default defineConfig({
               lastLogin: new Date(),
               createdAt: new Date(),
               updatedAt: new Date(),
-              role: 'user',
+              role: 'user', // Default role
               preferences: {},
             })
-            .returning();
+            .returning({ id: Users.id }); // Only return necessary field
 
-          user.id = newUser[0].id;
+          if (!newUserResult || newUserResult.length === 0) {
+            console.error('Failed to create new user in DB for:', user.email);
+            return false; // Abort sign in
+          }
+          console.log(`New user ${user.email} created with ID ${newUserResult[0].id}.`);
         }
-
-        console.log('User ID assigned:', user.id);
-        return true;
+        return true; // Allow sign in
       } catch (error) {
-        console.error('Error in signIn callback:', error);
-        return false;
+        console.error('Error during signIn DB operations:', error);
+        return false; // Prevent sign in on DB error
       }
     },
-    async redirect({ url, baseUrl }) {
-      console.log('Redirect callback', { url, baseUrl });
-      // Always redirect to home page after sign-in or sign-out
-      return '/';
+    async jwt({ token, user }) {
+      if (user?.email) {
+        const dbUser = await getDbUser(user.email);
+        if (dbUser) {
+          token.id = dbUser.id;
+          token.role = dbUser.role;
+          token.picture = dbUser.image ?? token.picture;
+        } else {
+          console.error('JWT Callback: DB User not found for:', user.email);
+        }
+      }
+      return token;
     },
     async session({ session, token }) {
-      console.log('Session callback', { session, token });
-      if (session.user) {
+      if (token?.id && session.user) {
         session.user.id = token.id as number;
+        session.user.role = token.role as string;
+        session.user.image = token.picture as string | null;
+      } else {
+        console.warn('Session Callback: Token or session.user missing/incomplete', {
+          tokenId: token?.id,
+          sessionUserExists: !!session.user,
+        });
       }
       return session;
     },
-    async jwt({ token, user }) {
-      console.log('JWT callback', { token, user });
-      if (user) {
-        token.id = user.id;
-      }
-      return token;
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith('/')) return `${baseUrl}${url}`;
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
     },
   },
 });

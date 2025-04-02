@@ -3,7 +3,6 @@ import type { Session } from '@auth/core/types';
 /// <reference path="../.astro/types.d.ts" />
 /// <reference types="astro/client" />
 /// <reference types="auth-astro/client" />
-/// <reference types="@auth/core/types" />
 /// <reference path="./types/astro.d.ts" />
 
 interface ImportMetaEnv {
@@ -33,6 +32,7 @@ interface ImportMeta {
 export interface ExtendedSession extends Session {
   user?: Session['user'] & {
     id: number;
+    role?: string;
   };
 }
 
@@ -40,5 +40,42 @@ export interface ExtendedSession extends Session {
 declare namespace App {
   interface Locals {
     session: ExtendedSession | null;
+  }
+}
+
+// -- Module Augmentation for Auth.js Types --
+declare module '@auth/core/types' {
+  /**
+   * Extend the built-in session types
+   */
+  interface Session {
+    user?: {
+      id: number; // Use number for database ID
+      role?: string;
+    } & Session['user']; // Combine with default user properties (name, email, image)
+  }
+
+  /**
+   * Extend the built-in user types
+   * This might be needed if the `user` object passed to callbacks needs the role.
+   */
+  interface User {
+    role?: string;
+    // id is often added dynamically or via adapter, base User might not have it
+  }
+}
+
+declare module '@auth/core/jwt' {
+  /**
+   * Extend the built-in JWT types
+   */
+  interface JWT {
+    id?: number; // Use number for database ID
+    role?: string;
+    // Keep other standard JWT claims like name, email, picture if needed
+    // These might be added automatically by providers
+    name?: string | null;
+    email?: string | null;
+    picture?: string | null;
   }
 }

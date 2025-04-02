@@ -178,6 +178,7 @@ export const server = {
         return { success: false, error: 'Authentication required.' };
       }
       const userId = session.user.id;
+      const userRole = session.user.role; // Get the user's role
       const { sayingId } = input;
 
       try {
@@ -185,12 +186,18 @@ export const server = {
         if (!saying) {
           return { success: false, error: 'Saying not found.' };
         }
-        if (saying.userId !== userId) {
+
+        // Allow deletion if user is the owner OR if user is an admin
+        if (saying.userId !== userId && userRole !== 'admin') {
           return { success: false, error: 'Authorization failed.' };
         }
+
+        // Proceed with deletion
         await db.delete(Likes).where(eq(Likes.sayingId, sayingId));
         await db.delete(Sayings).where(eq(Sayings.id, sayingId));
-        console.log(`Saying ${sayingId} deleted successfully by user ${userId}`);
+        console.log(
+          `Saying ${sayingId} deleted successfully by user ${userId} (Role: ${userRole})`
+        );
         return { success: true };
       } catch (error) {
         console.error('Error deleting saying:', error);

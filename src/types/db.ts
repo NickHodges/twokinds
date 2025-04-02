@@ -2,9 +2,13 @@ export interface DBUser {
   id: number;
   name: string;
   email: string;
-  image: string;
+  image: string | null;
   role: string;
   createdAt: Date;
+  provider: string;
+  lastLogin: Date;
+  updatedAt: Date;
+  preferences: unknown;
 }
 
 export interface DBSaying {
