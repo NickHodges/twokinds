@@ -3,6 +3,7 @@ import SayingCard from './SayingCard.astro';
 import EmptyState from './EmptyState.astro';
 import type { Saying } from '../types/saying';
 import { db, Likes, eq, and, count } from 'astro:db';
+import type { ExtendedSession } from '../env'; // Import session type
 
 const {
   sayings,
@@ -12,9 +13,15 @@ const {
     href: '/create',
   },
   session,
-} = Astro.props;
+} = Astro.props as {
+  sayings: Saying[];
+  emptyStateText?: string;
+  emptyStateCallToAction?: { text: string; href: string };
+  session: ExtendedSession | null;
+};
 
 const isAuthenticated = !!session?.user;
+const userRole = session?.user?.role;
 
 // Get liked status and total likes for each saying
 const likedStatus = new Map<number, boolean>();
@@ -44,20 +51,26 @@ for (const saying of sayings) {
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
   {
     sayings.length > 0 ? (
-      sayings.map((saying: Saying) => (
-        <SayingCard
-          id={saying.id}
-          introText={saying.introText || saying.intro_data?.introText || ''}
-          typeName={saying.typeName || saying.type_data?.name || ''}
-          firstKind={saying.firstKind}
-          secondKind={saying.secondKind}
-          createdAt={saying.createdAt}
-          isLiked={likedStatus.get(saying.id) || false}
-          totalLikes={totalLikes.get(saying.id) || 0}
-          isAuthenticated={isAuthenticated}
-          canEdit={session?.user?.id === saying.userId}
-        />
-      ))
+      sayings.map((saying: Saying) => {
+        const isOwner = session?.user?.id === saying.userId;
+        const isAdmin = userRole === 'admin';
+        const canEdit = isOwner || isAdmin; // Calculate canEdit here
+
+        return (
+          <SayingCard
+            id={saying.id}
+            introText={saying.introText || saying.intro_data?.introText || ''}
+            typeName={saying.typeName || saying.type_data?.name || ''}
+            firstKind={saying.firstKind}
+            secondKind={saying.secondKind}
+            createdAt={saying.createdAt}
+            isLiked={likedStatus.get(saying.id) || false}
+            totalLikes={totalLikes.get(saying.id) || 0}
+            isAuthenticated={isAuthenticated}
+            canEdit={canEdit}
+          />
+        );
+      })
     ) : (
       <EmptyState message={emptyStateText} callToAction={emptyStateCallToAction} />
     )
