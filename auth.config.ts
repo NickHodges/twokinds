@@ -7,6 +7,11 @@ import { createLogger } from './src/utils/logger';
 
 const logger = createLogger('AuthConfig');
 
+// Log the environment variables to verify they are loaded
+logger.info('Attempting to load Google Credentials:');
+logger.info(`GOOGLE_CLIENT_ID: ${import.meta.env.GOOGLE_CLIENT_ID?.substring(0, 10)}...`); // Log first 10 chars for verification
+logger.info(`GOOGLE_CLIENT_SECRET: ${import.meta.env.GOOGLE_CLIENT_SECRET?.substring(0, 5)}...`); // Log first 5 chars
+
 async function getDbUser(email: string): Promise<DBUser | undefined> {
   if (!email) return undefined;
   try {

@@ -3,7 +3,7 @@ import { getSession } from 'auth-astro/server';
 import authConfig from '../../../../auth.config';
 import { getUserIdFromSession, updateUserPreferences } from '../../../utils/user-db';
 import type { UserPreferences } from '../../../utils/user-db';
-import { createLogger } from '../../utils/logger';
+import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('API/User/Preferences');
 

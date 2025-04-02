@@ -1,9 +1,12 @@
 {
   "extends": "astro/tsconfigs/strict",
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"],
+  "exclude": ["dist", "node_modules"],
   "compilerOptions": {
-    "types": ["@auth/core"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
     "typeRoots": ["./node_modules/@types", "./src/types"]
   }
 }
