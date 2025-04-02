@@ -3,6 +3,9 @@ import { getSession } from 'auth-astro/server';
 import authConfig from '../../../../auth.config';
 import { getUserIdFromSession, updateUserPreferences } from '../../../utils/user-db';
 import type { UserPreferences } from '../../../utils/user-db';
+import { createLogger } from '../../utils/logger';
+
+const logger = createLogger('API/User/Preferences');
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -31,7 +34,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     return new Response(JSON.stringify({ preferences: updatedUser.preferences }));
   } catch (error) {
-    console.error('Error updating user preferences:', error);
+    logger.error('Error updating user preferences:', error);
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
     });

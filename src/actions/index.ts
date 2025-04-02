@@ -2,6 +2,9 @@ import { defineAction } from 'astro:actions';
 import { z } from 'zod';
 import { db, Sayings, Types, Likes, and, eq } from 'astro:db';
 import type { ExtendedSession } from '../env';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('Actions');
 
 // Define Zod schema for sign-in validation
 const SignInSchema = z.object({
@@ -100,7 +103,7 @@ export const server = {
           return { success: true, action: shouldLike ? 'already-liked' : 'already-unliked' };
         }
       } catch (error) {
-        console.error('Error updating like status:', error);
+        logger.error('Error updating like status:', error);
         return { success: false, error: 'Failed to update like status' };
       }
     },
@@ -160,10 +163,11 @@ export const server = {
           updatedAt: new Date(),
         };
         const result = await db.insert(Sayings).values(values).returning({ id: Sayings.id });
+        logger.info(`Saying ${result[0].id} created successfully by user ${session.user.id}`);
         // Return success object
         return { success: true, createdId: result[0].id };
       } catch (error) {
-        console.error('Error saving saying:', error);
+        logger.error('Error saving saying:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         // Return error object
         return { success: false, error: errorMessage };
@@ -180,7 +184,7 @@ export const server = {
       // const redirectBase = context.url?.origin || ''; // Not needed
 
       if (session?.user) {
-        console.log('User already signed in');
+        logger.info('User already signed in');
         // Consider returning a specific object or redirecting on client-side
         return { success: false, error: 'Already signed in' };
       }
@@ -192,7 +196,7 @@ export const server = {
         // For now, we return an object indicating the provider chosen.
         // The front-end might need to react to this.
         // Alternatively, the form action itself might trigger the Auth.js redirect.
-        console.log(`Initiating sign in with ${provider}, callback: ${callbackUrl}`);
+        logger.info(`Initiating sign in with ${provider}, callback: ${callbackUrl}`);
         // Auth.js should handle the actual redirect when configured properly.
         // Returning an object here might be redundant if the form post directly triggers auth.
         return { success: true, provider: provider }; // Indicate success/provider
@@ -201,7 +205,7 @@ export const server = {
         // const redirectUrl = `${redirectBase}/api/auth/signin/${provider}?callbackUrl=${encodeURIComponent(callbackUrl)}`;
         // return context.redirect(redirectUrl);
       } catch (error) {
-        console.error('Error during sign-in action initiation:', error);
+        logger.error('Error during sign-in action initiation:', error);
         return { success: false, error: 'Authentication initiation failed' };
       }
     },
@@ -234,12 +238,12 @@ export const server = {
         }
         await db.delete(Likes).where(eq(Likes.sayingId, sayingId));
         await db.delete(Sayings).where(eq(Sayings.id, sayingId));
-        console.log(
+        logger.info(
           `Saying ${sayingId} deleted successfully by user ${userId} (Role: ${userRole})`
-        ); // Restore role log
+        );
         return { success: true };
       } catch (error) {
-        console.error('Error deleting saying:', error);
+        logger.error('Error deleting saying:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         return { success: false, error: `Failed to delete saying: ${errorMessage}` };
       }
@@ -310,11 +314,11 @@ export const server = {
             secondKind: input.secondKind,
           })
           .where(eq(Sayings.id, input.sayingId));
-        console.log(`Saying ${input.sayingId} updated by user ${userId} (Role: ${userRole})`);
+        logger.info(`Saying ${input.sayingId} updated by user ${userId} (Role: ${userRole})`);
         // Return success object
         return { success: true, updatedId: input.sayingId };
       } catch (error) {
-        console.error('Error updating saying:', error);
+        logger.error('Error updating saying:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         // Return error object
         return { success: false, error: errorMessage };

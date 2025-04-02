@@ -3,13 +3,16 @@ import GitHub from '@auth/core/providers/github';
 import Google from '@auth/core/providers/google';
 import { db, Users, eq } from 'astro:db';
 import type { DBUser } from './src/types/db';
+import { createLogger } from './src/utils/logger';
+
+const logger = createLogger('AuthConfig');
 
 async function getDbUser(email: string): Promise<DBUser | undefined> {
   if (!email) return undefined;
   try {
     return await db.select().from(Users).where(eq(Users.email, email)).get();
   } catch (error) {
-    console.error('Error fetching DB user:', error);
+    logger.error('Error fetching DB user:', error);
     return undefined;
   }
 }
@@ -27,31 +30,30 @@ export default defineConfig({
   ],
   secret: import.meta.env.AUTH_SECRET,
   trustHost: import.meta.env.AUTH_TRUST_HOST ?? true,
-  debug: process.env.NODE_ENV !== 'production', // Only enable debug in development
+  debug: process.env.NODE_ENV !== 'production',
   session: {
     strategy: 'jwt',
-    maxAge: 60 * 60, // 1 hour instead of the default 30 days
+    maxAge: 60 * 60,
   },
   pages: {
-    signIn: '/auth/signin', // Custom sign-in page
-    error: '/auth/error', // Custom error page
+    signIn: '/auth/signin',
+    error: '/auth/error',
   },
   callbacks: {
     async signIn({ user, account }) {
-      console.log('signIn callback triggered', {
+      logger.info('signIn callback triggered', {
         userEmail: user.email,
         provider: account?.provider,
       });
       if (!user.email) {
-        console.error('No email found for user during sign in.');
-        return false; // Abort sign in
+        logger.error('No email found for user during sign in.');
+        return false;
       }
 
       try {
         const dbUser = await getDbUser(user.email);
 
         if (dbUser) {
-          // User exists, update last login and image if needed
           await db
             .update(Users)
             .set({
@@ -60,9 +62,8 @@ export default defineConfig({
               image: user.image ?? dbUser.image,
             })
             .where(eq(Users.id, dbUser.id));
-          console.log(`Existing user ${user.email} signed in.`);
+          logger.info(`Existing user ${user.email} signed in.`);
         } else {
-          // User doesn't exist, create them
           const newUserResult = await db
             .insert(Users)
             .values({
@@ -73,21 +74,21 @@ export default defineConfig({
               lastLogin: new Date(),
               createdAt: new Date(),
               updatedAt: new Date(),
-              role: 'user', // Default role
+              role: 'user',
               preferences: {},
             })
-            .returning({ id: Users.id }); // Only return necessary field
+            .returning({ id: Users.id });
 
           if (!newUserResult || newUserResult.length === 0) {
-            console.error('Failed to create new user in DB for:', user.email);
-            return false; // Abort sign in
+            logger.error('Failed to create new user in DB for:', user.email);
+            return false;
           }
-          console.log(`New user ${user.email} created with ID ${newUserResult[0].id}.`);
+          logger.info(`New user ${user.email} created with ID ${newUserResult[0].id}.`);
         }
-        return true; // Allow sign in
+        return true;
       } catch (error) {
-        console.error('Error during signIn DB operations:', error);
-        return false; // Prevent sign in on DB error
+        logger.error('Error during signIn DB operations:', error);
+        return false;
       }
     },
     async jwt({ token, user }) {
@@ -98,7 +99,7 @@ export default defineConfig({
           token.role = dbUser.role;
           token.picture = dbUser.image ?? token.picture;
         } else {
-          console.error('JWT Callback: DB User not found for:', user.email);
+          logger.error('JWT Callback: DB User not found for:', user.email);
         }
       }
       return token;
@@ -109,7 +110,7 @@ export default defineConfig({
         session.user.role = token.role as string;
         session.user.image = token.picture as string | null;
       } else {
-        console.warn('Session Callback: Token or session.user missing/incomplete', {
+        logger.warn('Session Callback: Token or session.user missing/incomplete', {
           tokenId: token?.id,
           sessionUserExists: !!session.user,
         });

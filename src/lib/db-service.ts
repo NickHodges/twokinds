@@ -1,6 +1,30 @@
 import type { Saying } from '../types/saying';
 import type { DBSaying, DBIntro, DBType } from '../types/db';
 import { db, Sayings, Intros, Types, Likes, eq, and, desc, count } from 'astro:db';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('DBService');
+
+let dbModule: { db: typeof db } | null = null;
+
+// Dynamically import the database module only if available
+(async () => {
+  try {
+    dbModule = await import('astro:db');
+  } catch (importError) {
+    // If the database module is not available (e.g., in certain test environments)
+    logger.warn(
+      'Database module not available in this environment, using fallback data',
+      importError
+    );
+  }
+})();
+
+function handleError(context: string, error: unknown) {
+  const message = error instanceof Error ? error.message : 'Unknown database error';
+  logger.error(`Database Error in ${context}:`, message, error);
+  // In a real app, you might want to re-throw a custom error or handle it differently
+}
 
 // Create a wrapper function that safely handles the database queries
 // This will handle potential import issues in serverless environments
@@ -40,32 +64,30 @@ async function safeDbQuery<T>(queryFn: () => Promise<T>, fallbackValue: T): Prom
  * @param id The ID of the saying to retrieve
  * @returns The saying with intro and type data, or null if not found
  */
-export async function getSayingById(id: number) {
-  return safeDbQuery(async () => {
-    // Get the saying record
-    const sayingResults = await db.select().from(Sayings).where(eq(Sayings.id, id));
-
-    // If no results, return null
-    if (!sayingResults || sayingResults.length === 0) {
-      console.log(`No saying found with ID: ${id}`);
+export async function getSayingById(id: number): Promise<Saying | null> {
+  if (!dbModule?.db) {
+    logger.warn('DB not available in getSayingById');
+    return null; // Or return fallback data
+  }
+  try {
+    const saying = await dbModule.db.select().from(Sayings).where(eq(Sayings.id, id)).get();
+    if (!saying) {
+      logger.info(`No saying found with ID: ${id}`); // Use logger
       return null;
     }
 
-    const saying = sayingResults[0];
+    const intro = await dbModule.db.select().from(Intros).where(eq(Intros.id, saying.intro)).get();
+    const type = await dbModule.db.select().from(Types).where(eq(Types.id, saying.type)).get();
 
-    // Get the related intro
-    const introResults = await db.select().from(Intros).where(eq(Intros.id, saying.intro));
-
-    // Get the related type
-    const typeResults = await db.select().from(Types).where(eq(Types.id, saying.type));
-
-    // Combine the data
     return {
       ...saying,
-      introText: introResults[0]?.introText || 'Unknown intro',
-      typeName: typeResults[0]?.name || 'Unknown type',
+      introText: intro?.introText ?? '', // Provide default empty string
+      typeName: type?.name ?? '', // Provide default empty string
     };
-  }, null);
+  } catch (error) {
+    handleError('getSayingById', error);
+    return null;
+  }
 }
 
 /**
@@ -74,43 +96,49 @@ export async function getSayingById(id: number) {
  * @returns Array of sayings with intro and type data
  */
 export async function getAllSayings(): Promise<Saying[]> {
-  return safeDbQuery(async () => {
-    // First, get all sayings
-    const sayings = await db.select().from(Sayings).orderBy(desc(Sayings.createdAt));
+  if (!dbModule?.db) {
+    logger.warn('DB not available in getAllSayings');
+    return []; // Or return fallback data
+  }
 
-    // Get all intros and types in one query each
-    const intros = await db.select().from(Intros);
-    const types = await db.select().from(Types);
+  try {
+    // Fetch all data in separate queries
+    const allSayings: DBSaying[] = await dbModule.db
+      .select()
+      .from(Sayings)
+      .orderBy(desc(Sayings.createdAt))
+      .all();
+    const allIntros: DBIntro[] = await dbModule.db.select().from(Intros).all();
+    const allTypes: DBType[] = await dbModule.db.select().from(Types).all();
 
     // Create maps for quick lookups
-    const introMap = new Map(intros.map((intro) => [intro.id, intro]));
-    const typeMap = new Map(types.map((type) => [type.id, type]));
+    const introMap = new Map(allIntros.map((i: DBIntro) => [i.id, i.introText]));
+    const typeMap = new Map(allTypes.map((t: DBType) => [t.id, t.name]));
 
-    // Log any missing relationships
-    for (const saying of sayings) {
-      if (!introMap.has(saying.intro)) {
-        console.error(`Missing intro for saying ${saying.id}: intro=${saying.intro}`);
-      }
-      if (!typeMap.has(saying.type)) {
-        console.error(`Missing type for saying ${saying.id}: type=${saying.type}`);
-      }
-    }
+    // Combine data
+    const results: Saying[] = allSayings.map((saying: DBSaying) => {
+      const introText = introMap.get(saying.intro);
+      const typeName = typeMap.get(saying.type);
 
-    // Combine the data
-    return sayings.map((saying) => ({
-      ...saying,
-      introText: introMap.get(saying.intro)?.introText || '',
-      typeName: typeMap.get(saying.type)?.name || '',
-      intro_data: {
-        id: saying.intro,
-        introText: introMap.get(saying.intro)?.introText || '',
-      },
-      type_data: {
-        id: saying.type,
-        name: typeMap.get(saying.type)?.name || '',
-      },
-    }));
-  }, []);
+      if (introText === undefined) {
+        logger.error(`Missing intro for saying ${saying.id}: intro=${saying.intro}`);
+      }
+      if (typeName === undefined) {
+        logger.error(`Missing type for saying ${saying.id}: type=${saying.type}`);
+      }
+
+      return {
+        ...saying,
+        introText: introText ?? '',
+        typeName: typeName ?? '',
+      };
+    });
+
+    return results;
+  } catch (error) {
+    handleError('getAllSayings', error);
+    return [];
+  }
 }
 
 export async function getUserSayings(userId: number): Promise<Saying[]> {

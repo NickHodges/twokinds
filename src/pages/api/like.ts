@@ -1,73 +1,41 @@
 import type { APIRoute } from 'astro';
 import { db, Likes, eq, and } from 'astro:db';
-import { getSession } from 'auth-astro/server';
 
-export const POST: APIRoute = async ({ request }) => {
+import type { ExtendedSession } from '../../env';
+import { z } from 'zod';
+import { createLogger } from '../../utils/logger';
+
+const logger = createLogger('API/Like');
+
+const LikeSchema = z.object({
+  sayingId: z.number().int().positive(),
+  action: z.enum(['like', 'unlike']),
+});
+
+export const POST: APIRoute = async ({ request, locals }) => {
+  const session = locals.session as ExtendedSession | null;
+
+  if (!session?.user?.id) {
+    return new Response(JSON.stringify({ message: 'Unauthorized' }), { status: 401 });
+  }
+
+  const userId = session.user.id;
+
   try {
-    // Get the current user's session
-    const session = await getSession(request);
+    const body = await request.json();
+    const parseResult = LikeSchema.safeParse(body);
 
-    if (!session?.user?.id) {
+    if (!parseResult.success) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'You must be logged in to like a saying',
-        }),
-        {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        }
+        JSON.stringify({ message: 'Invalid input', errors: parseResult.error.flatten() }),
+        { status: 400 }
       );
     }
 
-    const userId = session.user.id;
-    let data;
+    const { sayingId, action } = parseResult.data;
 
-    // Handle both JSON and form data
-    const contentType = request.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-      data = await request.json();
-    } else {
-      const formData = await request.formData();
-      data = {
-        sayingId: Number(formData.get('sayingId')),
-        action: formData.get('action'),
-      };
-    }
-
-    const { sayingId } = data;
-
-    if (!sayingId) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Saying ID is required',
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    // Check if the like already exists
-    const existingLike = await db
-      .select()
-      .from(Likes)
-      .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
-      .get();
-
-    let liked = false;
-
-    if (existingLike) {
-      // Unlike if already liked
-      await db
-        .delete(Likes)
-        .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
-        .run();
-      liked = false;
-    } else {
-      // Like if not already liked
+    if (action === 'like') {
+      // Upsert: Try to insert, if it fails due to unique constraint, do nothing (or update timestamp)
       await db
         .insert(Likes)
         .values({
@@ -75,31 +43,30 @@ export const POST: APIRoute = async ({ request }) => {
           userId,
           createdAt: new Date(),
         })
-        .run();
-      liked = true;
+        .onConflictDoNothing(); // Or .onConflictDoUpdate(...) if you want to update timestamp
+    } else if (action === 'unlike') {
+      await db.delete(Likes).where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)));
     }
+
+    // Get updated like count
+    const likeCountResult = await db
+      .select({ count: Likes.id.count() })
+      .from(Likes)
+      .where(eq(Likes.sayingId, sayingId))
+      .get();
+
+    const totalLikes = likeCountResult?.count ?? 0;
 
     return new Response(
       JSON.stringify({
         success: true,
-        liked,
+        action: action === 'like' ? 'liked' : 'unliked',
+        totalLikes,
       }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
+      { status: 200 }
     );
   } catch (error) {
-    console.error('Error toggling like status:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: 'Failed to update like status',
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    logger.error('Error toggling like status:', error); // Use logger
+    return new Response(JSON.stringify({ message: 'Internal Server Error' }), { status: 500 });
   }
 };

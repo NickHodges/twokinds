@@ -1,7 +1,10 @@
-import { db, Sayings, Types } from 'astro:db';
+import { db, Sayings, Types, eq } from 'astro:db';
 import type { APIRoute } from 'astro';
 import type { ExtendedSession } from '../../env';
 import { z } from 'zod';
+import { createLogger } from '../../utils/logger';
+
+const logger = createLogger('API/CreateSaying');
 
 // Define the form schema for validation - make newType conditional
 const formSchema = z.discriminatedUnion('typeChoice', [
@@ -52,12 +55,17 @@ export const GET: APIRoute = async () => {
 };
 
 // Handle form submission via API
-export const POST: APIRoute = async ({ request, locals, redirect }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
+  const session = locals.session as ExtendedSession | null;
+
+  if (!session?.user?.id) {
+    return new Response(JSON.stringify({ message: 'Unauthorized' }), { status: 401 });
+  }
+
   try {
-    // Get form data from request
     const formData = await request.formData();
     const formValues = Object.fromEntries(formData.entries());
-    console.log('Received form data:', formValues);
+    logger.info('Received form data:', formValues);
 
     // Convert to the expected format
     const data = {
@@ -72,45 +80,50 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
     // Parse and validate the input data
     const parseResult = formSchema.safeParse(data);
     if (!parseResult.success) {
-      console.error('Validation errors:', parseResult.error);
-      return redirect(
-        `/create?error=${encodeURIComponent(parseResult.error.issues.map((i) => i.message).join(', '))}`,
-        302
+      logger.error('Validation errors:', parseResult.error.flatten());
+      return new Response(
+        JSON.stringify({ message: 'Invalid input', errors: parseResult.error.flatten() }),
+        { status: 400 }
       );
     }
 
     const body = parseResult.data;
-    console.log('Validated data:', body);
-
-    // Get session from locals
-    const session = locals.session as ExtendedSession | null;
-    console.log('API session:', session?.user);
-
-    if (!session?.user?.id) {
-      return redirect('/create?error=You must be logged in to create a saying', 302);
-    }
+    logger.info('Validated data:', body);
+    logger.info('API session user ID:', session.user.id);
 
     // Process type selection
     let typeId: number;
 
     if (body.typeChoice === 'new') {
       // Create a new type
-      const newTypeResult = await db
-        .insert(Types)
-        .values({
-          name: body.newType,
-          createdAt: new Date(),
-        })
-        .returning();
-
-      if (!newTypeResult || newTypeResult.length === 0) {
-        return redirect('/create?error=Failed to create new type', 302);
+      const existingType = await db
+        .select({ id: Types.id })
+        .from(Types)
+        .where(eq(Types.name, body.newType))
+        .get();
+      if (existingType) {
+        typeId = existingType.id;
+      } else {
+        const newTypeResult = await db
+          .insert(Types)
+          .values({ name: body.newType, createdAt: new Date() })
+          .returning({ id: Types.id });
+        if (!newTypeResult || newTypeResult.length === 0) {
+          return new Response(JSON.stringify({ message: 'Failed to create new type' }), {
+            status: 500,
+          });
+        }
+        typeId = newTypeResult[0].id;
       }
-
-      typeId = newTypeResult[0].id;
     } else {
       // Use existing type
       typeId = body.type;
+    }
+
+    if (!typeId) {
+      return new Response(JSON.stringify({ message: 'Invalid type selected or created' }), {
+        status: 400,
+      });
     }
 
     // Insert data into database
@@ -121,16 +134,19 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
       secondKind: body.secondKind,
       userId: session.user.id,
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    console.log('Inserting saying:', values);
-    const result = await db.insert(Sayings).values(values).returning();
+    logger.info('Inserting saying:', values);
+    const result = await db.insert(Sayings).values(values).returning({ id: Sayings.id });
 
-    // Redirect to success page
-    return redirect(`/create?success=true&id=${result[0].id}`, 302);
+    if (!result || result.length === 0) {
+      return new Response(JSON.stringify({ message: 'Failed to save saying' }), { status: 500 });
+    }
+
+    return new Response(JSON.stringify({ success: true, id: result[0].id }), { status: 201 });
   } catch (error) {
-    console.error('Error in create-saying API:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    return redirect(`/create?error=${encodeURIComponent(errorMessage)}`, 302);
+    logger.error('Error in create-saying API:', error);
+    return new Response(JSON.stringify({ message: 'Internal Server Error' }), { status: 500 });
   }
 };

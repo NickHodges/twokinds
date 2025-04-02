@@ -1,32 +1,29 @@
 import type { APIRoute } from 'astro';
-import { db } from 'astro:db';
+import { db, Users } from 'astro:db';
+import { createLogger } from '../../utils/logger';
+
+const logger = createLogger('API/TestDB');
 
 export const GET: APIRoute = async () => {
   try {
-    // Test the database connection by querying the Users table
-    const users = await db.select().from('Users').all();
+    // Check database connection by selecting count of users
+    // Drizzle/Astro:DB doesn't expose a simple .count() in select,
+    // so we fetch all IDs and count them, or rely on the query not throwing.
+    // For a simple connection test, just trying to query is enough.
+    await db.select({ id: Users.id }).from(Users).limit(1).get();
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Database connection successful',
-        users: users,
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    return new Response(JSON.stringify({ message: 'Database connected successfully' }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   } catch (error) {
-    console.error('Database connection error:', error);
+    // Type guard for error
+    const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+    logger.error('Database connection error:', errorMessage, error); // Log message and original error
     return new Response(
-      JSON.stringify({
-        success: false,
-        message: 'Database connection failed',
-        error: error.message,
-      }),
+      JSON.stringify({ message: 'Database connection failed', error: errorMessage }),
       {
         status: 500,
         headers: {
