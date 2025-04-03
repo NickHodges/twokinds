@@ -73,34 +73,45 @@ export const server = {
     input: ToggleLikeSchema,
     handler: async (input, { locals }) => {
       const session = locals.session as ExtendedSession | null;
+      logger.info('toggleLike action started', { userId: session?.user?.id, input }); // Log start
       if (!session?.user?.id) {
+        logger.warn('toggleLike: Unauthorized access attempt.');
         return { success: false, error: 'You must be logged in to like a saying' };
       }
       const userId = session.user.id;
       const { sayingId, action } = input;
 
       try {
+        logger.info('Checking for existing like', { userId, sayingId });
         const existingLike = await db
           .select()
           .from(Likes)
           .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
           .get();
+        logger.info('Existing like found:', existingLike ? existingLike.id : 'None');
 
         const shouldLike = action === 'like' || (action === undefined && !existingLike);
         const shouldUnlike = action === 'unlike' || (action === undefined && !!existingLike);
+        logger.info('Determined actions:', { shouldLike, shouldUnlike });
 
         if (shouldLike && !existingLike) {
+          logger.info('Attempting to insert like');
           await db.insert(Likes).values({
             sayingId,
             userId,
             createdAt: new Date(),
           });
-          return { success: true, action: 'liked' };
+          logger.info('Like inserted successfully');
+          return { success: true, action: 'liked' }; // Return liked
         } else if (shouldUnlike && existingLike) {
+          logger.info('Attempting to delete like');
           await db.delete(Likes).where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)));
-          return { success: true, action: 'unliked' };
+          logger.info('Like deleted successfully');
+          return { success: true, action: 'unliked' }; // Return unliked
         } else {
-          return { success: true, action: shouldLike ? 'already-liked' : 'already-unliked' };
+          const resultingAction = shouldLike ? 'already-liked' : 'already-unliked';
+          logger.info('No DB action needed:', { resultingAction });
+          return { success: true, action: resultingAction };
         }
       } catch (error) {
         logger.error('Error updating like status:', error);

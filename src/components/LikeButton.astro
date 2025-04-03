@@ -1,4 +1,6 @@
 ---
+import { actions } from 'astro:actions'; // Import actions
+
 /**
  * @typedef {object} Props
  * @property {number} sayingId - ID of the saying to like
@@ -21,12 +23,14 @@ const {
   isAuthenticated ? (
     <form
       method="POST"
-      action="/api/like"
       data-saying-id={sayingId}
       data-total-likes={totalLikes}
       data-liked={initialLiked}
+      data-like-form
     >
+      <input type="hidden" name="sayingId" value={sayingId} />
       <button
+        formaction={actions.toggleLike}
         type="submit"
         class:list={[
           'flex items-center gap-1 rounded-full px-3 py-1.5 text-sm transition-colors',
@@ -52,7 +56,7 @@ const {
           <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
         </svg>
         <span>{initialLiked ? 'Liked' : 'Like'}</span>
-        <span class="ml-1">({totalLikes})</span>
+        <span class="like-count ml-1">({totalLikes})</span>
       </button>
     </form>
   ) : (
@@ -78,38 +82,76 @@ const {
 }
 
 <script>
-  // Client-side enhancement
+  import { actions } from 'astro:actions';
+
   document.addEventListener('DOMContentLoaded', () => {
-    const forms = document.querySelectorAll<HTMLFormElement>('form[data-saying-id]');
+    const forms = document.querySelectorAll<HTMLFormElement>('form[data-like-form]');
 
     forms.forEach((form) => {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const button = form.querySelector('button');
+
+        const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
         if (!button) return;
 
+        const formData = new FormData(form);
+
+        button.disabled = true;
+        const originalButtonHtml = button.innerHTML;
+        // Set loading state
+        button.innerHTML = `
+          <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg> Processing...
+        `;
+
+        // Initialize state variables based on current dataset values before the action
+        let liked = form.dataset.liked === 'true';
+        let newTotalLikes = parseInt(form.dataset.totalLikes || '0');
+
         try {
-          button.disabled = true;
-          const sayingId = form.dataset.sayingId;
+          const result = await actions.toggleLike(formData);
 
-          const response = await fetch('/api/like', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ sayingId: Number(sayingId) }),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to like/unlike');
+          if (result.error) {
+            throw new Error(result.error.message || 'Failed to update like status.');
           }
 
-          const { liked } = await response.json();
-          form.dataset.liked = liked.toString();
+          const data = result.data;
+          if (!data || typeof data.action === 'undefined') {
+            throw new Error('Invalid response format from action.');
+          }
 
-          // Update button appearance
+          // Update state based on the successful action result
+          liked = data.action === 'liked';
+          const currentTotalLikes = parseInt(form.dataset.totalLikes || '0');
+          newTotalLikes =
+            data.action === 'liked'
+              ? currentTotalLikes + 1
+              : data.action === 'unliked'
+                ? Math.max(0, currentTotalLikes - 1)
+                : currentTotalLikes;
+
+          // Update data attributes immediately after successful action
+          form.dataset.liked = liked.toString();
+          form.dataset.totalLikes = newTotalLikes.toString();
+        } catch (error) {
+          console.error('Error toggling like:', error);
+          alert(error instanceof Error ? error.message : 'An unknown error occurred.');
+          // NOTE: State variables (liked, newTotalLikes) will retain their pre-error values
+          // because the code execution jumps to the finally block.
+        } finally {
+          // Restore the original button HTML structure first
+          button.innerHTML = originalButtonHtml;
+
+          // NOW, query elements within the restored structure
+          const likeTextSpan = button.querySelector('span:not(.like-count)');
+          const likeCountSpan = button.querySelector('span.like-count');
           const svg = button.querySelector('svg');
+
+          // Update the content and appearance based on the FINAL state (liked, newTotalLikes)
+          if (likeTextSpan) likeTextSpan.textContent = liked ? 'Liked' : 'Like';
+          if (likeCountSpan) likeCountSpan.textContent = `(${newTotalLikes})`;
           if (svg) svg.setAttribute('fill', liked ? 'currentColor' : 'none');
 
           button.classList.toggle('bg-red-100', liked);
@@ -119,19 +161,6 @@ const {
           button.classList.toggle('text-gray-600', !liked);
           button.classList.toggle('hover:bg-gray-200', !liked);
 
-          // Update text and like count
-          const [likeText, likeCount] = button.querySelectorAll('span');
-          if (likeText) likeText.textContent = liked ? 'Liked' : 'Like';
-
-          // Update the like count
-          let totalLikes = parseInt(form.dataset.totalLikes || '0');
-          totalLikes = liked ? totalLikes + 1 : totalLikes - 1;
-          form.dataset.totalLikes = totalLikes.toString();
-          if (likeCount) likeCount.textContent = `(${totalLikes})`;
-        } catch (error) {
-          console.error('Error toggling like:', error);
-          alert('Failed to update like status. Please try again.');
-        } finally {
           button.disabled = false;
         }
       });
