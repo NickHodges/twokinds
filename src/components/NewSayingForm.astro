@@ -1,6 +1,8 @@
 ---
-import NotificationBanner from './NotificationBanner.astro';
-import ActionButtons from './ActionButtons.astro';
+// import NotificationBanner from './NotificationBanner.astro';
+// import ActionButtons from './ActionButtons.astro';
+import { actions } from 'astro:actions';
+import '@/styles/NewSayingForm.css';
 
 export interface Props {
   intros: {
@@ -11,35 +13,15 @@ export interface Props {
     id: number;
     typeName: string;
   }[];
-  error?: string;
-  success?: string;
-  newSayingId?: number;
 }
 
-const { intros = [], types = [], error, success, newSayingId } = Astro.props;
+const { intros = [], types = [] } = Astro.props;
 ---
 
 <div class="w-full">
-  {
-    success && (
-      <NotificationBanner type="success">
-        <p>Your saying has been created successfully!</p>
-        <ActionButtons viewUrl={`/saying/${newSayingId}`} createAnotherUrl="/create" />
-      </NotificationBanner>
-    )
-  }
-
-  {
-    error && (
-      <NotificationBanner type="error">
-        <p>{error}</p>
-      </NotificationBanner>
-    )
-  }
-
   <form
-    action="/api/create-saying"
     method="POST"
+    id="new-saying-form"
     class="space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
   >
     <div>
@@ -164,7 +146,9 @@ const { intros = [], types = [], error, success, newSayingId } = Astro.props;
       </a>
       <button
         type="submit"
-        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+        class="submit-button inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+        id="submit-button"
+        formaction={actions.submitSaying}
       >
         Create Saying
       </button>
@@ -173,33 +157,40 @@ const { intros = [], types = [], error, success, newSayingId } = Astro.props;
 </div>
 
 <script>
-  // Handle type choice radio buttons
   document.addEventListener('DOMContentLoaded', () => {
-    const typeExistingRadio = document.getElementById('typeExisting') as HTMLInputElement;
-    const typeNewRadio = document.getElementById('typeNew') as HTMLInputElement;
+    const typeExistingRadio = document.getElementById('typeExisting') as HTMLInputElement | null;
+    const typeNewRadio = document.getElementById('typeNew') as HTMLInputElement | null;
     const existingTypeContainer = document.getElementById('existingTypeContainer');
     const newTypeContainer = document.getElementById('newTypeContainer');
-    const typeSelect = document.getElementById('type') as HTMLSelectElement;
-    const newTypeInput = document.getElementById('newType') as HTMLInputElement;
+    const typeSelect = document.getElementById('type') as HTMLSelectElement | null;
+    const newTypeInput = document.getElementById('newType') as HTMLInputElement | null;
 
     function updateTypeFields() {
+      if (
+        !typeExistingRadio ||
+        !typeNewRadio ||
+        !existingTypeContainer ||
+        !newTypeContainer ||
+        !typeSelect ||
+        !newTypeInput
+      ) {
+        console.warn('Type toggle elements not found.');
+        return;
+      }
       if (typeExistingRadio.checked) {
-        existingTypeContainer?.classList.remove('hidden');
-        newTypeContainer?.classList.add('hidden');
+        existingTypeContainer.classList.remove('hidden');
+        newTypeContainer.classList.add('hidden');
         typeSelect.required = true;
         newTypeInput.required = false;
       } else {
-        existingTypeContainer?.classList.add('hidden');
-        newTypeContainer?.classList.remove('hidden');
+        existingTypeContainer.classList.add('hidden');
+        newTypeContainer.classList.remove('hidden');
         typeSelect.required = false;
         newTypeInput.required = true;
       }
     }
-
     typeExistingRadio?.addEventListener('change', updateTypeFields);
     typeNewRadio?.addEventListener('change', updateTypeFields);
-
-    // Initial update
-    updateTypeFields();
+    if (typeExistingRadio) updateTypeFields();
   });
 </script>

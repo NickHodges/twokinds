@@ -1,11 +1,13 @@
 ---
 import { db, Intros, Types } from 'astro:db';
 import '../../styles/index.css';
+import '../../styles/create-page.css';
 import MainLayout from '../../layouts/MainLayout.astro';
 import NewSayingForm from '../../components/NewSayingForm.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import { getSession } from 'auth-astro/server';
 import type { IntroType, SayingType } from '../../types/saying';
+import { actions } from 'astro:actions';
 
 // Get the current user's session
 const session = await getSession(Astro.request);
@@ -15,7 +17,18 @@ if (!session) {
   return Astro.redirect('/auth/signin?redirect=/create');
 }
 
-// Fetch data from database
+// --- Handle Action Result and Redirect ---
+// Use the GLOBAL Astro object
+const result = Astro.getActionResult(actions.submitSaying);
+if (result && !result.error && result.data?.success && result.data.createdId) {
+  return Astro.redirect(`/saying/${result.data.createdId}`);
+}
+// If there was an error, Astro Actions may display it near form fields.
+// Optionally, handle `result.error` here for custom display if needed.
+// let actionError = result?.error?.message; // Example
+// --- End Action Result Handling ---
+
+// Fetch data from database for form population
 const introsData = (await db.select().from(Intros)) as IntroType[];
 const typesData = (await db.select().from(Types)) as SayingType[];
 
@@ -30,27 +43,8 @@ const types = typesData.map((type) => ({
   typeName: type.name,
 }));
 
-// Initialize success/error values
-let success = '';
-let error = '';
-let newSayingId: number | undefined = undefined;
-
-// Handle form submission result from action redirect
-if (Astro.url.searchParams.has('success')) {
-  success = Astro.url.searchParams.get('success') === 'true' ? 'true' : '';
-  if (success && Astro.url.searchParams.has('id')) {
-    newSayingId = Number(Astro.url.searchParams.get('id')) || undefined;
-  }
-}
-
-if (Astro.url.searchParams.has('error')) {
-  error = decodeURIComponent(Astro.url.searchParams.get('error') || '');
-}
-
 // Don't prerender so we always get fresh data
 export const prerender = false;
-
-// Action results will be processed in the NewSayingForm component
 ---
 
 <MainLayout>
@@ -58,48 +52,7 @@ export const prerender = false;
     <PageHeader title="Create a New Saying" />
 
     <div class="mt-2 mb-8 p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md">
-      <style>
-        input[name='firstKind'],
-        input[name='secondKind'] {
-          width: 100% !important;
-        }
-
-        select,
-        select option {
-          color: black !important;
-          background-color: white !important;
-        }
-
-        .dark select {
-          background-color: #1f2937 !important;
-          color: white !important;
-        }
-
-        .dark select option {
-          background-color: #1f2937 !important;
-          color: white !important;
-        }
-
-        button[type='submit'] {
-          display: block !important;
-          visibility: visible !important;
-          opacity: 1 !important;
-          width: auto !important;
-          margin-top: 1.5rem !important;
-          background-color: #3b82f6 !important;
-          color: white !important;
-          font-weight: bold !important;
-          padding: 0.75rem 1.5rem !important;
-        }
-      </style>
-
-      <NewSayingForm
-        intros={intros}
-        types={types}
-        success={success}
-        error={error}
-        newSayingId={newSayingId}
-      />
+      <NewSayingForm intros={intros} types={types} />
     </div>
   </div>
 </MainLayout>

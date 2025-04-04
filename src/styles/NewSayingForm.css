@@ -1,0 +1,36 @@
+/* Styles originally in src/components/NewSayingForm.astro */
+input[name='firstKind'],
+input[name='secondKind'] {
+  width: 100% !important;
+}
+
+select,
+select option {
+  color: black !important;
+  background-color: white !important;
+}
+
+.dark select {
+  background-color: #1f2937 !important;
+  color: white !important;
+}
+
+.dark select option {
+  background-color: #1f2937 !important;
+  color: white !important;
+}
+
+/* Styles originally applied to the submit button within NewSayingForm.astro */
+/* Consider refining selector if used elsewhere */
+form#new-saying-form button[type='submit'] {
+  /* Added form ID for specificity */
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: auto !important;
+  margin-top: 1.5rem !important;
+  background-color: #3b82f6 !important;
+  color: white !important;
+  font-weight: bold !important;
+  padding: 0.75rem 1.5rem !important;
+}

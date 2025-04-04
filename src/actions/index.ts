@@ -126,16 +126,15 @@ export const server = {
     input: NewSayingSchema,
     handler: async (input, context) => {
       const session = context.locals.session as ExtendedSession | null;
-      // Use context.url for origin if needed, but return objects
-      // const redirectBase = context.url?.origin || '';
 
       if (!session?.user?.id) {
-        // Return error object
+        // Return error object for Astro's built-in error handling
         return { success: false, error: 'You must be logged in to create a saying' };
       }
 
-      let typeId = 0;
       try {
+        // --- Simplified Type Logic ---
+        let typeId = 0;
         if (input.typeChoice === 'new') {
           const existingType = await db
             .select({ id: Types.id })
@@ -150,7 +149,7 @@ export const server = {
               .values({ name: input.newType, createdAt: new Date() })
               .returning({ id: Types.id });
             if (!newTypeResult || newTypeResult.length === 0) {
-              // Return error object
+              // Return minimal error for action failure
               return { success: false, error: 'Failed to create new type' };
             }
             typeId = newTypeResult[0].id;
@@ -158,12 +157,17 @@ export const server = {
         } else {
           typeId = input.type;
         }
-
-        if (!typeId) {
-          // Return error object
-          return { success: false, error: 'Invalid type selected or created' };
+        // Zod schema already validates positive integer for existing type
+        if (!typeId && input.typeChoice === 'existing') {
+          return { success: false, error: 'Invalid type selected.' };
         }
+        if (!typeId && input.typeChoice === 'new') {
+          // This case should be covered by newType creation logic, but as fallback:
+          return { success: false, error: 'Failed to establish type ID.' };
+        }
+        // --- End Type Logic ---
 
+        // --- Database Insertion ---
         const values = {
           intro: input.intro,
           type: typeId,
@@ -174,14 +178,27 @@ export const server = {
           updatedAt: new Date(),
         };
         const result = await db.insert(Sayings).values(values).returning({ id: Sayings.id });
-        logger.info(`Saying ${result[0].id} created successfully by user ${session.user.id}`);
-        // Return success object
-        return { success: true, createdId: result[0].id };
+        // --- End Insertion ---
+
+        // --- Check Insertion Result ---
+        if (!result || result.length === 0 || !result[0].id) {
+          logger.error('Failed to retrieve ID after insertion.');
+          return { success: false, error: 'Database error during insertion.' };
+        }
+        // --- End Check ---
+
+        // --- Return success JSON for getActionResult ---
+        const newId = result[0].id;
+        logger.info(`Saying ${newId} created successfully by user ${session.user.id}`);
+        return { success: true, createdId: newId };
+        // ----------------------------------------------
       } catch (error) {
-        logger.error('Error saving saying:', error);
+        // --- Catch Unexpected Errors ---
+        logger.error('Unexpected error saving saying:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        // Return error object
+        // Return minimal error for action failure
         return { success: false, error: errorMessage };
+        // -----------------------------
       }
     },
   }),
