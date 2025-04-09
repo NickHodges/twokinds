@@ -55,7 +55,7 @@ const {
         >
           <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
         </svg>
-        <span>{initialLiked ? 'Liked' : 'Like'}</span>
+        <span>{initialLiked ? '' : ''}</span>
         <span class="like-count ml-1">({totalLikes})</span>
       </button>
     </form>
@@ -103,7 +103,7 @@ const {
           <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg> Processing...
+          </svg>
         `;
 
         // Initialize state variables based on current dataset values before the action
@@ -145,12 +145,12 @@ const {
           button.innerHTML = originalButtonHtml;
 
           // NOW, query elements within the restored structure
-          const likeTextSpan = button.querySelector('span:not(.like-count)');
+
           const likeCountSpan = button.querySelector('span.like-count');
           const svg = button.querySelector('svg');
 
           // Update the content and appearance based on the FINAL state (liked, newTotalLikes)
-          if (likeTextSpan) likeTextSpan.textContent = liked ? 'Liked' : 'Like';
+
           if (likeCountSpan) likeCountSpan.textContent = `(${newTotalLikes})`;
           if (svg) svg.setAttribute('fill', liked ? 'currentColor' : 'none');
 
