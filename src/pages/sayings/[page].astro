@@ -58,7 +58,7 @@ export const prerender = false;
 ---
 
 <MainLayout title={`Sayings - Page ${currentPage}`}>
-  {currentPage === 1 && <Hero session={session} />}
+  <Hero session={session} />
   <SayingList sayings={page.data} session={session} />
   {page.lastPage > 1 && <Pagination page={page} basePath="/sayings" />}
 </MainLayout>
