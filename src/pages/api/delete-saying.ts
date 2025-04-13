@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Check if the saying exists and belongs to the user
+    // Check if the saying exists
     const saying = await db.select().from(Sayings).where(eq(Sayings.id, sayingId)).get();
 
     if (!saying) {
@@ -64,21 +64,32 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Convert session user ID to number for comparison
-    const numericUserId = parseInt(session.user.id, 10);
-    
-    if (saying.userId !== numericUserId) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'You can only delete your own sayings',
-        }),
-        {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+    // In development environment, allow any authenticated user to delete any saying
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    if (!isDevelopment) {
+      // Convert session user ID to number for comparison
+      const numericUserId = parseInt(session.user.id, 10);
+
+      // In production, only allow users to delete their own sayings
+      if (saying.userId !== numericUserId) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'You can only delete your own sayings',
+          }),
+          {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
     }
+
+    // Log the deletion operation
+    console.log(
+      `Deleting saying ID ${sayingId}${isDevelopment ? ' (development mode bypass)' : ''}`
+    );
 
     // Delete all likes for this saying first
     await db.delete(Likes).where(eq(Likes.sayingId, sayingId)).run();

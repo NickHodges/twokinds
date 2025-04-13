@@ -91,7 +91,9 @@ export const server = {
         } else if (shouldUnlike && existingLike.length > 0) {
           try {
             // Remove the like
-            await db.delete(Likes).where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)));
+            await db
+              .delete(Likes)
+              .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)));
             return {
               success: true,
               action: 'unliked',
@@ -222,10 +224,10 @@ export const server = {
         };
 
         console.log('Inserting saying:', values);
-        
+
         try {
           const result = await db.insert(Sayings).values(values).returning();
-          
+
           // Return redirect with success
           const redirectUrl = url
             ? `${url.origin}/create?success=true&id=${result[0].id}`
@@ -233,7 +235,7 @@ export const server = {
           return Response.redirect(redirectUrl, 302);
         } catch (dbError) {
           console.error('Database error when inserting saying:', dbError);
-          
+
           // If we're in production and having database issues, provide a more user-friendly error
           if (process.env.NODE_ENV === 'production') {
             const redirectUrl = url
@@ -241,7 +243,7 @@ export const server = {
               : `/create?error=${encodeURIComponent('Service temporarily unavailable')}`;
             return Response.redirect(redirectUrl, 302);
           }
-          
+
           // In development, show the actual error for debugging
           throw dbError;
         }
@@ -276,6 +278,88 @@ export const server = {
         return {
           success: false,
           error: 'Authentication failed',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        };
+      }
+    },
+  }),
+
+  // Delete saying action
+  deleteSaying: defineAction({
+    name: 'deleteSaying',
+    accept: 'form',
+    input: z.object({
+      sayingId: z.coerce.number().int().positive('Valid saying ID is required'),
+      userId: z.coerce.number().int().positive('Valid user ID is required'),
+    }),
+
+    async handler({ request }) {
+      try {
+        // Get the session
+        const session = await getSession(request);
+        if (!session?.user?.id) {
+          return {
+            success: false,
+            error: 'You must be logged in to delete a saying',
+          };
+        }
+
+        const form = await request.formData();
+        const sayingId = Number(form.get('sayingId'));
+        const requestedUserId = Number(form.get('userId'));
+
+        // Use session.user.dbId if available, otherwise session.user.id
+        const currentUserId = session.user.dbId || session.user.id;
+
+        console.log('Delete saying request:', {
+          sayingId,
+          requestedUserId,
+          currentUserId,
+          sessionUserId: session.user.id,
+          dbId: session.user.dbId,
+        });
+
+        // Check if the saying exists
+        const saying = await db.select().from(Sayings).where(eq(Sayings.id, sayingId)).get();
+
+        if (!saying) {
+          return {
+            success: false,
+            error: 'Saying not found',
+          };
+        }
+
+        // Verify ownership - compare numerical values
+        if (Number(saying.userId) !== Number(currentUserId)) {
+          console.error('Unauthorized delete attempt:', {
+            sayingUserId: saying.userId,
+            currentUserId: currentUserId,
+            session: session.user,
+          });
+
+          return {
+            success: false,
+            error: 'You are not authorized to delete this saying',
+          };
+        }
+
+        // Delete associated likes first
+        await db.delete(Likes).where(eq(Likes.sayingId, sayingId)).run();
+
+        // Delete the saying
+        await db.delete(Sayings).where(eq(Sayings.id, sayingId)).run();
+
+        console.log('Saying deleted successfully:', sayingId);
+
+        return {
+          success: true,
+          message: 'Saying deleted successfully',
+        };
+      } catch (error) {
+        console.error('Error deleting saying:', error);
+        return {
+          success: false,
+          error: 'Failed to delete saying',
           message: error instanceof Error ? error.message : 'Unknown error',
         };
       }

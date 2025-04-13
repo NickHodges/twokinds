@@ -2,10 +2,11 @@
 import MainLayout from '../../layouts/MainLayout.astro';
 import { getSession } from 'auth-astro/server';
 import authConfig from '../../../auth.config';
-import { db, Sayings, Intros, Types, eq, and } from 'astro:db';
+import { db, Sayings, Intros, Types, eq, and, Users } from 'astro:db';
 import type { ExtendedSession } from '../../env';
 import { getSayingById } from '../../lib/db-service';
 
+// Get the session
 const session = (await getSession(Astro.request, authConfig)) as ExtendedSession | null;
 
 // This should be a protected page
@@ -15,7 +16,7 @@ if (!session?.user?.id) {
 
 // Get the ID from the URL
 const { id } = Astro.params;
-const sayingId = parseInt(id || '0');
+const sayingId = parseInt(id || '0', 10);
 
 if (!sayingId) {
   return Astro.redirect('/dashboard?error=invalid-id');
@@ -24,9 +25,68 @@ if (!sayingId) {
 // Fetch the saying
 const saying = await getSayingById(sayingId);
 
-// If no saying found or user is not the owner, redirect
-if (!saying || saying.userId !== session.user.id) {
-  return Astro.redirect('/dashboard?error=not-found-or-unauthorized');
+if (!saying) {
+  console.error(`No saying found with ID: ${sayingId}`);
+  return Astro.redirect('/dashboard?error=not-found');
+}
+
+// Get the current user's database ID
+let currentUserId: number | null = null;
+
+// First check if dbId is already in the session
+if (session.user.dbId) {
+  currentUserId =
+    typeof session.user.dbId === 'string' ? parseInt(session.user.dbId, 10) : session.user.dbId;
+}
+
+// If not found in session, look up by email
+if (!currentUserId && session.user.email) {
+  try {
+    const user = await db.select().from(Users).where(eq(Users.email, session.user.email)).get();
+
+    if (user) {
+      currentUserId = user.id;
+      // Store for future use
+      if (session.user) {
+        session.user.dbId = user.id;
+      }
+    }
+  } catch (e) {
+    console.error('Error looking up user by email:', e);
+  }
+}
+
+// Convert saying's userId to a number for consistent comparison
+const sayingUserId =
+  typeof saying.userId === 'string' ? parseInt(saying.userId, 10) : saying.userId;
+
+// Log detailed information for debugging
+console.log('Edit saying authorization check:', {
+  sayingId,
+  sayingUserId,
+  sayingUserIdType: typeof saying.userId,
+  currentUserId,
+  sessionUserId: session.user.id,
+  sessionUserEmail: session.user.email,
+  sessionDbId: session.user.dbId,
+  dbIdType: typeof session.user.dbId,
+});
+
+// SPECIAL HANDLING FOR DEV MODE: In dev, if saying is owned by user ID 1 (seed data),
+// allow the current user to edit it regardless of their ID
+const isDev = import.meta.env.DEV;
+const isSeedData = sayingUserId === 1;
+const userCanEditSeed = isDev && isSeedData;
+const userOwnsThis = currentUserId && sayingUserId === currentUserId;
+
+if (!userOwnsThis && !userCanEditSeed) {
+  console.log('User not authorized to edit saying:', {
+    sayingUserId,
+    currentUserId,
+    isDev,
+    isSeedData,
+  });
+  return Astro.redirect('/dashboard?error=not-authorized');
 }
 
 // Fetch all available intros for the dropdown
@@ -40,8 +100,8 @@ if (Astro.request.method === 'POST') {
   try {
     const formData = await Astro.request.formData();
 
-    const introId = parseInt(formData.get('intro')?.toString() || '0');
-    const typeId = parseInt(formData.get('type')?.toString() || '0');
+    const introId = parseInt(formData.get('intro')?.toString() || '0', 10);
+    const typeId = parseInt(formData.get('type')?.toString() || '0', 10);
     const typeChoice = formData.get('typeChoice')?.toString() || 'existing';
     const newType = formData.get('newType')?.toString() || '';
     const firstKind = formData.get('firstKind')?.toString() || '';
@@ -57,11 +117,7 @@ if (Astro.request.method === 'POST') {
     // If user chose to create a new type
     if (typeChoice === 'new' && newType) {
       // Check if type already exists
-      const existingType = await db
-        .select()
-        .from(Types)
-        .where(eq(Types.name, newType))
-        .get();
+      const existingType = await db.select().from(Types).where(eq(Types.name, newType)).get();
 
       if (existingType) {
         // Use existing type if found
@@ -72,7 +128,7 @@ if (Astro.request.method === 'POST') {
           .insert(Types)
           .values({
             name: newType,
-            createdAt: new Date()
+            createdAt: new Date(),
           })
           .returning();
 
@@ -84,7 +140,7 @@ if (Astro.request.method === 'POST') {
       }
     }
 
-    // Update the saying
+    // Update the saying - use numeric IDs consistently
     await db
       .update(Sayings)
       .set({
@@ -92,8 +148,9 @@ if (Astro.request.method === 'POST') {
         type: finalTypeId,
         firstKind,
         secondKind,
+        updatedAt: new Date(),
       })
-      .where(and(eq(Sayings.id, sayingId), eq(Sayings.userId, session.user.id)));
+      .where(and(eq(Sayings.id, sayingId), eq(Sayings.userId, currentUserId)));
 
     // Redirect back to dashboard with success message
     return Astro.redirect('/dashboard?success=saying-updated');
@@ -118,11 +175,13 @@ const errorMessage = url.searchParams.get('error');
       </p>
     </div>
 
-    {errorMessage && (
-      <div class="mb-6 p-4 bg-red-100 border border-red-200 text-red-700 rounded-md">
-        <p>{errorMessage}</p>
-      </div>
-    )}
+    {
+      errorMessage && (
+        <div class="mb-6 p-4 bg-red-100 border border-red-200 text-red-700 rounded-md">
+          <p>{errorMessage}</p>
+        </div>
+      )
+    }
 
     <form method="POST" class="space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div>
@@ -135,11 +194,13 @@ const errorMessage = url.searchParams.get('error');
           required
           class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
         >
-          {intros.map((intro) => (
-            <option value={intro.id} selected={intro.id === saying.intro}>
-              {intro.introText}
-            </option>
-          ))}
+          {
+            intros.map((intro) => (
+              <option value={intro.id} selected={intro.id === saying.intro}>
+                {intro.introText}
+              </option>
+            ))
+          }
         </select>
       </div>
 
@@ -183,16 +244,21 @@ const errorMessage = url.searchParams.get('error');
           name="type"
           class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
         >
-          {types.map((type) => (
-            <option value={type.id} selected={type.id === saying.type}>
-              {type.name}
-            </option>
-          ))}
+          {
+            types.map((type) => (
+              <option value={type.id} selected={type.id === saying.type}>
+                {type.name}
+              </option>
+            ))
+          }
         </select>
       </div>
 
       <div id="newTypeContainer" class="hidden">
-        <label for="newType" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label
+          for="newType"
+          class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
           New Type Name
         </label>
         <input
@@ -205,7 +271,10 @@ const errorMessage = url.searchParams.get('error');
       </div>
 
       <div>
-        <label for="firstKind" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label
+          for="firstKind"
+          class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
           First Kind (Those who...)
         </label>
         <input
@@ -219,7 +288,10 @@ const errorMessage = url.searchParams.get('error');
       </div>
 
       <div>
-        <label for="secondKind" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label
+          for="secondKind"
+          class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
           Second Kind (Those who...)
         </label>
         <input

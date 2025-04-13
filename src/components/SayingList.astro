@@ -3,6 +3,7 @@ import SayingCard from './SayingCard.astro';
 import EmptyState from './EmptyState.astro';
 import type { Saying } from '../types/saying';
 import { db, Likes, eq, and, count } from 'astro:db';
+import { getUserIdFromSession } from '../utils/user-db';
 
 const {
   sayings,
@@ -16,14 +17,27 @@ const {
 
 const isAuthenticated = !!session?.user;
 
+// Get user ID as number consistently
+const userId = getUserIdFromSession(session);
+
 // Get liked status and total likes for each saying
 const likedStatus = new Map<string, boolean>();
 const totalLikes = new Map<string, number>();
 
+// Add debug logging to check the user ID comparison
+for (const saying of sayings) {
+  console.log('Debug canEdit:', {
+    userId,
+    sayingUserId: Number(saying.userId),
+    isSame: userId === Number(saying.userId),
+    sayingRaw: saying,
+  });
+}
+
 for (const saying of sayings) {
   // Convert ID from string to number for database queries
   const sayingId = Number(saying.id);
-  
+
   // Get total likes for this saying
   if (Number.isFinite(sayingId)) {
     const likesResult = await db
@@ -37,29 +51,16 @@ for (const saying of sayings) {
   }
 
   // Get liked status if user is authenticated
-  if (session?.user?.id) {
-    const userIdString = session.user.id.toString();
-    const isNumericId = /^\d+$/.test(userIdString);
-    
+  if (userId) {
     // Ensure the sayingId is a valid number
     if (Number.isFinite(sayingId)) {
       try {
-        let like;
-        if (isNumericId) {
-          // For numeric user IDs
-          like = await db
-            .select()
-            .from(Likes)
-            .where(and(eq(Likes.userId, Number(userIdString)), eq(Likes.sayingId, sayingId)))
-            .get();
-        } else {
-          // For string user IDs (like UUIDs from OAuth)
-          like = await db
-            .select()
-            .from(Likes)
-            .where(and(eq(Likes.userId, userIdString), eq(Likes.sayingId, sayingId)))
-            .get();
-        }
+        const like = await db
+          .select()
+          .from(Likes)
+          .where(and(eq(Likes.userId, userId), eq(Likes.sayingId, sayingId)))
+          .get();
+
         likedStatus.set(saying.id, !!like);
       } catch (error) {
         console.error(`Error checking like status for saying ${saying.id}:`, error);
@@ -86,7 +87,7 @@ for (const saying of sayings) {
           isLiked={likedStatus.get(saying.id) || false}
           totalLikes={totalLikes.get(saying.id) || 0}
           isAuthenticated={isAuthenticated}
-          canEdit={session?.user?.id === saying.userId}
+          canEdit={userId === Number(saying.userId)}
         />
       ))
     ) : (
