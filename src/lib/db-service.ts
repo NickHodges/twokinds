@@ -15,7 +15,16 @@ export async function getSayingById(id: number) {
 
   try {
     // Get the saying record
-    const sayingResults = await db.select().from(Sayings).where(eq(Sayings.id, id));
+    const sayingResults = (await db.select().from(Sayings).where(eq(Sayings.id, id))) as Array<{
+      id: number;
+      intro: number;
+      type: number;
+      firstKind: string;
+      secondKind: string;
+      userId: number;
+      createdAt: Date;
+      updatedAt?: Date;
+    }>;
 
     // If no results, return null
     if (!sayingResults || sayingResults.length === 0) {

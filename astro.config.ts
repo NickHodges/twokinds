@@ -13,10 +13,14 @@ export default defineConfig({
       // Configure database mode based on environment
       // By default, use local SQLite for development and testing
       // And remote DB for production when ASTRO_DB_REMOTE_URL is set
-      remote: process.env.NODE_ENV === 'production' ? 
-        (process.env.ASTRO_PRODUCTION_DB_TYPE === 'local' ? false : true) : false
+      remote:
+        process.env.NODE_ENV === 'production'
+          ? process.env.ASTRO_PRODUCTION_DB_TYPE === 'local'
+            ? false
+            : true
+          : false,
     }),
-    auth()
+    auth(),
   ],
   output: 'server',
   site: 'https://twokindsof.com',
@@ -30,8 +34,8 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: {
-        'auth:config': fileURLToPath(new URL('./.auth/config.ts', import.meta.url))
-      }
+        'auth:config': fileURLToPath(new URL('./.auth/config.ts', import.meta.url)),
+      },
     },
     server: {
       hmr: {
@@ -63,7 +67,11 @@ export default defineConfig({
   env: {
     schema: {
       // Database configuration
-      ASTRO_DATABASE_FILE: envField.string({ context: 'server', access: 'public', default: '.astro/db.sqlite' }),
+      ASTRO_DATABASE_FILE: envField.string({
+        context: 'server',
+        access: 'public',
+        default: '.astro/db.sqlite',
+      }),
       ASTRO_DB_REMOTE_URL: envField.string({ context: 'server', access: 'secret', optional: true }),
       ASTRO_DB_APP_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),
 
@@ -75,10 +83,17 @@ export default defineConfig({
 
       // OAuth Provider Credentials
       GITHUB_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
-      GITHUB_CLIENT_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
+      GITHUB_CLIENT_SECRET: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: false,
+      }),
       GOOGLE_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
-      GOOGLE_CLIENT_SECRET: envField.string({ context: 'server', access: 'secret', optional: false }),
-
+      GOOGLE_CLIENT_SECRET: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: false,
+      }),
     },
   },
 });

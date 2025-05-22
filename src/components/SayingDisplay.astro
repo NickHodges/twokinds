@@ -20,20 +20,11 @@ const { saying } = Astro.props;
 ---
 
 <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-md">
-  <div class="mb-8 text-center">
-    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">{saying.introText}</h1>
-  </div>
-
-  <div class="space-y-6 text-xl text-center">
-    <h4 class="text-xl text-blue-600 dark:text-blue-400 font-medium">{saying.typeName}</h4>
-    <p class="text-gray-800 dark:text-gray-200 break-words">
-      <span class="text-blue-600 dark:text-blue-400 font-medium">Those who </span>
-      {saying.firstKind}
-    </p>
-    <p class="font-medium text-gray-600 dark:text-gray-400">and</p>
-    <p class="text-gray-800 dark:text-gray-200 break-words">
-      <span class="text-blue-600 dark:text-blue-400 font-medium">Those who </span>
-      {saying.secondKind}
+  <div class="text-center">
+    <p class="text-4xl text-gray-900 dark:text-white">
+      {
+        `${saying.introText} ${saying.typeName}: Those who ${saying.firstKind} and those who ${saying.secondKind}.`
+      }
     </p>
   </div>
 
