@@ -9,7 +9,7 @@ export const config = {
     /**
      * Number of sayings to display per page
      */
-    sayingsPerPage: 6,
+    sayingsPerPage: 9,
   },
 
   /**
