@@ -34,26 +34,16 @@ const {
   class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col h-full group"
 >
   <div class="p-6 flex-grow overflow-hidden">
-    <h3
-      class="text-lg font-medium text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:line-clamp-none transition-all"
-    >
+    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3 whitespace-normal">
       {introText}
+      <span class="text-blue-600 dark:text-blue-400 font-bold">{typeName}</span>&mdash;
     </h3>
 
     <div class="space-y-2 relative">
-      <h4 class="text-blue-600 dark:text-blue-400 font-medium mb-2">{typeName}</h4>
       <p class="text-gray-700 dark:text-gray-300">
-        <span class="text-blue-600 dark:text-blue-400 font-medium">Those who </span>
-        <span class="break-words line-clamp-3 group-hover:line-clamp-none transition-all"
-          >{firstKind}</span
-        >
-      </p>
-      <p class="text-gray-500 dark:text-gray-400 text-left text-sm font-medium">and</p>
-      <p class="text-gray-700 dark:text-gray-300">
-        <span class="text-blue-600 dark:text-blue-400 font-medium">those who </span>
-        <span class="break-words line-clamp-3 group-hover:line-clamp-none transition-all"
-          >{secondKind}</span
-        >
+        <span class="font-medium">Those who </span>{firstKind}
+        <span class="0 font-medium"> and </span>
+        <span class="font-medium">those who </span>{secondKind}.
       </p>
     </div>
   </div>
