@@ -19,10 +19,10 @@ export const config = {
     /**
      * Site title
      */
-    title: 'Two Kinds of People',
+    title: 'Two Kinds Of',
     /**
      * Site description
      */
-    description: "Exploring humanity's endless dualities, one saying at a time",
+    description: "Exploring the world's endless dualities, one saying at a time",
   },
 };
