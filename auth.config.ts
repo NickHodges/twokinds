@@ -23,7 +23,7 @@ export default defineConfig({
         
         // Create a mock user for development
         return {
-          id: "1",
+          id: 1,
           name: credentials.name || "Dev User",
           email: credentials.email,
           image: "https://avatars.githubusercontent.com/u/1?v=4",
@@ -90,13 +90,8 @@ export default defineConfig({
             return false;
           }
 
-          user.id = String(newUser.id); // Convert number to string for compatibility
-          console.log('New user created successfully:', {
-            dbId: newUser.id,
-            dbIdType: typeof newUser.id,
-            assignedId: user.id,
-            assignedIdType: typeof user.id
-          });
+          user.id = newUser.id;
+          console.log('New user created successfully with ID:', newUser.id);
         } else {
           // Update existing user's last login
           console.log('Updating existing user:', existingUser.id);
@@ -111,13 +106,8 @@ export default defineConfig({
             .where(eq(Users.id, existingUser.id))
             .run();
 
-          user.id = String(existingUser.id); // Convert number to string for compatibility
-          console.log('User updated successfully:', {
-            dbId: existingUser.id,
-            dbIdType: typeof existingUser.id,
-            assignedId: user.id,
-            assignedIdType: typeof user.id
-          });
+          user.id = existingUser.id;
+          console.log('User updated successfully with ID:', existingUser.id);
         }
 
         return true;
@@ -145,7 +135,7 @@ export default defineConfig({
       
       if (session.user) {
         // Assign token ID to session user ID
-        session.user.id = token.id as string;
+        session.user.id = token.id as number;
         
         console.log('Session after modification', {
           userId: session.user.id,

@@ -287,20 +287,9 @@ export function getUserIdFromSession(session: Session | ExtendedSession | null):
     return null;
   }
   
-  // If this is already a numeric ID
+  // Session user IDs are stored as numbers
   if (typeof session.user.id === 'number') {
     return session.user.id;
-  }
-  
-  // Try parsing the ID as a number
-  const numericId = parseInt(session.user.id, 10);
-  if (!isNaN(numericId)) {
-    return numericId;
-  }
-  
-  // If we have a session.user.dbId (from middleware), use that
-  if (session.user.dbId && typeof session.user.dbId === 'number') {
-    return session.user.dbId;
   }
   
   logger.error('Could not get numeric ID from session');

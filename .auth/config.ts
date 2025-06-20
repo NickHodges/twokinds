@@ -45,7 +45,7 @@ export default defineConfig({
 
       if (session.user) {
         // Ensure we always have an ID - use token.id or token.sub
-        session.user.id = (token.id || token.sub) as string;
+        session.user.id = Number(token.id || token.sub);
       }
 
       return session;
