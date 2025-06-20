@@ -51,8 +51,8 @@ TwoKinds is a platform where users can create, share, and interact with "There a
 
 4. Set up the database:
    ```bash
-   npm run astro db push
-   npm run astro db seed
+   npm run db:push
+   npm run db:seed
    ```
 
 5. Start the development server:
@@ -76,8 +76,8 @@ All commands are run from the root of the project:
 | `npm run lint:fix`        | Run ESLint and fix issues automatically          |
 | `npm run format`          | Run Prettier to format code                      |
 | `npm run format:check`    | Check code formatting with Prettier              |
-| `npm run astro db push`   | Push schema changes to the database              |
-| `npm run astro db seed`   | Seed the database with sample data               |
+| `npm run db:push`         | Push schema changes to the database              |
+| `npm run db:seed`         | Seed the database with sample data               |
 | `npm run production:test` | Test production build with local database        |
 
 ## Project Structure
