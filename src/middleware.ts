@@ -51,10 +51,10 @@ const auth = defineMiddleware(async ({ locals, request }, next) => {
               // Store the database user in locals for easy access
               locals.dbUser = user;
               
-              // Also add the database ID to the session user
+              // Also ensure the session user ID is numeric
               if (session.user) {
-                session.user.dbId = user.id;
-                logger.info('Updated session with database ID:', user.id);
+                session.user.id = user.id;
+                logger.info('Updated session with numeric ID:', user.id);
               }
             } else {
               logger.warn('Failed to upsert user, but continuing with session');

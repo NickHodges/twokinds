@@ -191,7 +191,6 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
     logger.info('API session:', {
       id: session?.user?.id,
       email: session?.user?.email,
-      dbId: session?.user?.dbId,
       locals: locals.dbUser ? true : false
     });
 
@@ -230,10 +229,10 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
       userId = locals.dbUser.id;
       logger.info('Using user ID from locals:', userId);
     } 
-    // Option 2: Use dbId from session if available
-    else if (session.user.dbId) {
-      userId = session.user.dbId;
-      logger.info('Using dbId from session:', userId);
+    // Option 2: Use ID from session if available
+    else if (typeof session.user.id === 'number') {
+      userId = session.user.id;
+      logger.info('Using numeric ID from session:', userId);
     }
 
     // If we still don't have userId and we have an email, use our emergency function
@@ -248,8 +247,7 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
       if (userId) {
         logger.info('Emergency user creation succeeded with ID:', userId);
         
-        // Update the session and locals with the new user ID
-        session.user.dbId = userId;
+        // Update the locals with the new user ID
         if (!locals.dbUser) {
           locals.dbUser = { id: userId };
         } else {

@@ -33,8 +33,7 @@ interface ImportMeta {
 // Extend Astro's session type
 export interface ExtendedSession extends Session {
   user?: Session['user'] & {
-    id: string;
-    dbId?: number; // Added numeric database ID
+    id: number;
   };
 }
 

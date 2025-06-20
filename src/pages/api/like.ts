@@ -26,11 +26,11 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Try multiple methods to get the user ID
     let userId: number | null = null;
-    
-    // Option 1: Use dbId from session if available
-    if (session.user.dbId) {
-      userId = session.user.dbId;
-      logger.info('Using dbId from session:', userId);
+
+    // Option 1: Use ID from session if available
+    if (typeof session.user.id === 'number') {
+      userId = session.user.id;
+      logger.info('Using numeric ID from session:', userId);
     }
     // Option 2: Try to look up by email directly
     else if (session.user.email) {
