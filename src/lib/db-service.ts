@@ -229,7 +229,7 @@ export async function getUserSayings(userIdOrEmail: string | number): Promise<Sa
           .select()
           .from(Likes)
           .where(and(
-            eq(Likes.userId, numericUserId), 
+            eq(Likes.userId, dbUserId),
             eq(Likes.sayingId, saying.id)
           ))
           .get()
