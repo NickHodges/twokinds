@@ -64,9 +64,9 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Convert session user ID to number for comparison
-    const numericUserId = parseInt(session.user.id, 10);
-    
+    // Session user ID is numeric
+    const numericUserId = session.user.id as number;
+
     if (saying.userId !== numericUserId) {
       return new Response(
         JSON.stringify({

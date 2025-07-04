@@ -1,7 +1,6 @@
 import { db, Sayings, Types, Users, eq } from 'astro:db';
 import type { APIRoute } from 'astro';
 import type { ExtendedSession } from '../../env';
-import { getUserDbId } from '../../utils/user-db';
 import { createLogger } from '../../utils/logger';
 import { z } from 'zod';
 
@@ -57,13 +56,17 @@ export const GET: APIRoute = async () => {
 
 /**
  * Force create user - An emergency function to ensure user creation works
- * 
+ *
  * This function attempts multiple strategies to ensure a user exists in the database
  * with a valid ID, using aggressive retry and error handling.
  */
-async function forceCreateUser(userEmail: string, userName?: string | null, userImage?: string | null): Promise<number | null> {
+async function forceCreateUser(
+  userEmail: string,
+  userName?: string | null,
+  userImage?: string | null
+): Promise<number | null> {
   logger.info('FORCE CREATING USER:', userEmail);
-  
+
   try {
     // First, attempt to find the user
     let dbUser = await db
@@ -71,17 +74,17 @@ async function forceCreateUser(userEmail: string, userName?: string | null, user
       .from(Users)
       .where(eq(Users.email, userEmail))
       .get()
-      .catch(err => {
+      .catch((err) => {
         logger.error('Error in initial user lookup:', err);
         return null;
       });
-      
+
     // If user exists and has a valid ID, use that
     if (dbUser && typeof dbUser.id === 'number' && dbUser.id > 0) {
       logger.info('User already exists with valid ID:', dbUser.id);
       return dbUser.id;
     }
-    
+
     // If user exists but has invalid ID, delete it
     if (dbUser) {
       logger.warn('Found user with invalid ID, deleting:', dbUser);
@@ -89,11 +92,11 @@ async function forceCreateUser(userEmail: string, userName?: string | null, user
         .delete(Users)
         .where(eq(Users.email, userEmail))
         .run()
-        .catch(err => {
+        .catch((err) => {
           logger.error('Failed to delete user with invalid ID:', err);
         });
     }
-    
+
     // Now create a fresh user
     logger.info('Creating brand new user record');
     const now = new Date();
@@ -112,22 +115,24 @@ async function forceCreateUser(userEmail: string, userName?: string | null, user
       })
       .returning()
       .get()
-      .catch(err => {
+      .catch((err) => {
         // Check if it's a unique constraint - user might have been created in parallel
-        if (err.code === 'SQLITE_CONSTRAINT_UNIQUE' || 
-            (err.message && err.message.includes('UNIQUE constraint failed'))) {
+        if (
+          err.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+          (err.message && err.message.includes('UNIQUE constraint failed'))
+        ) {
           logger.warn('User already created in parallel process');
           return null;
         }
         logger.error('Error creating fresh user:', err);
         return null;
       });
-      
+
     if (newUser && newUser.id) {
       logger.info('Successfully created fresh user with ID:', newUser.id);
       return newUser.id;
     }
-    
+
     // If we reach here, the creation might have failed due to a race condition
     // Try one more lookup to find the potentially created user
     logger.info('Performing final lookup');
@@ -136,16 +141,16 @@ async function forceCreateUser(userEmail: string, userName?: string | null, user
       .from(Users)
       .where(eq(Users.email, userEmail))
       .get()
-      .catch(err => {
+      .catch((err) => {
         logger.error('Error in final user lookup:', err);
         return null;
       });
-      
+
     if (dbUser && typeof dbUser.id === 'number' && dbUser.id > 0) {
       logger.info('Found user in final lookup with ID:', dbUser.id);
       return dbUser.id;
     }
-    
+
     // All strategies failed
     logger.error('All user creation strategies failed');
     return null;
@@ -191,8 +196,7 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
     logger.info('API session:', {
       id: session?.user?.id,
       email: session?.user?.email,
-      dbId: session?.user?.dbId,
-      locals: locals.dbUser ? true : false
+      locals: locals.dbUser ? true : false,
     });
 
     if (!session?.user?.id) {
@@ -224,32 +228,27 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
 
     // First check if we already have the user ID in locals
     let userId: number | null = null;
-    
+
     // Option 1: Use user ID from locals.dbUser (set by middleware)
     if (locals.dbUser?.id) {
       userId = locals.dbUser.id;
       logger.info('Using user ID from locals:', userId);
-    } 
-    // Option 2: Use dbId from session if available
-    else if (session.user.dbId) {
-      userId = session.user.dbId;
-      logger.info('Using dbId from session:', userId);
+    }
+    // Option 2: Use ID from session if available
+    else if (typeof session.user.id === 'number') {
+      userId = session.user.id;
+      logger.info('Using numeric ID from session:', userId);
     }
 
     // If we still don't have userId and we have an email, use our emergency function
     if (!userId && session.user.email) {
       logger.info('No user ID found through normal channels, using emergency function');
-      userId = await forceCreateUser(
-        session.user.email,
-        session.user.name,
-        session.user.image
-      );
-      
+      userId = await forceCreateUser(session.user.email, session.user.name, session.user.image);
+
       if (userId) {
         logger.info('Emergency user creation succeeded with ID:', userId);
-        
-        // Update the session and locals with the new user ID
-        session.user.dbId = userId;
+
+        // Update the locals with the new user ID
         if (!locals.dbUser) {
           locals.dbUser = { id: userId };
         } else {
@@ -257,15 +256,21 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
         }
       }
     }
-    
+
     // Final check - if we still don't have a user ID, we can't continue
     if (!userId) {
-      logger.error('Emergency user creation FAILED, absolute last resort failed:', session.user.email);
-      return redirect('/create?error=Could not find or create user account - please contact support', 302);
+      logger.error(
+        'Emergency user creation FAILED, absolute last resort failed:',
+        session.user.email
+      );
+      return redirect(
+        '/create?error=Could not find or create user account - please contact support',
+        302
+      );
     }
-    
+
     logger.info('Using user ID for saying creation:', userId);
-    
+
     const values = {
       intro: body.intro,
       type: typeId,
@@ -276,17 +281,17 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
     };
 
     logger.info('Inserting saying:', values);
-    
+
     try {
       const result = await db.insert(Sayings).values(values).returning();
-      
+
       if (!result || result.length === 0) {
         logger.error('Insert succeeded but no result returned');
         return redirect('/create?error=Failed to create saying (no result)', 302);
       }
-      
+
       logger.info('Successfully created saying with ID:', result[0].id);
-      
+
       // Redirect to success page
       return redirect(`/create?success=true&id=${result[0].id}`, 302);
     } catch (insertError) {

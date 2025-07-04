@@ -23,7 +23,7 @@ const totalLikes = new Map<string, number>();
 for (const saying of sayings) {
   // Convert ID from string to number for database queries
   const sayingId = Number(saying.id);
-  
+
   // Get total likes for this saying
   if (Number.isFinite(sayingId)) {
     const likesResult = await db
@@ -38,28 +38,16 @@ for (const saying of sayings) {
 
   // Get liked status if user is authenticated
   if (session?.user?.id) {
-    const userIdString = session.user.id.toString();
-    const isNumericId = /^\d+$/.test(userIdString);
-    
+    const userId = session.user.id;
+
     // Ensure the sayingId is a valid number
     if (Number.isFinite(sayingId)) {
       try {
-        let like;
-        if (isNumericId) {
-          // For numeric user IDs
-          like = await db
-            .select()
-            .from(Likes)
-            .where(and(eq(Likes.userId, Number(userIdString)), eq(Likes.sayingId, sayingId)))
-            .get();
-        } else {
-          // For string user IDs (like UUIDs from OAuth)
-          like = await db
-            .select()
-            .from(Likes)
-            .where(and(eq(Likes.userId, userIdString), eq(Likes.sayingId, sayingId)))
-            .get();
-        }
+        const like = await db
+          .select()
+          .from(Likes)
+          .where(and(eq(Likes.userId, userId), eq(Likes.sayingId, sayingId)))
+          .get();
         likedStatus.set(saying.id, !!like);
       } catch (error) {
         console.error(`Error checking like status for saying ${saying.id}:`, error);

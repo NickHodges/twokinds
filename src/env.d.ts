@@ -23,7 +23,6 @@ interface ImportMetaEnv {
   readonly GITHUB_CLIENT_SECRET: string;
   readonly GOOGLE_CLIENT_ID: string;
   readonly GOOGLE_CLIENT_SECRET: string;
-
 }
 
 interface ImportMeta {
@@ -33,8 +32,7 @@ interface ImportMeta {
 // Extend Astro's session type
 export interface ExtendedSession extends Session {
   user?: Session['user'] & {
-    id: string;
-    dbId?: number; // Added numeric database ID
+    id: number;
   };
 }
 

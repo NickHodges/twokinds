@@ -26,23 +26,23 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Try multiple methods to get the user ID
     let userId: number | null = null;
-    
-    // Option 1: Use dbId from session if available
-    if (session.user.dbId) {
-      userId = session.user.dbId;
-      logger.info('Using dbId from session:', userId);
+
+    // Option 1: Use ID from session if available
+    if (typeof session.user.id === 'number') {
+      userId = session.user.id;
+      logger.info('Using numeric ID from session:', userId);
     }
     // Option 2: Try to look up by email directly
     else if (session.user.email) {
       logger.info('Looking up user by email:', session.user.email);
-      
+
       try {
         const dbUser = await db
           .select()
           .from(Users)
           .where(eq(Users.email, session.user.email))
           .get();
-          
+
         if (dbUser) {
           userId = dbUser.id;
           logger.info('Found user by direct email lookup:', userId);
@@ -59,7 +59,7 @@ export const POST: APIRoute = async ({ request }) => {
         logger.info('Found user ID with getUserDbId:', userId);
       }
     }
-    
+
     // If we still don't have a user ID, create the user
     if (!userId && session.user.email) {
       logger.info('Creating new user for:', session.user.email);
@@ -80,7 +80,7 @@ export const POST: APIRoute = async ({ request }) => {
           })
           .returning()
           .get();
-          
+
         if (newUser) {
           userId = newUser.id;
           logger.info('Created new user with ID:', userId);
@@ -89,7 +89,7 @@ export const POST: APIRoute = async ({ request }) => {
         logger.error('Error creating user:', createError);
       }
     }
-    
+
     // Final check - if we still don't have a user ID, we can't continue
     if (!userId) {
       logger.error('User not found in database and could not be created:', session.user.email);
@@ -104,9 +104,9 @@ export const POST: APIRoute = async ({ request }) => {
         }
       );
     }
-    
+
     logger.info('Using user ID for like operation:', userId);
-    
+
     let data;
 
     // Handle both JSON and form data

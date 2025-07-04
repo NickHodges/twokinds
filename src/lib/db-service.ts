@@ -97,25 +97,25 @@ export async function getAllSayings(): Promise<Saying[]> {
           ]);
 
           return {
-            id: String(saying.id),
-            intro: String(saying.intro),
-            type: String(saying.type),
+            id: saying.id,
+            intro: saying.intro,
+            type: saying.type,
             firstKind: saying.firstKind,
             secondKind: saying.secondKind,
-            userId: String(saying.userId),
+            userId: saying.userId,
             createdAt: saying.createdAt,
             updatedAt: saying.updatedAt || saying.createdAt, // Fallback for missing updatedAt
             introText: intro?.introText || 'Unknown intro',
             typeName: type?.name || 'Unknown type',
             intro_data: intro
               ? {
-                  id: String(intro.id),
+                  id: intro.id,
                   introText: intro.introText,
                 }
               : undefined,
             type_data: type
               ? {
-                  id: String(type.id),
+                  id: type.id,
                   name: type.name,
                 }
               : undefined,
@@ -125,12 +125,12 @@ export async function getAllSayings(): Promise<Saying[]> {
 
           // Return a basic version of the saying to prevent entire query from failing
           return {
-            id: String(saying.id),
-            intro: String(saying.intro),
-            type: String(saying.type),
+            id: saying.id,
+            intro: saying.intro,
+            type: saying.type,
             firstKind: saying.firstKind,
             secondKind: saying.secondKind,
-            userId: String(saying.userId),
+            userId: saying.userId,
             createdAt: saying.createdAt,
             updatedAt: saying.updatedAt || saying.createdAt,
             introText: 'Error loading intro',
@@ -271,25 +271,25 @@ export async function getUserSayings(userIdOrEmail: string | number): Promise<Sa
           ]);
 
           return {
-            id: String(saying.id),
-            intro: String(saying.intro),
-            type: String(saying.type),
+            id: saying.id,
+            intro: saying.intro,
+            type: saying.type,
             firstKind: saying.firstKind,
             secondKind: saying.secondKind,
-            userId: String(saying.userId),
+            userId: saying.userId,
             createdAt: saying.createdAt,
             updatedAt: saying.updatedAt || saying.createdAt,
             introText: intro?.introText || 'Unknown intro',
             typeName: type?.name || 'Unknown type',
             intro_data: intro
               ? {
-                  id: String(intro.id),
+                  id: intro.id,
                   introText: intro.introText,
                 }
               : undefined,
             type_data: type
               ? {
-                  id: String(type.id),
+                  id: type.id,
                   name: type.name,
                 }
               : undefined,
@@ -301,12 +301,12 @@ export async function getUserSayings(userIdOrEmail: string | number): Promise<Sa
 
           // Return a basic version of the saying to prevent entire query from failing
           return {
-            id: String(saying.id),
-            intro: String(saying.intro),
-            type: String(saying.type),
+            id: saying.id,
+            intro: saying.intro,
+            type: saying.type,
             firstKind: saying.firstKind,
             secondKind: saying.secondKind,
-            userId: String(saying.userId),
+            userId: saying.userId,
             createdAt: saying.createdAt,
             updatedAt: saying.updatedAt || saying.createdAt,
             introText: 'Error loading intro',

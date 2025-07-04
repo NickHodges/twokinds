@@ -18,7 +18,7 @@ let hasRunDatabaseRepair = false;
 const auth = defineMiddleware(async ({ locals, request }, next) => {
   try {
     logger.info('Getting session...');
-    
+
     // Run database repair once per server start
     if (!hasRunDatabaseRepair) {
       try {
@@ -30,7 +30,7 @@ const auth = defineMiddleware(async ({ locals, request }, next) => {
         logger.error('Error during database repair:', repairError);
       }
     }
-    
+
     // Wrap in try/catch to prevent authentication errors from breaking the app
     try {
       const session = (await getSession(request, authConfig)) as ExtendedSession | null;
@@ -46,15 +46,15 @@ const auth = defineMiddleware(async ({ locals, request }, next) => {
           logger.info('Upserting user:', session.user.email);
           try {
             const user = await upsertUser(session);
-            
+
             if (user) {
               // Store the database user in locals for easy access
               locals.dbUser = user;
-              
-              // Also add the database ID to the session user
+
+              // Also ensure the session user ID is numeric
               if (session.user) {
-                session.user.dbId = user.id;
-                logger.info('Updated session with database ID:', user.id);
+                session.user.id = user.id;
+                logger.info('Updated session with numeric ID:', user.id);
               }
             } else {
               logger.warn('Failed to upsert user, but continuing with session');

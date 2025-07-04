@@ -14,11 +14,11 @@ export interface UserPreferences {
 
 /**
  * User Database Utilities
- * 
+ *
  * This module provides utilities for working with users in the database,
  * especially for handling the mismatch between Auth.js session UUIDs and
  * our database's numeric IDs.
- * 
+ *
  * Key functions:
  * - getUserDbId: Looks up a user's numeric database ID by their email
  * - upsertUser: Ensures a user exists in the database with a numeric ID
@@ -30,19 +30,21 @@ const logger = createLogger('UserDB');
  * This handles the mapping between session user IDs (which could be UUIDs from OAuth)
  * and our database's numeric IDs
  */
-export async function getUserDbId(user: User | { id?: string | number, email?: string }): Promise<number | null> {
+export async function getUserDbId(
+  user: User | { id?: string | number; email?: string }
+): Promise<number | null> {
   try {
     // Exit early if no user
     if (!user) {
       logger.error('No user provided to getUserDbId');
       return null;
     }
-    
-    logger.info('Looking up database ID for user:', { 
-      providedId: user.id, 
-      email: user.email 
+
+    logger.info('Looking up database ID for user:', {
+      providedId: user.id,
+      email: user.email,
     });
-    
+
     // First try by email (most reliable way)
     if (user.email) {
       const dbUser = await db
@@ -50,24 +52,21 @@ export async function getUserDbId(user: User | { id?: string | number, email?: s
         .from(Users)
         .where(eq(Users.email, user.email))
         .get()
-        .catch(err => {
+        .catch((err) => {
           logger.error('Error finding user by email:', err);
           return null;
         });
-      
+
       if (dbUser) {
         // Check if the ID is valid
         if (dbUser.id === null || dbUser.id === undefined) {
           logger.error('Found user but ID is null or undefined. Attempting to fix...');
-          
+
           try {
             // Try to fix by recreating the user
             // First delete the user with null ID
-            await db
-              .delete(Users)
-              .where(eq(Users.email, user.email))
-              .run();
-              
+            await db.delete(Users).where(eq(Users.email, user.email)).run();
+
             // Then create a new user with proper autoincrement ID
             const now = new Date();
             const newUser = await db
@@ -85,7 +84,7 @@ export async function getUserDbId(user: User | { id?: string | number, email?: s
               })
               .returning()
               .get();
-              
+
             logger.info('Fixed user with null ID. New ID:', newUser.id);
             return newUser.id;
           } catch (fixError) {
@@ -93,7 +92,7 @@ export async function getUserDbId(user: User | { id?: string | number, email?: s
             return null;
           }
         }
-        
+
         logger.info('Found user by email with database ID:', dbUser.id);
         return dbUser.id;
       } else {
@@ -116,16 +115,17 @@ export async function getUserDbId(user: User | { id?: string | number, email?: s
             })
             .returning()
             .get();
-            
+
           logger.info('Created new user with ID:', newUser.id);
           return newUser.id;
         } catch (createError) {
           logger.error('Error creating user during lookup:', createError);
-          
+
           // Check if it's a unique constraint violation (user was created in a race condition)
-          if (createError.code === 'SQLITE_CONSTRAINT_UNIQUE' || 
-              (createError.message && createError.message.includes('UNIQUE constraint failed'))) {
-            
+          if (
+            createError.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+            (createError.message && createError.message.includes('UNIQUE constraint failed'))
+          ) {
             // Try one more time to get the user that was likely just created
             const conflictUser = await db
               .select()
@@ -133,18 +133,18 @@ export async function getUserDbId(user: User | { id?: string | number, email?: s
               .where(eq(Users.email, user.email))
               .get()
               .catch(() => null);
-              
+
             if (conflictUser && conflictUser.id !== null && conflictUser.id !== undefined) {
               logger.info('Found user after conflict with ID:', conflictUser.id);
               return conflictUser.id;
             }
           }
-          
+
           return null;
         }
       }
     }
-    
+
     // If we get here, we couldn't find the user
     logger.error('Could not find user in database');
     return null;
@@ -165,26 +165,26 @@ export async function upsertUser(session: ExtendedSession): Promise<{ id: number
       logger.error('No user in session');
       return null;
     }
-    
+
     const { user } = session;
     logger.info('Upserting user:', user.email);
-    
+
     // Check if user exists
     const existingUser = await db
       .select()
       .from(Users)
       .where(eq(Users.email, user.email))
       .get()
-      .catch(err => {
+      .catch((err) => {
         logger.error('Error finding user by email:', err);
         return null;
       });
-    
+
     if (existingUser) {
       // Check if the existing user has a valid ID
       if (existingUser.id === null || existingUser.id === undefined) {
         logger.error('Existing user has null ID:', existingUser);
-        
+
         // Try to recreate the user with a proper ID
         try {
           // First delete the user with null ID if possible
@@ -192,10 +192,10 @@ export async function upsertUser(session: ExtendedSession): Promise<{ id: number
             .delete(Users)
             .where(eq(Users.email, user.email))
             .run()
-            .catch(err => {
+            .catch((err) => {
               logger.error('Error deleting user with null ID:', err);
             });
-          
+
           // Then create a new user record
           const now = new Date();
           const recreatedUser = await db
@@ -213,7 +213,7 @@ export async function upsertUser(session: ExtendedSession): Promise<{ id: number
             })
             .returning()
             .get();
-          
+
           logger.info('Recreated user with valid ID:', recreatedUser.id);
           return { id: recreatedUser.id };
         } catch (recreateErr) {
@@ -221,10 +221,10 @@ export async function upsertUser(session: ExtendedSession): Promise<{ id: number
           return null;
         }
       }
-      
+
       // Update existing user with valid ID
       logger.info('Updating existing user:', existingUser.id);
-      
+
       await db
         .update(Users)
         .set({
@@ -235,17 +235,17 @@ export async function upsertUser(session: ExtendedSession): Promise<{ id: number
         })
         .where(eq(Users.id, existingUser.id))
         .run()
-        .catch(err => {
+        .catch((err) => {
           logger.error('Error updating user:', err);
           throw err;
         });
-      
+
       return { id: existingUser.id };
     } else {
       // Create new user
       logger.info('Creating new user');
       const now = new Date();
-      
+
       const newUser = await db
         .insert(Users)
         .values({
@@ -261,11 +261,11 @@ export async function upsertUser(session: ExtendedSession): Promise<{ id: number
         })
         .returning()
         .get()
-        .catch(err => {
+        .catch((err) => {
           logger.error('Error creating user:', err);
           throw err;
         });
-      
+
       logger.info('Created new user with ID:', newUser.id);
       return { id: newUser.id };
     }
@@ -277,7 +277,7 @@ export async function upsertUser(session: ExtendedSession): Promise<{ id: number
 
 /**
  * Get a user ID from a session
- * 
+ *
  * @param session The user session
  * @returns The numeric user ID or null if not found
  */
@@ -286,61 +286,47 @@ export function getUserIdFromSession(session: Session | ExtendedSession | null):
     logger.error('No user ID in session');
     return null;
   }
-  
-  // If this is already a numeric ID
+
+  // Session user IDs are stored as numbers
   if (typeof session.user.id === 'number') {
     return session.user.id;
   }
-  
-  // Try parsing the ID as a number
-  const numericId = parseInt(session.user.id, 10);
-  if (!isNaN(numericId)) {
-    return numericId;
-  }
-  
-  // If we have a session.user.dbId (from middleware), use that
-  if (session.user.dbId && typeof session.user.dbId === 'number') {
-    return session.user.dbId;
-  }
-  
+
   logger.error('Could not get numeric ID from session');
   return null;
 }
 
 /**
  * Update user preferences
- * 
+ *
  * @param userId The numeric user ID
  * @param preferences The preferences to update
  * @returns The updated user or null if not found
  */
-export async function updateUserPreferences(
-  userId: number,
-  preferences: UserPreferences
-) {
+export async function updateUserPreferences(userId: number, preferences: UserPreferences) {
   try {
     logger.info('Updating preferences for user:', userId);
-    
+
     // Find the user first to get existing preferences
     const user = await db
       .select()
       .from(Users)
       .where(eq(Users.id, userId))
       .get()
-      .catch(err => {
+      .catch((err) => {
         logger.error('Error finding user:', err);
         return null;
       });
-    
+
     if (!user) {
       logger.error('User not found:', userId);
       return null;
     }
-    
+
     // Merge existing preferences with new ones
     const existingPrefs = user.preferences || {};
     const mergedPrefs = { ...existingPrefs, ...preferences };
-    
+
     // Update the user
     const updatedUser = await db
       .update(Users)
@@ -351,16 +337,16 @@ export async function updateUserPreferences(
       .where(eq(Users.id, userId))
       .returning()
       .get()
-      .catch(err => {
+      .catch((err) => {
         logger.error('Error updating user preferences:', err);
         return null;
       });
-    
+
     if (!updatedUser) {
       logger.error('Failed to update user preferences');
       return null;
     }
-    
+
     logger.info('Updated preferences for user:', userId);
     return updatedUser;
   } catch (error) {
@@ -371,17 +357,17 @@ export async function updateUserPreferences(
 
 /**
  * Get a user by ID
- * 
+ *
  * @param userId The user ID (can be string or number)
  * @returns The user or null if not found
  */
 export async function getUserById(userId: string | number) {
   try {
     logger.info('Getting user by ID:', userId);
-    
+
     // Handle different ID formats
     let dbUserId: number | null = null;
-    
+
     if (typeof userId === 'number') {
       // If it's already a number, use it directly
       dbUserId = userId;
@@ -398,43 +384,43 @@ export async function getUserById(userId: string | number) {
             .from(Users)
             .where(eq(Users.email, userId))
             .get()
-            .catch(err => {
+            .catch((err) => {
               logger.error('Error finding user by email:', err);
               return null;
             });
-          
+
           if (userByEmail) {
             return userByEmail;
           }
         }
-        
+
         // If we get here, we couldn't find the user
         logger.error('Could not find user with ID:', userId);
         return null;
       }
     }
-    
+
     if (!dbUserId) {
       logger.error('Invalid user ID format:', userId);
       return null;
     }
-    
+
     // Get the user from the database
     const user = await db
       .select()
       .from(Users)
       .where(eq(Users.id, dbUserId))
       .get()
-      .catch(err => {
+      .catch((err) => {
         logger.error('Error finding user by ID:', err);
         return null;
       });
-    
+
     if (!user) {
       logger.error('User not found with ID:', userId);
       return null;
     }
-    
+
     logger.info('Found user by ID:', userId);
     return user;
   } catch (error) {

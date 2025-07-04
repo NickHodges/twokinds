@@ -36,12 +36,14 @@ TwoKinds is a platform where users can create, share, and interact with "There a
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/twokinds.git
    cd twokinds
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
@@ -50,9 +52,10 @@ TwoKinds is a platform where users can create, share, and interact with "There a
    Contact the project owner to set up the required environment variables
 
 4. Set up the database:
+
    ```bash
-   npm run astro db push
-   npm run astro db seed
+   npm run db:push
+   npm run db:seed
    ```
 
 5. Start the development server:
@@ -66,19 +69,19 @@ TwoKinds is a platform where users can create, share, and interact with "There a
 
 All commands are run from the root of the project:
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm run dev`             | Start development server                         |
-| `npm run build`           | Build for production                             |
-| `npm run preview`         | Preview production build                         |
-| `npm run astro`           | Run Astro CLI commands                           |
-| `npm run lint`            | Run ESLint to check code                         |
-| `npm run lint:fix`        | Run ESLint and fix issues automatically          |
-| `npm run format`          | Run Prettier to format code                      |
-| `npm run format:check`    | Check code formatting with Prettier              |
-| `npm run astro db push`   | Push schema changes to the database              |
-| `npm run astro db seed`   | Seed the database with sample data               |
-| `npm run production:test` | Test production build with local database        |
+| Command                   | Action                                    |
+| :------------------------ | :---------------------------------------- |
+| `npm run dev`             | Start development server                  |
+| `npm run build`           | Build for production                      |
+| `npm run preview`         | Preview production build                  |
+| `npm run astro`           | Run Astro CLI commands                    |
+| `npm run lint`            | Run ESLint to check code                  |
+| `npm run lint:fix`        | Run ESLint and fix issues automatically   |
+| `npm run format`          | Run Prettier to format code               |
+| `npm run format:check`    | Check code formatting with Prettier       |
+| `npm run db:push`         | Push schema changes to the database       |
+| `npm run db:seed`         | Seed the database with sample data        |
+| `npm run production:test` | Test production build with local database |
 
 ## Project Structure
 
