@@ -27,11 +27,11 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@astrojs/db": "^0.15.0",
-    "@astrojs/node": "^9.2.2",
+    "@astrojs/db": "^0.17.1",
+    "@astrojs/node": "^9.4.3",
     "@astrojs/react": "^4.3.0",
     "@astrojs/tailwind": "^6.0.2",
-    "@astrojs/vercel": "^8.1.5",
+    "@astrojs/vercel": "^8.2.7",
     "@auth/core": "^0.37.4",
     "@hookform/resolvers": "^4.1.3",
     "@libsql/client": "^0.14.0",
@@ -40,7 +40,7 @@
     "@radix-ui/react-select": "^2.1.6",
     "@radix-ui/react-slot": "^1.1.2",
     "@tailwindcss/postcss": "^4.0.12",
-    "astro": "^5.9.3",
+    "astro": "^5.13.5",
     "auth-astro": "^4.2.0",
     "autoprefixer": "^10.4.21",
     "body-parser": "^1.20.3",

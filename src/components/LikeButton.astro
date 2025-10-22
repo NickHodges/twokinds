@@ -1,31 +1,23 @@
 ---
-/**
- * @typedef {object} Props
- * @property {number} sayingId - ID of the saying to like
- * @property {boolean} [initialLiked=false] - Whether the saying is initially liked
- * @property {number} totalLikes - Total number of likes
- * @property {boolean} [isAuthenticated=false] - Whether the user is authenticated
- * @property {string} [class] - Additional CSS classes
- */
-
 const {
   sayingId,
   initialLiked = false,
   totalLikes = 0,
   isAuthenticated = false,
   class: className = '',
+}: {
+  sayingId: number;
+  initialLiked?: boolean;
+  totalLikes: number;
+  isAuthenticated?: boolean;
+  class?: string;
 } = Astro.props;
 ---
 
 {
   isAuthenticated ? (
-    <form
-      method="POST"
-      action="/api/like"
-      data-saying-id={sayingId}
-      data-total-likes={totalLikes}
-      data-liked={initialLiked}
-    >
+    <form method="POST" action="/actions/toggleLike" data-astro-reload>
+      <input type="hidden" name="sayingId" value={sayingId} />
       <button
         type="submit"
         class:list={[
@@ -78,9 +70,10 @@ const {
 }
 
 <script>
-  // Client-side enhancement
+  import { actions } from 'astro:actions';
+
   document.addEventListener('DOMContentLoaded', () => {
-    const forms = document.querySelectorAll<HTMLFormElement>('form[data-saying-id]');
+    const forms = document.querySelectorAll<HTMLFormElement>('form[action="/actions/toggleLike"]');
 
     forms.forEach((form) => {
       form.addEventListener('submit', async (e) => {
@@ -88,49 +81,21 @@ const {
         const button = form.querySelector('button');
         if (!button) return;
 
+        const formData = new FormData(form);
+        button.disabled = true;
+
         try {
-          button.disabled = true;
-          const sayingId = form.dataset.sayingId;
+          const { error } = await actions.toggleLike(formData);
 
-          const response = await fetch('/api/like', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ sayingId: Number(sayingId) }),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to like/unlike');
+          if (error) {
+            console.error('Error toggling like:', error);
+            return;
           }
 
-          const { liked } = await response.json();
-          form.dataset.liked = liked.toString();
-
-          // Update button appearance
-          const svg = button.querySelector('svg');
-          if (svg) svg.setAttribute('fill', liked ? 'currentColor' : 'none');
-
-          button.classList.toggle('bg-red-100', liked);
-          button.classList.toggle('text-red-600', liked);
-          button.classList.toggle('hover:bg-red-200', liked);
-          button.classList.toggle('bg-gray-100', !liked);
-          button.classList.toggle('text-gray-600', !liked);
-          button.classList.toggle('hover:bg-gray-200', !liked);
-
-          // Update text and like count
-          const [likeText, likeCount] = button.querySelectorAll('span');
-          if (likeText) likeText.textContent = liked ? 'Liked' : 'Like';
-
-          // Update the like count
-          let totalLikes = parseInt(form.dataset.totalLikes || '0');
-          totalLikes = liked ? totalLikes + 1 : totalLikes - 1;
-          form.dataset.totalLikes = totalLikes.toString();
-          if (likeCount) likeCount.textContent = `(${totalLikes})`;
+          // Let Astro handle the page reload to get fresh data
+          window.location.reload();
         } catch (error) {
           console.error('Error toggling like:', error);
-          alert('Failed to update like status. Please try again.');
         } finally {
           button.disabled = false;
         }

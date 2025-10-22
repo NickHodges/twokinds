@@ -19,7 +19,6 @@ const session = Astro.locals.session as ExtendedSession | null;
 const isAuthenticated = !!session?.user;
 
 // Fetch the saying directly from Astro:DB
-console.log('Fetching saying with ID:', sayingId);
 const saying = await getSayingById(sayingId);
 
 // Check if the current user has liked this saying and get total likes

@@ -37,85 +37,45 @@ const ToggleLikeSchema = z.object({
 export const server = {
   // Export action for toggling likes
   toggleLike: defineAction({
-    name: 'toggleLike',
     accept: 'form',
     input: ToggleLikeSchema,
+    handler: async (input, { locals }) => {
+      // Get user ID from locals (set by middleware)
+      const userId = locals.dbUser?.id;
 
-    // Handle form toggling a like
-    async handler({ request }) {
-      try {
-        const session = await getSession(request);
-        if (!session?.user?.id) {
-          return {
-            success: false,
-            error: 'You must be logged in to like a saying',
-          };
-        }
+      if (!userId) {
+        throw new Error('You must be logged in to like a saying');
+      }
 
-        const userId = session.user.id;
-        const formData = await request.formData();
-        const sayingId = Number(formData.get('sayingId'));
-        const action = formData.get('action') as 'like' | 'unlike' | undefined;
+      const { sayingId } = input;
 
-        // Check if the like already exists
-        const existingLike = await db
-          .select()
-          .from(Likes)
+      // Check if the like already exists
+      const existingLike = await db
+        .select()
+        .from(Likes)
+        .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
+        .get();
+
+      if (existingLike) {
+        // Unlike
+        await db
+          .delete(Likes)
           .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
-          .limit(1);
+          .run();
 
-        // Determine if we need to like or unlike
-        const shouldLike = action === 'like' || (action === undefined && existingLike.length === 0);
-        const shouldUnlike =
-          action === 'unlike' || (action === undefined && existingLike.length > 0);
+        return { liked: false };
+      } else {
+        // Like
+        await db
+          .insert(Likes)
+          .values({
+            sayingId,
+            userId,
+            createdAt: new Date(),
+          })
+          .run();
 
-        if (shouldLike && existingLike.length === 0) {
-          try {
-            // Add the like
-            await db.insert(Likes).values({
-              sayingId,
-              userId,
-              createdAt: new Date(),
-            });
-            return {
-              success: true,
-              action: 'liked',
-            };
-          } catch (dbError) {
-            console.error('Database error adding like:', dbError);
-            return {
-              success: false,
-              error: 'Unable to like this saying at the moment. Please try again later.',
-            };
-          }
-        } else if (shouldUnlike && existingLike.length > 0) {
-          try {
-            // Remove the like
-            await db.delete(Likes).where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)));
-            return {
-              success: true,
-              action: 'unliked',
-            };
-          } catch (dbError) {
-            console.error('Database error removing like:', dbError);
-            return {
-              success: false,
-              error: 'Unable to unlike this saying at the moment. Please try again later.',
-            };
-          }
-        } else {
-          // No change needed
-          return {
-            success: true,
-            action: shouldLike ? 'already-liked' : 'already-unliked',
-          };
-        }
-      } catch (error) {
-        console.error('Error updating like status:', error);
-        return {
-          success: false,
-          error: 'Failed to update like status',
-        };
+        return { liked: true };
       }
     },
   }),
@@ -222,10 +182,10 @@ export const server = {
         };
 
         console.log('Inserting saying:', values);
-        
+
         try {
           const result = await db.insert(Sayings).values(values).returning();
-          
+
           // Return redirect with success
           const redirectUrl = url
             ? `${url.origin}/create?success=true&id=${result[0].id}`
@@ -233,7 +193,7 @@ export const server = {
           return Response.redirect(redirectUrl, 302);
         } catch (dbError) {
           console.error('Database error when inserting saying:', dbError);
-          
+
           // If we're in production and having database issues, provide a more user-friendly error
           if (process.env.NODE_ENV === 'production') {
             const redirectUrl = url
@@ -241,7 +201,7 @@ export const server = {
               : `/create?error=${encodeURIComponent('Service temporarily unavailable')}`;
             return Response.redirect(redirectUrl, 302);
           }
-          
+
           // In development, show the actual error for debugging
           throw dbError;
         }
