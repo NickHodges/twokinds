@@ -35,11 +35,12 @@ if (saying) {
   totalLikes = likesResult?.value || 0;
 
   // Check if current user has liked
-  if (session?.user?.id) {
+  const dbUserId = Astro.locals.dbUser?.id;
+  if (dbUserId) {
     const like = await db
       .select()
       .from(Likes)
-      .where(and(eq(Likes.userId, session.user.id), eq(Likes.sayingId, sayingId)))
+      .where(and(eq(Likes.userId, dbUserId), eq(Likes.sayingId, sayingId)))
       .get();
     isLiked = !!like;
   }

@@ -11,7 +11,7 @@ const requestSchema = z.object({
   sayingId: z.coerce.number().int().positive('Valid saying ID is required'),
 });
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
     // Get the request data
     const data = await request.json();
@@ -64,10 +64,23 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Session user ID is numeric
-    const numericUserId = session.user.id as number;
+    // Get database user ID from locals (set by middleware)
+    const dbUserId = locals.dbUser?.id;
 
-    if (saying.userId !== numericUserId) {
+    if (!dbUserId) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Database user ID not found',
+        }),
+        {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    if (saying.userId !== dbUserId) {
       return new Response(
         JSON.stringify({
           success: false,

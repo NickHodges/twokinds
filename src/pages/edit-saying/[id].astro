@@ -13,6 +13,13 @@ if (!session?.user?.id) {
   return Astro.redirect('/?error=unauthorized');
 }
 
+// Get database user ID from locals (set by middleware)
+const dbUserId = Astro.locals.dbUser?.id;
+
+if (!dbUserId) {
+  return Astro.redirect('/?error=no-db-user');
+}
+
 // Get the ID from the URL
 const { id } = Astro.params;
 const sayingId = parseInt(id || '0');
@@ -25,7 +32,7 @@ if (!sayingId) {
 const saying = await getSayingById(sayingId);
 
 // If no saying found or user is not the owner, redirect
-if (!saying || saying.userId !== session.user.id) {
+if (!saying || saying.userId !== dbUserId) {
   return Astro.redirect('/dashboard?error=not-found-or-unauthorized');
 }
 
@@ -57,11 +64,7 @@ if (Astro.request.method === 'POST') {
     // If user chose to create a new type
     if (typeChoice === 'new' && newType) {
       // Check if type already exists
-      const existingType = await db
-        .select()
-        .from(Types)
-        .where(eq(Types.name, newType))
-        .get();
+      const existingType = await db.select().from(Types).where(eq(Types.name, newType)).get();
 
       if (existingType) {
         // Use existing type if found
@@ -72,7 +75,7 @@ if (Astro.request.method === 'POST') {
           .insert(Types)
           .values({
             name: newType,
-            createdAt: new Date()
+            createdAt: new Date(),
           })
           .returning();
 
@@ -93,7 +96,7 @@ if (Astro.request.method === 'POST') {
         firstKind,
         secondKind,
       })
-      .where(and(eq(Sayings.id, sayingId), eq(Sayings.userId, session.user.id)));
+      .where(and(eq(Sayings.id, sayingId), eq(Sayings.userId, dbUserId)));
 
     // Redirect back to dashboard with success message
     return Astro.redirect('/dashboard?success=saying-updated');
@@ -118,11 +121,13 @@ const errorMessage = url.searchParams.get('error');
       </p>
     </div>
 
-    {errorMessage && (
-      <div class="mb-6 p-4 bg-red-100 border border-red-200 text-red-700 rounded-md">
-        <p>{errorMessage}</p>
-      </div>
-    )}
+    {
+      errorMessage && (
+        <div class="mb-6 p-4 bg-red-100 border border-red-200 text-red-700 rounded-md">
+          <p>{errorMessage}</p>
+        </div>
+      )
+    }
 
     <form method="POST" class="space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div>
@@ -135,11 +140,13 @@ const errorMessage = url.searchParams.get('error');
           required
           class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
         >
-          {intros.map((intro) => (
-            <option value={intro.id} selected={intro.id === saying.intro}>
-              {intro.introText}
-            </option>
-          ))}
+          {
+            intros.map((intro) => (
+              <option value={intro.id} selected={intro.id === saying.intro}>
+                {intro.introText}
+              </option>
+            ))
+          }
         </select>
       </div>
 
@@ -183,16 +190,21 @@ const errorMessage = url.searchParams.get('error');
           name="type"
           class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
         >
-          {types.map((type) => (
-            <option value={type.id} selected={type.id === saying.type}>
-              {type.name}
-            </option>
-          ))}
+          {
+            types.map((type) => (
+              <option value={type.id} selected={type.id === saying.type}>
+                {type.name}
+              </option>
+            ))
+          }
         </select>
       </div>
 
       <div id="newTypeContainer" class="hidden">
-        <label for="newType" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label
+          for="newType"
+          class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
           New Type Name
         </label>
         <input
@@ -205,7 +217,10 @@ const errorMessage = url.searchParams.get('error');
       </div>
 
       <div>
-        <label for="firstKind" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label
+          for="firstKind"
+          class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
           First Kind (Those who...)
         </label>
         <input
@@ -219,7 +234,10 @@ const errorMessage = url.searchParams.get('error');
       </div>
 
       <div>
-        <label for="secondKind" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label
+          for="secondKind"
+          class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
           Second Kind (Those who...)
         </label>
         <input

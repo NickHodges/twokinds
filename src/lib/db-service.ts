@@ -236,7 +236,7 @@ export async function getUserSayings(userIdOrEmail: string | number): Promise<Sa
         const like = await db
           .select()
           .from(Likes)
-          .where(and(eq(Likes.userId, numericUserId), eq(Likes.sayingId, saying.id)))
+          .where(and(eq(Likes.userId, dbUserId), eq(Likes.sayingId, saying.id)))
           .get()
           .catch((err) => {
             console.error(`Error getting like status for saying ${saying.id}:`, err);

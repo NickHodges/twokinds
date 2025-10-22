@@ -229,15 +229,10 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
     // First check if we already have the user ID in locals
     let userId: number | null = null;
 
-    // Option 1: Use user ID from locals.dbUser (set by middleware)
+    // Use user ID from locals.dbUser (set by middleware)
     if (locals.dbUser?.id) {
       userId = locals.dbUser.id;
       logger.info('Using user ID from locals:', userId);
-    }
-    // Option 2: Use ID from session if available
-    else if (typeof session.user.id === 'number') {
-      userId = session.user.id;
-      logger.info('Using numeric ID from session:', userId);
     }
 
     // If we still don't have userId and we have an email, use our emergency function

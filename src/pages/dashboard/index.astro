@@ -36,20 +36,20 @@ try {
   console.log('Dashboard - user session:', {
     id: session.user.id,
     type: typeof session.user.id,
-    email: session.user.email
+    email: session.user.email,
   });
-  
+
   // Use the database user ID if available from middleware, otherwise look it up
   let userDbId = Astro.locals.dbUser?.id;
-  
+
   if (!userDbId) {
     try {
       userDbId = await getUserDbId(session.user);
-      
+
       if (!userDbId) {
         // Try one more time with forced recreation
         console.warn('First attempt to get user ID failed, trying with forced recreation');
-        
+
         // Make a direct database call to find and fix the user
         const existingUser = await db
           .select()
@@ -57,21 +57,21 @@ try {
           .where(eq(Users.email, session.user.email))
           .get()
           .catch(() => null);
-          
+
         if (existingUser) {
           // User exists but has a null ID - try to fix
           if (existingUser.id === null || existingUser.id === undefined) {
             console.warn('Found user with null ID, attempting to fix');
-            
+
             // Delete the null ID user first
             await db
               .delete(Users)
               .where(eq(Users.email, session.user.email))
               .run()
-              .catch(err => {
+              .catch((err) => {
                 console.error('Error deleting user with null ID:', err);
               });
-              
+
             // Create a new user with proper ID
             const now = new Date();
             const newUser = await db
@@ -89,7 +89,7 @@ try {
               })
               .returning()
               .get();
-              
+
             userDbId = newUser.id;
             console.log('Fixed user with null ID. New ID:', userDbId);
           } else {
@@ -113,7 +113,7 @@ try {
             })
             .returning()
             .get();
-            
+
           userDbId = newUser.id;
           console.log('Created new user with ID:', userDbId);
         }
@@ -121,7 +121,7 @@ try {
     } catch (error) {
       console.error('Error getting/creating user ID:', error);
     }
-    
+
     if (!userDbId) {
       console.error('Could not find or create database ID for user:', session.user.email);
       // Instead of throwing an error, show an empty list with appropriate message
@@ -129,9 +129,9 @@ try {
       throw new Error('User not found in database');
     }
   }
-  
+
   console.log('Using database ID for user:', userDbId);
-  
+
   // Use the numeric ID from our database
   const allSayings = await getUserSayings(userDbId);
   console.log(`Found ${allSayings.length} sayings for user`);
@@ -167,20 +167,22 @@ const page = {
   <div class="flex flex-col">
     <div class="mt-8 px-4">
       <h1 class="text-3xl font-bold mb-6">Your Sayings</h1>
-      
-      {page.data.length > 0 ? (
-        <>
-          <SayingList sayings={page.data} session={session} />
-          {page.lastPage > 1 && <Pagination page={page} basePath="/dashboard" />}
-        </>
-      ) : (
-        <EmptyState
-          message="No Sayings Found"
-          callToAction={{ text: "Create a Saying", href: "/create" }}
-          isDatabaseError={false}
-          devMessage="You haven't created any sayings yet. Would you like to create one now?"
-        />
-      )}
+
+      {
+        page.data.length > 0 ? (
+          <>
+            <SayingList sayings={page.data} session={session} />
+            {page.lastPage > 1 && <Pagination page={page} basePath="/dashboard" />}
+          </>
+        ) : (
+          <EmptyState
+            message="You haven't created any sayings yet"
+            callToAction={{ text: 'Create Your First Saying', href: '/create' }}
+            isDatabaseError={false}
+            devMessage="Get started by creating your first saying!"
+          />
+        )
+      }
     </div>
   </div>
 </MainLayout>

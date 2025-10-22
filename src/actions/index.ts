@@ -86,7 +86,7 @@ export const server = {
     accept: 'form',
 
     // Handle the form submission
-    async handler({ request, cookies, url }) {
+    async handler({ request, cookies, url, locals }) {
       try {
         // Use the request object from the context
         let session;
@@ -170,13 +170,23 @@ export const server = {
           typeId = type;
         }
 
+        // Get database user ID from locals (set by middleware)
+        const dbUserId = locals?.dbUser?.id;
+
+        if (!dbUserId) {
+          const redirectUrl = url
+            ? `${url.origin}/create?error=${encodeURIComponent('Database user ID not found')}`
+            : '/create?error=NoDbUser';
+          return Response.redirect(redirectUrl, 302);
+        }
+
         // Insert data into database
         const values = {
           intro: intro,
           type: typeId,
           firstKind: firstKind,
           secondKind: secondKind,
-          userId: session.user.id,
+          userId: dbUserId,
           createdAt: new Date(),
           updatedAt: new Date(), // Ensure updatedAt is set
         };

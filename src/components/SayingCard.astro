@@ -119,8 +119,12 @@ const {
 
         if (confirm('Are you sure you want to delete this saying? This cannot be undone.')) {
           try {
-            const response = await fetch(`/api/delete-saying?id=${sayingId}`, {
-              method: 'DELETE',
+            const response = await fetch('/api/delete-saying', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ sayingId: parseInt(sayingId) }),
             });
 
             const result = await response.json();
