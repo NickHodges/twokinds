@@ -5,6 +5,7 @@ interface Saying {
   id: number;
   introText: string;
   typeName: string;
+  pronoun?: string;
   firstKind: string;
   secondKind: string;
   createdAt: Date;
@@ -22,7 +23,9 @@ const { saying } = Astro.props;
 <div class="max-w-2xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
   <h1>
     {saying.introText}
-    {saying.typeName} &mdash; those who {saying.firstKind} and those who {saying.secondKind}.
+    {saying.typeName} &mdash; those {saying.pronoun || 'who'}
+    {saying.firstKind} and those {saying.pronoun || 'who'}
+    {saying.secondKind}.
   </h1>
 </div>
 

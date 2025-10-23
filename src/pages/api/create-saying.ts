@@ -207,11 +207,15 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
     let typeId: number;
 
     if (body.typeChoice === 'new') {
+      // Get pronoun from form data (defaults to 'who' if not specified)
+      const pronoun = (formValues.pronoun as string) || 'who';
+
       // Create a new type
       const newTypeResult = await db
         .insert(Types)
         .values({
           name: body.newType,
+          pronoun: pronoun,
           createdAt: new Date(),
         })
         .returning();

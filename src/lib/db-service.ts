@@ -50,6 +50,7 @@ export async function getSayingById(id: number) {
         ...saying,
         introText: introResults[0]?.introText || 'Unknown intro',
         typeName: typeResults[0]?.name || 'Unknown type',
+        pronoun: typeResults[0]?.pronoun || 'who',
       };
     } catch (relationError) {
       console.error(`Error fetching related data for saying ${id}:`, relationError);
@@ -59,6 +60,7 @@ export async function getSayingById(id: number) {
         ...saying,
         introText: 'Error loading intro',
         typeName: 'Error loading type',
+        pronoun: 'who',
       };
     }
   } catch (error) {
@@ -107,6 +109,7 @@ export async function getAllSayings(): Promise<Saying[]> {
             updatedAt: saying.updatedAt || saying.createdAt, // Fallback for missing updatedAt
             introText: intro?.introText || 'Unknown intro',
             typeName: type?.name || 'Unknown type',
+            pronoun: type?.pronoun || 'who',
             intro_data: intro
               ? {
                   id: intro.id,
@@ -117,6 +120,7 @@ export async function getAllSayings(): Promise<Saying[]> {
               ? {
                   id: type.id,
                   name: type.name,
+                  pronoun: type.pronoun || 'who',
                 }
               : undefined,
           };
@@ -135,6 +139,7 @@ export async function getAllSayings(): Promise<Saying[]> {
             updatedAt: saying.updatedAt || saying.createdAt,
             introText: 'Error loading intro',
             typeName: 'Error loading type',
+            pronoun: 'who',
           };
         }
       })
@@ -281,6 +286,7 @@ export async function getUserSayings(userIdOrEmail: string | number): Promise<Sa
             updatedAt: saying.updatedAt || saying.createdAt,
             introText: intro?.introText || 'Unknown intro',
             typeName: type?.name || 'Unknown type',
+            pronoun: type?.pronoun || 'who',
             intro_data: intro
               ? {
                   id: intro.id,
@@ -291,6 +297,7 @@ export async function getUserSayings(userIdOrEmail: string | number): Promise<Sa
               ? {
                   id: type.id,
                   name: type.name,
+                  pronoun: type.pronoun || 'who',
                 }
               : undefined,
             isLiked: likedStatus.get(saying.id) || false,
@@ -311,6 +318,7 @@ export async function getUserSayings(userIdOrEmail: string | number): Promise<Sa
             updatedAt: saying.updatedAt || saying.createdAt,
             introText: 'Error loading intro',
             typeName: 'Error loading type',
+            pronoun: 'who',
             isLiked: false,
             totalLikes: 0,
           };

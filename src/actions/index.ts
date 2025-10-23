@@ -121,6 +121,7 @@ export const server = {
         const firstKind = formData.get('firstKind') as string;
         const secondKind = formData.get('secondKind') as string;
         const newType = formData.get('newType') as string;
+        const pronoun = (formData.get('pronoun') as string) || 'who';
 
         // Basic validation
         if (!intro || !firstKind || !secondKind) {
@@ -153,6 +154,7 @@ export const server = {
             .insert(Types)
             .values({
               name: newType,
+              pronoun: pronoun,
               createdAt: new Date(),
             })
             .returning();

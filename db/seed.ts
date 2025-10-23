@@ -4,7 +4,7 @@ import { db, Intros, Types, Users, Sayings } from 'astro:db';
 export default async function seed() {
   try {
     console.log('Starting database seeding...');
-    
+
     // Create system user with ID 1
     console.log('Creating system user...');
     // First, manually insert a user with ID 1
@@ -17,9 +17,9 @@ export default async function seed() {
       createdAt: new Date(),
       updatedAt: new Date(),
       role: 'system',
-      preferences: {}
+      preferences: {},
     };
-    
+
     await db.insert(Users).values(systemUser);
     console.log('System user created with ID: 1');
 
@@ -33,7 +33,7 @@ export default async function seed() {
         { introText: 'You can divide everything into two kinds of', createdAt: new Date() },
       ])
       .returning();
-    
+
     const [intro1, intro2, intro3] = intros;
     console.log(`Created ${intros.length} intros`);
 
@@ -42,12 +42,12 @@ export default async function seed() {
     const types = await db
       .insert(Types)
       .values([
-        { name: 'people', createdAt: new Date() },
-        { name: 'dogs', createdAt: new Date() },
-        { name: 'refrigerators', createdAt: new Date() },
+        { name: 'people', pronoun: 'who', createdAt: new Date() },
+        { name: 'dogs', pronoun: 'that', createdAt: new Date() },
+        { name: 'refrigerators', pronoun: 'that', createdAt: new Date() },
       ])
       .returning();
-    
+
     const [type1, type2, type3] = types;
     console.log(`Created ${types.length} types`);
 
@@ -78,21 +78,20 @@ export default async function seed() {
           intro: intro3.id,
           type: type3.id,
           firstKind: 'have ice makers',
-          secondKind: 'don\'t have ice makers',
+          secondKind: "don't have ice makers",
           userId: 1, // Fixed userId
           createdAt: new Date(),
           updatedAt: new Date(),
         },
       ])
       .returning();
-    
+
     console.log(`Created ${sayings.length} sayings`);
     console.log('Database seeding completed successfully');
-    
+
     return true;
   } catch (error) {
     console.error('Error seeding database:', error);
     throw error;
   }
 }
-

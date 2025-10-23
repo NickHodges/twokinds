@@ -51,6 +51,7 @@ if (Astro.request.method === 'POST') {
     const typeId = parseInt(formData.get('type')?.toString() || '0');
     const typeChoice = formData.get('typeChoice')?.toString() || 'existing';
     const newType = formData.get('newType')?.toString() || '';
+    const pronoun = formData.get('pronoun')?.toString() || 'who';
     const firstKind = formData.get('firstKind')?.toString() || '';
     const secondKind = formData.get('secondKind')?.toString() || '';
 
@@ -75,6 +76,7 @@ if (Astro.request.method === 'POST') {
           .insert(Types)
           .values({
             name: newType,
+            pronoun: pronoun,
             createdAt: new Date(),
           })
           .returning();
@@ -200,20 +202,57 @@ const errorMessage = url.searchParams.get('error');
         </select>
       </div>
 
-      <div id="newTypeContainer" class="hidden">
-        <label
-          for="newType"
-          class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          New Type Name
-        </label>
-        <input
-          type="text"
-          id="newType"
-          name="newType"
-          placeholder="Enter a new type..."
-          class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-        />
+      <div id="newTypeContainer" class="hidden space-y-4">
+        <div>
+          <label
+            for="newType"
+            class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            New Type Name
+          </label>
+          <input
+            type="text"
+            id="newType"
+            name="newType"
+            placeholder="e.g., people, dogs, refrigerators..."
+            class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <fieldset>
+            <legend class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Pronoun (This type refers to...)
+            </legend>
+            <div class="space-y-2">
+              <div class="flex items-center">
+                <input
+                  type="radio"
+                  id="pronounWho"
+                  name="pronoun"
+                  value="who"
+                  checked={true}
+                  class="form-radio mr-2"
+                />
+                <label for="pronounWho" class="text-sm">
+                  People (uses "who") - e.g., "People <strong>who</strong> love coffee"
+                </label>
+              </div>
+              <div class="flex items-center">
+                <input
+                  type="radio"
+                  id="pronounThat"
+                  name="pronoun"
+                  value="that"
+                  class="form-radio mr-2"
+                />
+                <label for="pronounThat" class="text-sm">
+                  Things/Animals (uses "that") - e.g., "Dogs <strong>that</strong> bark loudly"
+                </label>
+              </div>
+            </div>
+          </fieldset>
+        </div>
       </div>
 
       <div>

@@ -1,18 +1,21 @@
 ---
-/**
- * @typedef {object} Props
- * @property {string} [viewUrl] - URL to view the saying (optional)
- * @property {string} createAnotherUrl - URL to create another saying
- */
+interface Props {
+  viewUrl?: string;
+  createAnotherUrl: string;
+}
 
-const { createAnotherUrl } = Astro.props;
+const { viewUrl } = Astro.props as Props;
 ---
 
 <div class="mt-4 flex justify-center space-x-4">
-  <a
-    href={createAnotherUrl}
-    class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 text-base font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-  >
-    Create another saying
-  </a>
+  {
+    viewUrl && (
+      <a
+        href={viewUrl}
+        class="inline-flex items-center px-4 py-2 border border-transparent text-white bg-blue-600 hover:bg-blue-700 text-base font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+      >
+        View Saying
+      </a>
+    )
+  }
 </div>

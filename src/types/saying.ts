@@ -8,6 +8,7 @@ export interface Saying {
   createdAt: Date;
   introText?: string;
   typeName?: string;
+  pronoun?: string;
   intro_data?: {
     id: number;
     introText: string;
@@ -15,6 +16,7 @@ export interface Saying {
   type_data?: {
     id: number;
     name: string;
+    pronoun?: string;
   };
   user?: {
     id: number;
@@ -35,6 +37,7 @@ export interface IntroType {
 export interface SayingType {
   id: number;
   name: string;
+  pronoun?: string;
   createdAt: Date;
 }
 

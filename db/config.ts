@@ -30,6 +30,7 @@ const Types = defineTable({
   columns: {
     id: column.number({ primaryKey: true, autoIncrement: true }),
     name: column.text(),
+    pronoun: column.text({ default: 'who' }), // 'who' for people, 'that' for things
     createdAt: column.date(),
   },
 });

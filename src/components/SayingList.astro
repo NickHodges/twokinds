@@ -67,6 +67,7 @@ for (const saying of sayings) {
           id={saying.id}
           introText={saying.introText || saying.intro_data?.introText || ''}
           typeName={saying.typeName || saying.type_data?.name || ''}
+          pronoun={saying.pronoun || saying.type_data?.pronoun || 'who'}
           firstKind={saying.firstKind}
           secondKind={saying.secondKind}
           createdAt={saying.createdAt}
