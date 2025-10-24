@@ -5,11 +5,15 @@ import authConfig from '../../../auth.config';
 import { db, Sayings, Intros, Types, eq, and } from 'astro:db';
 import type { ExtendedSession } from '../../env';
 import { getSayingById } from '../../lib/db-service';
+import { createLogger } from '../../utils/logger';
+
+const logger = createLogger('Edit Saying Page');
 
 const session = (await getSession(Astro.request, authConfig)) as ExtendedSession | null;
 
 // This should be a protected page
 if (!session?.user?.id) {
+  logger.warn('Unauthorized access attempt to edit saying');
   return Astro.redirect('/?error=unauthorized');
 }
 
@@ -17,6 +21,7 @@ if (!session?.user?.id) {
 const dbUserId = Astro.locals.dbUser?.id;
 
 if (!dbUserId) {
+  logger.error('No database user ID in locals', { sessionUserId: session.user.id });
   return Astro.redirect('/?error=no-db-user');
 }
 
@@ -24,17 +29,33 @@ if (!dbUserId) {
 const { id } = Astro.params;
 const sayingId = parseInt(id || '0');
 
+logger.debug('Edit saying page accessed', { sayingId, dbUserId });
+
 if (!sayingId) {
+  logger.warn('Invalid saying ID', { id });
   return Astro.redirect('/dashboard?error=invalid-id');
 }
 
 // Fetch the saying
 const saying = await getSayingById(sayingId);
 
+logger.debug('Saying fetched for edit', {
+  found: !!saying,
+  sayingUserId: saying?.userId,
+  requestUserId: dbUserId,
+});
+
 // If no saying found or user is not the owner, redirect
 if (!saying || saying.userId !== dbUserId) {
+  logger.warn('Unauthorized edit attempt or saying not found', {
+    sayingId,
+    sayingUserId: saying?.userId,
+    requestUserId: dbUserId,
+  });
   return Astro.redirect('/dashboard?error=not-found-or-unauthorized');
 }
+
+logger.info('Edit saying page loaded successfully', { sayingId, userId: dbUserId });
 
 // Fetch all available intros for the dropdown
 const intros = await db.select().from(Intros).orderBy(Intros.introText);
@@ -100,10 +121,11 @@ if (Astro.request.method === 'POST') {
       })
       .where(and(eq(Sayings.id, sayingId), eq(Sayings.userId, dbUserId)));
 
+    logger.info('Saying updated successfully', { sayingId, userId: dbUserId });
     // Redirect back to dashboard with success message
     return Astro.redirect('/dashboard?success=saying-updated');
   } catch (error) {
-    console.error('Error updating saying:', error);
+    logger.error('Error updating saying', { sayingId, error });
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     return Astro.redirect(`/edit-saying/${sayingId}?error=${encodeURIComponent(errorMessage)}`);
   }

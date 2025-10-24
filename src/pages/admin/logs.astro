@@ -1,0 +1,304 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import '../../styles/index.css';
+import { db, Logs, desc, and, eq } from 'astro:db';
+import { createLogger } from '../../utils/logger';
+import type { ExtendedSession } from '../../env';
+
+const logger = createLogger('Logs Viewer');
+
+// Don't prerender so we always get fresh data
+export const prerender = false;
+
+// Get current user's session
+const session = Astro.locals.session as ExtendedSession | null;
+
+// Redirect if not logged in
+if (!session?.user) {
+  logger.warn('Unauthorized access attempt to logs viewer - not logged in');
+  return Astro.redirect('/auth/signin');
+}
+
+// Check role from database user (not session, as session may be stale)
+const dbUser = Astro.locals.dbUser;
+if (!dbUser || dbUser.role !== 'admin') {
+  logger.warn('Unauthorized access attempt to logs viewer', {
+    userId: session.user.id,
+    sessionRole: session.user.role,
+    dbRole: dbUser?.role,
+  });
+  return Astro.redirect('/dashboard?error=unauthorized');
+}
+
+// Get filter parameters from URL
+const url = new URL(Astro.request.url);
+const levelFilter = url.searchParams.get('level') || 'all';
+const contextFilter = url.searchParams.get('context') || 'all';
+const pageNum = parseInt(url.searchParams.get('page') || '1', 10);
+const pageSize = 50;
+
+logger.debug('Logs viewer accessed', { levelFilter, contextFilter, pageNum });
+
+// Build query conditions
+const conditions = [];
+if (levelFilter !== 'all') {
+  conditions.push(eq(Logs.level, levelFilter));
+}
+
+// Get logs from database
+let logs;
+let totalLogs = 0;
+
+try {
+  // Get total count for pagination
+  const countQuery =
+    conditions.length > 0
+      ? db
+          .select()
+          .from(Logs)
+          .where(and(...conditions))
+      : db.select().from(Logs);
+
+  const allLogs = await countQuery.all();
+  totalLogs = allLogs.length;
+
+  // Get paginated logs
+  const offset = (pageNum - 1) * pageSize;
+
+  let query = db.select().from(Logs);
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions));
+  }
+
+  logs = await query.orderBy(desc(Logs.createdAt)).limit(pageSize).offset(offset).all();
+
+  logger.info('Logs fetched successfully', {
+    count: logs.length,
+    total: totalLogs,
+    page: pageNum,
+    filters: { level: levelFilter, context: contextFilter },
+  });
+} catch (error) {
+  logger.error('Error fetching logs', { error });
+  logs = [];
+}
+
+// Get unique contexts for filter dropdown
+let contexts: string[] = [];
+try {
+  const uniqueContexts = await db.select({ context: Logs.context }).from(Logs).all();
+
+  contexts = [...new Set(uniqueContexts.map((c) => c.context))].sort();
+} catch (error) {
+  logger.error('Error fetching contexts', { error });
+}
+
+const totalPages = Math.ceil(totalLogs / pageSize);
+const levels = ['all', 'debug', 'info', 'warn', 'error'];
+
+// Helper function to format date
+function formatDate(date: Date): string {
+  return new Date(date).toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+// Helper function to get level badge color
+function getLevelColor(level: string): string {
+  switch (level) {
+    case 'error':
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+    case 'warn':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+    case 'info':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+    case 'debug':
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+  }
+}
+---
+
+<MainLayout>
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Application Logs</h1>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+      <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label for="level" class="block text-sm font-medium mb-2">Log Level</label>
+          <select
+            id="level"
+            name="level"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+          >
+            {
+              levels.map((level) => (
+                <option value={level} selected={level === levelFilter}>
+                  {level.charAt(0).toUpperCase() + level.slice(1)}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+
+        <div>
+          <label for="context" class="block text-sm font-medium mb-2">Context</label>
+          <select
+            id="context"
+            name="context"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+          >
+            <option value="all" selected={contextFilter === 'all'}>All Contexts</option>
+            {
+              contexts.map((context) => (
+                <option value={context} selected={context === contextFilter}>
+                  {context}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+
+        <div class="flex items-end">
+          <button
+            type="submit"
+            class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Apply Filters
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Stats -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Showing {logs.length} of {totalLogs} logs
+        {levelFilter !== 'all' && ` (filtered by level: ${levelFilter})`}
+        {contextFilter !== 'all' && ` (filtered by context: ${contextFilter})`}
+      </p>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+      {
+        logs.length > 0 ? (
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead class="bg-gray-50 dark:bg-gray-900">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Time
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Level
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Context
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Message
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Metadata
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {logs.map((log) => (
+                  <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {formatDate(log.createdAt)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span
+                        class={`px-2 py-1 text-xs font-semibold rounded ${getLevelColor(log.level)}`}
+                      >
+                        {log.level.toUpperCase()}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {log.context}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                      <div class="max-w-md">{log.message}</div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                      {log.metadata ? (
+                        <details class="cursor-pointer">
+                          <summary class="text-blue-600 dark:text-blue-400 hover:underline">
+                            View
+                          </summary>
+                          <pre class="mt-2 text-xs bg-gray-50 dark:bg-gray-900 p-2 rounded overflow-x-auto">
+                            {JSON.stringify(log.metadata, null, 2)}
+                          </pre>
+                        </details>
+                      ) : (
+                        <span class="text-gray-400">-</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div class="p-8 text-center text-gray-500 dark:text-gray-400">
+            No logs found matching the current filters.
+          </div>
+        )
+      }
+    </div>
+
+    <!-- Pagination -->
+    {
+      totalPages > 1 && (
+        <div class="mt-6 flex justify-center gap-2">
+          {pageNum > 1 && (
+            <a
+              href={`/admin/logs?page=${pageNum - 1}&level=${levelFilter}&context=${contextFilter}`}
+              class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Previous
+            </a>
+          )}
+
+          <span class="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-md">
+            Page {pageNum} of {totalPages}
+          </span>
+
+          {pageNum < totalPages && (
+            <a
+              href={`/admin/logs?page=${pageNum + 1}&level=${levelFilter}&context=${contextFilter}`}
+              class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Next
+            </a>
+          )}
+        </div>
+      )
+    }
+
+    <!-- Back to Dashboard -->
+    <div class="mt-8">
+      <a href="/dashboard" class="text-blue-600 dark:text-blue-400 hover:underline">
+        &larr; Back to Dashboard
+      </a>
+    </div>
+  </div>
+</MainLayout>
+
+<style>
+  details[open] summary {
+    margin-bottom: 0.5rem;
+  }
+</style>

@@ -11,7 +11,7 @@ We'd love to hear from you! Whether you have questions, feedback, or need suppor
 
 For general inquiries, support requests, or feedback:
 
-**[support@twokindsofpeople.com](mailto:support@twokindsofpeople.com)**
+**[support@twokindsof.com](mailto:support@twokindsof.com)**
 
 ## Response Time
 
@@ -30,20 +30,19 @@ To help us assist you more quickly, please include:
 
 If you need to report inappropriate content or violations of our Terms of Service:
 
-**[abuse@twokindsofpeople.com](mailto:abuse@twokindsofpeople.com)**
+**[abuse@twokindsof.com](mailto:abuse@twokindsof.com)**
 
 ## Legal Inquiries
 
 For legal matters, copyright claims (DMCA), or privacy concerns:
 
-**[legal@twokindsofpeople.com](mailto:legal@twokindsofpeople.com)**
+**[legal@twokindsof.com](mailto:legal@twokindsof.com)**
 
 ## Follow Us
 
 Stay updated with the latest news and updates:
 
 - Twitter/X: [@twokindsof](https://twitter.com/twokindsof)
-- GitHub: [TwoKindsOfPeople](https://github.com/TwoKindsOfPeople)
 
 ## Privacy
 
@@ -62,7 +61,7 @@ Go to your dashboard, find the saying you want to modify, and click the "Edit" o
 **Why was my content removed?**
 Content may be removed if it violates our Terms of Service. You should receive an email notification if this occurs.
 
-**Can I use Two Kinds of People for commercial purposes?**
+**Can I use Two Kinds of for commercial purposes?**
 Please contact us at the email above to discuss commercial use cases.
 
 **I found a bug! How do I report it?**
@@ -70,4 +69,4 @@ We appreciate bug reports! Please email us with detailed steps to reproduce the 
 
 ---
 
-**Thank you for using Two Kinds of People!**
+**Thank you for using Two Kinds of!**

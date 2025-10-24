@@ -2,6 +2,9 @@ import { defineAction } from 'astro:actions';
 import { z } from 'zod';
 import { db, Sayings, Types, Likes, and, eq } from 'astro:db';
 import { getSession } from 'auth-astro/server';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('Actions');
 
 // Define Zod schema for sign-in validation
 const SignInSchema = z.object({
@@ -40,42 +43,52 @@ export const server = {
     accept: 'form',
     input: ToggleLikeSchema,
     handler: async (input, { locals }) => {
+      logger.debug('toggleLike action called', { sayingId: input.sayingId });
+
       // Get user ID from locals (set by middleware)
       const userId = locals.dbUser?.id;
 
       if (!userId) {
+        logger.warn('Unauthenticated like attempt', { sayingId: input.sayingId });
         throw new Error('You must be logged in to like a saying');
       }
 
       const { sayingId } = input;
 
-      // Check if the like already exists
-      const existingLike = await db
-        .select()
-        .from(Likes)
-        .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
-        .get();
-
-      if (existingLike) {
-        // Unlike
-        await db
-          .delete(Likes)
+      try {
+        // Check if the like already exists
+        const existingLike = await db
+          .select()
+          .from(Likes)
           .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
-          .run();
+          .get();
 
-        return { liked: false };
-      } else {
-        // Like
-        await db
-          .insert(Likes)
-          .values({
-            sayingId,
-            userId,
-            createdAt: new Date(),
-          })
-          .run();
+        if (existingLike) {
+          // Unlike
+          await db
+            .delete(Likes)
+            .where(and(eq(Likes.sayingId, sayingId), eq(Likes.userId, userId)))
+            .run();
 
-        return { liked: true };
+          logger.info('User unliked saying', { userId, sayingId });
+          return { liked: false };
+        } else {
+          // Like
+          await db
+            .insert(Likes)
+            .values({
+              sayingId,
+              userId,
+              createdAt: new Date(),
+            })
+            .run();
+
+          logger.info('User liked saying', { userId, sayingId });
+          return { liked: true };
+        }
+      } catch (error) {
+        logger.error('Error toggling like', { userId, sayingId, error });
+        throw error;
       }
     },
   }),
@@ -87,6 +100,8 @@ export const server = {
 
     // Handle the form submission
     async handler({ request, cookies, url, locals }) {
+      logger.debug('submitSaying action called');
+
       try {
         // Use the request object from the context
         let session;
@@ -94,7 +109,7 @@ export const server = {
           session = await getSession(request);
         } catch (error) {
           // Fallback to cookies if request doesn't work
-          console.error('Error getting session from request:', error);
+          logger.warn('Error getting session from request, falling back to cookies', { error });
           const headers = new Headers();
           for (const [name, value] of Object.entries(cookies || {})) {
             headers.append('Cookie', `${name}=${value}`);
@@ -104,6 +119,7 @@ export const server = {
         }
 
         if (!session?.user?.id) {
+          logger.warn('Unauthenticated saying submission attempt');
           const redirectUrl = url
             ? `${url.origin}/create?error=${encodeURIComponent('You must be logged in to create a saying')}`
             : '/create?error=AuthRequired';
@@ -112,7 +128,7 @@ export const server = {
 
         // Get form data
         const formData = await request.formData();
-        console.log('Form data:', Object.fromEntries(formData.entries()));
+        logger.debug('Form data received', { formData: Object.fromEntries(formData.entries()) });
 
         // Process form data
         const typeChoice = formData.get('typeChoice') as string;
@@ -125,6 +141,11 @@ export const server = {
 
         // Basic validation
         if (!intro || !firstKind || !secondKind) {
+          logger.warn('Validation failed: missing required fields', {
+            intro,
+            firstKind,
+            secondKind,
+          });
           const redirectUrl = url
             ? `${url.origin}/create?error=${encodeURIComponent('Missing required fields')}`
             : '/create?error=MissingFields';
@@ -132,6 +153,7 @@ export const server = {
         }
 
         if (typeChoice === 'existing' && !type) {
+          logger.warn('Validation failed: existing type not selected');
           const redirectUrl = url
             ? `${url.origin}/create?error=${encodeURIComponent('Please select a type')}`
             : '/create?error=TypeRequired';
@@ -139,17 +161,49 @@ export const server = {
         }
 
         if (typeChoice === 'new' && (!newType || newType.length < 2)) {
+          logger.warn('Validation failed: invalid new type name', { newType });
           const redirectUrl = url
             ? `${url.origin}/create?error=${encodeURIComponent('Please enter a valid new type name (at least 2 characters)')}`
             : '/create?error=InvalidTypeLength';
           return Response.redirect(redirectUrl, 302);
         }
 
+        // Moderate content before proceeding
+        const { getContentModerator } = await import('../utils/moderation');
+        const moderator = getContentModerator();
+
+        // Combine all text content for moderation
+        const contentToModerate = `${firstKind} ${secondKind}${typeChoice === 'new' ? ` ${newType}` : ''}`;
+
+        logger.debug('Moderating content', { contentLength: contentToModerate.length });
+
+        const moderationResult = await moderator.moderateContent({
+          text: contentToModerate,
+          context: {
+            userId: session.user.id,
+            contentType: 'saying',
+          },
+        });
+
+        if (!moderationResult.isSafe) {
+          logger.warn('Content flagged by moderation', {
+            userId: session.user.id,
+            reason: moderationResult.reason,
+          });
+          const redirectUrl = url
+            ? `${url.origin}/create?error=${encodeURIComponent(`Content flagged: ${moderationResult.reason || 'inappropriate content detected'}`)}`
+            : '/create?error=ContentFlagged';
+          return Response.redirect(redirectUrl, 302);
+        }
+
+        logger.info('Content passed moderation', { userId: session.user.id });
+
         // Process type selection
         let typeId;
 
         if (typeChoice === 'new') {
           // Create a new type
+          logger.info('Creating new type', { newType, pronoun });
           const newTypeResult = await db
             .insert(Types)
             .values({
@@ -160,6 +214,7 @@ export const server = {
             .returning();
 
           if (!newTypeResult || newTypeResult.length === 0) {
+            logger.error('Failed to create new type', { newType, pronoun });
             const redirectUrl = url
               ? `${url.origin}/create?error=${encodeURIComponent('Failed to create new type')}`
               : '/create?error=TypeCreationFailed';
@@ -167,15 +222,20 @@ export const server = {
           }
 
           typeId = newTypeResult[0].id;
+          logger.info('Successfully created new type', { typeId, newType });
         } else {
           // Use existing type
           typeId = type;
+          logger.debug('Using existing type', { typeId });
         }
 
         // Get database user ID from locals (set by middleware)
         const dbUserId = locals?.dbUser?.id;
 
         if (!dbUserId) {
+          logger.error('Database user ID not found in locals', {
+            sessionUserId: session?.user?.id,
+          });
           const redirectUrl = url
             ? `${url.origin}/create?error=${encodeURIComponent('Database user ID not found')}`
             : '/create?error=NoDbUser';
@@ -193,10 +253,12 @@ export const server = {
           updatedAt: new Date(), // Ensure updatedAt is set
         };
 
-        console.log('Inserting saying:', values);
+        logger.debug('Inserting saying', { values });
 
         try {
           const result = await db.insert(Sayings).values(values).returning();
+
+          logger.info('Successfully created saying', { sayingId: result[0].id, userId: dbUserId });
 
           // Return redirect with success
           const redirectUrl = url
@@ -204,7 +266,7 @@ export const server = {
             : `/create?success=true&id=${result[0].id}`;
           return Response.redirect(redirectUrl, 302);
         } catch (dbError) {
-          console.error('Database error when inserting saying:', dbError);
+          logger.error('Database error when inserting saying', { dbError, values });
 
           // If we're in production and having database issues, provide a more user-friendly error
           if (process.env.NODE_ENV === 'production') {
@@ -218,7 +280,7 @@ export const server = {
           throw dbError;
         }
       } catch (error) {
-        console.error('Error saving saying:', error);
+        logger.error('Error saving saying', { error });
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         const redirectUrl = url
           ? `${url.origin}/create?error=${encodeURIComponent(errorMessage)}`
@@ -235,8 +297,12 @@ export const server = {
     input: SignInSchema,
 
     handler: async (body) => {
+      logger.debug('signIn action called', { provider: body.provider });
+
       try {
         const { provider, callbackUrl = '/' } = body;
+
+        logger.info('Initiating sign-in', { provider, callbackUrl });
 
         // Auth-astro will handle the redirect
         return {
@@ -244,7 +310,7 @@ export const server = {
           redirect: `/api/auth/signin/${provider}?callbackUrl=${encodeURIComponent(callbackUrl)}`,
         };
       } catch (error) {
-        console.error('Error during sign-in:', error);
+        logger.error('Error during sign-in', { error, provider: body.provider });
         return {
           success: false,
           error: 'Authentication failed',

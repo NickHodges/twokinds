@@ -1,5 +1,8 @@
 import { db, Sayings, Intros, Types, Likes, Users, eq, desc, and, count } from 'astro:db';
 import type { Saying } from '../types/saying';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('DB Service');
 
 /**
  * Get a complete saying with all related data by ID
@@ -9,9 +12,11 @@ import type { Saying } from '../types/saying';
  */
 export async function getSayingById(id: number) {
   if (!id || !Number.isFinite(id)) {
-    console.error(`Invalid saying ID: ${id}`);
+    logger.error('Invalid saying ID', { id });
     return null;
   }
+
+  logger.debug('Fetching saying by ID', { id });
 
   try {
     // Get the saying record
@@ -19,7 +24,7 @@ export async function getSayingById(id: number) {
 
     // If no results, return null
     if (!sayingResults || sayingResults.length === 0) {
-      console.log(`No saying found with ID: ${id}`);
+      logger.warn('No saying found with ID', { id });
       return null;
     }
 
@@ -45,6 +50,8 @@ export async function getSayingById(id: number) {
           .catch(() => []),
       ]);
 
+      logger.debug('Successfully fetched saying with related data', { id, sayingId: saying.id });
+
       // Combine the data
       return {
         ...saying,
@@ -53,7 +60,7 @@ export async function getSayingById(id: number) {
         pronoun: typeResults[0]?.pronoun || 'who',
       };
     } catch (relationError) {
-      console.error(`Error fetching related data for saying ${id}:`, relationError);
+      logger.error('Error fetching related data for saying', { id, error: relationError });
 
       // Return the saying with default values for related data
       return {
@@ -64,7 +71,7 @@ export async function getSayingById(id: number) {
       };
     }
   } catch (error) {
-    console.error('Error getting saying by ID:', error);
+    logger.error('Error getting saying by ID', { id, error });
     return null;
   }
 }
@@ -75,6 +82,8 @@ export async function getSayingById(id: number) {
  * @returns Array of sayings with intro and type data
  */
 export async function getAllSayings(): Promise<Saying[]> {
+  logger.debug('Fetching all sayings');
+
   try {
     // Try to fetch sayings from the database
     const rawSayings = await db.select().from(Sayings).orderBy(desc(Sayings.createdAt));
@@ -125,7 +134,10 @@ export async function getAllSayings(): Promise<Saying[]> {
               : undefined,
           };
         } catch (itemError) {
-          console.error(`Error processing saying ${saying.id}:`, itemError);
+          logger.error('Error processing saying in getAllSayings', {
+            sayingId: saying.id,
+            error: itemError,
+          });
 
           // Return a basic version of the saying to prevent entire query from failing
           return {
@@ -145,9 +157,10 @@ export async function getAllSayings(): Promise<Saying[]> {
       })
     );
 
+    logger.info('Successfully fetched all sayings', { count: sayingsWithData.length });
     return sayingsWithData;
   } catch (dbError) {
-    console.error('Error fetching sayings from database:', dbError);
+    logger.error('Error fetching sayings from database', { error: dbError });
 
     // In production, return an empty array rather than crashing
     if (process.env.NODE_ENV === 'production') {
@@ -160,11 +173,11 @@ export async function getAllSayings(): Promise<Saying[]> {
 }
 
 export async function getUserSayings(userIdOrEmail: string | number): Promise<Saying[]> {
-  try {
-    console.log('getUserSayings called with:', userIdOrEmail, 'type:', typeof userIdOrEmail);
+  logger.debug('getUserSayings called', { userIdOrEmail, type: typeof userIdOrEmail });
 
+  try {
     if (!userIdOrEmail) {
-      console.error('No user ID or email provided');
+      logger.error('No user ID or email provided');
       return [];
     }
 
@@ -180,36 +193,36 @@ export async function getUserSayings(userIdOrEmail: string | number): Promise<Sa
         dbUserId = parseInt(userIdOrEmail, 10);
       } else if (userIdOrEmail.includes('@')) {
         // If it's an email, look up the user
-        console.log('Looking up user by email:', userIdOrEmail);
+        logger.debug('Looking up user by email', { email: userIdOrEmail });
         const dbUser = await db
           .select()
           .from(Users)
           .where(eq(Users.email, userIdOrEmail))
           .get()
           .catch((err) => {
-            console.error('Error finding user by email:', err);
+            logger.error('Error finding user by email', { email: userIdOrEmail, error: err });
             return null;
           });
 
         if (dbUser) {
           dbUserId = dbUser.id;
-          console.log('Found user by email with ID:', dbUserId);
+          logger.info('Found user by email', { email: userIdOrEmail, userId: dbUserId });
         } else {
-          console.error('User not found by email:', userIdOrEmail);
+          logger.warn('User not found by email', { email: userIdOrEmail });
         }
       } else {
         // It's probably a UUID from OAuth, try to look up by session ID in Users table
-        console.log('Looking up user by session ID in provider ID:', userIdOrEmail);
+        logger.debug('Looking up user by session ID in provider ID', { userIdOrEmail });
         // We don't have a provider ID column, so we'll need to use email from the session
       }
     }
 
     if (dbUserId === null) {
-      console.error('Could not determine database user ID');
+      logger.error('Could not determine database user ID', { userIdOrEmail });
       return [];
     }
 
-    console.log('Using database user ID:', dbUserId);
+    logger.debug('Using database user ID', { dbUserId });
 
     // Get all sayings for the user
     const rawSayings = await db
@@ -219,7 +232,7 @@ export async function getUserSayings(userIdOrEmail: string | number): Promise<Sa
       .orderBy(desc(Sayings.createdAt))
       .all() // Use all() instead of get() to get multiple results
       .catch((err) => {
-        console.error(`Error fetching sayings for user ${dbUserId}:`, err);
+        logger.error('Error fetching sayings for user', { dbUserId, error: err });
         return [];
       });
 
@@ -244,13 +257,17 @@ export async function getUserSayings(userIdOrEmail: string | number): Promise<Sa
           .where(and(eq(Likes.userId, dbUserId), eq(Likes.sayingId, saying.id)))
           .get()
           .catch((err) => {
-            console.error(`Error getting like status for saying ${saying.id}:`, err);
+            logger.error('Error getting like status for saying', {
+              sayingId: saying.id,
+              dbUserId,
+              error: err,
+            });
             return null;
           });
 
         likedStatus.set(saying.id, !!like);
       } catch (likeError) {
-        console.error(`Error getting likes for saying ${saying.id}:`, likeError);
+        logger.error('Error getting likes for saying', { sayingId: saying.id, error: likeError });
         totalLikes.set(saying.id, 0);
         likedStatus.set(saying.id, false);
       }
@@ -304,7 +321,10 @@ export async function getUserSayings(userIdOrEmail: string | number): Promise<Sa
             totalLikes: totalLikes.get(saying.id) || 0,
           };
         } catch (itemError) {
-          console.error(`Error processing saying ${saying.id}:`, itemError);
+          logger.error('Error processing saying in getUserSayings', {
+            sayingId: saying.id,
+            error: itemError,
+          });
 
           // Return a basic version of the saying to prevent entire query from failing
           return {
@@ -326,9 +346,10 @@ export async function getUserSayings(userIdOrEmail: string | number): Promise<Sa
       })
     );
 
+    logger.info('Successfully fetched user sayings', { dbUserId, count: sayingsWithData.length });
     return sayingsWithData;
   } catch (dbError) {
-    console.error('Error fetching user sayings from database:', dbError);
+    logger.error('Error fetching user sayings from database', { userIdOrEmail, error: dbError });
 
     // In production, return an empty array rather than crashing
     if (process.env.NODE_ENV === 'production') {

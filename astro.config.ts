@@ -99,6 +99,13 @@ export default defineConfig({
         access: 'secret',
         optional: false,
       }),
+
+      // Content Moderation
+      OPENAI_API_KEY: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
     },
   },
 });

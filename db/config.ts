@@ -59,6 +59,22 @@ const Likes = defineTable({
   },
 });
 
+const Logs = defineTable({
+  columns: {
+    id: column.number({ primaryKey: true, autoIncrement: true }),
+    level: column.text(), // 'debug', 'info', 'warn', 'error'
+    context: column.text(), // Logger context like 'UserDB', 'Actions', etc.
+    message: column.text(),
+    metadata: column.json({ optional: true }), // Additional structured data
+    createdAt: column.date(),
+  },
+  indexes: {
+    level_idx: { on: ['level'] },
+    context_idx: { on: ['context'] },
+    created_at_idx: { on: ['createdAt'] },
+  },
+});
+
 export default defineDb({
   tables: {
     Users,
@@ -66,5 +82,6 @@ export default defineDb({
     Types,
     Sayings,
     Likes,
+    Logs,
   },
 });

@@ -159,7 +159,18 @@ export async function getUserDbId(
  * This ensures the user exists in our database with a proper numeric ID,
  * regardless of the OAuth provider's ID format
  */
-export async function upsertUser(session: ExtendedSession): Promise<{ id: number } | null> {
+export async function upsertUser(session: ExtendedSession): Promise<{
+  id: number;
+  name: string;
+  email: string;
+  image: string | null;
+  provider: string;
+  role: string;
+  lastLogin: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  preferences: unknown;
+} | null> {
   try {
     if (!session?.user) {
       logger.error('No user in session');
@@ -215,7 +226,7 @@ export async function upsertUser(session: ExtendedSession): Promise<{ id: number
             .get();
 
           logger.info('Recreated user with valid ID:', recreatedUser.id);
-          return { id: recreatedUser.id };
+          return recreatedUser;
         } catch (recreateErr) {
           logger.error('Failed to recreate user with valid ID:', recreateErr);
           return null;
@@ -225,7 +236,7 @@ export async function upsertUser(session: ExtendedSession): Promise<{ id: number
       // Update existing user with valid ID
       logger.info('Updating existing user:', existingUser.id);
 
-      await db
+      const updatedUser = await db
         .update(Users)
         .set({
           name: user.name || existingUser.name,
@@ -234,13 +245,14 @@ export async function upsertUser(session: ExtendedSession): Promise<{ id: number
           updatedAt: new Date(),
         })
         .where(eq(Users.id, existingUser.id))
-        .run()
+        .returning()
+        .get()
         .catch((err) => {
           logger.error('Error updating user:', err);
           throw err;
         });
 
-      return { id: existingUser.id };
+      return updatedUser;
     } else {
       // Create new user
       logger.info('Creating new user');
@@ -267,7 +279,7 @@ export async function upsertUser(session: ExtendedSession): Promise<{ id: number
         });
 
       logger.info('Created new user with ID:', newUser.id);
-      return { id: newUser.id };
+      return newUser;
     }
   } catch (error) {
     logger.error('Error in upsertUser:', error);
