@@ -28,12 +28,27 @@ const { url, title }: Props = Astro.props;
 </div>
 
 <style>
-  /* Custom styling to match our design */
+  /* Override shareon default styles to match our design */
   :global(.shareon > a) {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 9999px;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+    min-width: 2.5rem !important;
+    padding: 0 !important;
+    border-radius: 9999px !important;
+    box-sizing: border-box !important;
     transition: transform 0.2s;
+    margin: 0.25rem;
+  }
+
+  :global(.shareon > a::before) {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    margin: 0 !important;
   }
 
   :global(.shareon > a:hover) {
