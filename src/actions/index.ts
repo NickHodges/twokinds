@@ -168,6 +168,33 @@ export const server = {
           return Response.redirect(redirectUrl, 302);
         }
 
+        // Check rate limits
+        const { getRateLimiter } = await import('../utils/ratelimit');
+        const rateLimiter = getRateLimiter();
+
+        const rateLimitCheck = await rateLimiter.checkLimit({
+          identifier: session.user.id,
+          action: 'create_saying',
+        });
+
+        if (!rateLimitCheck.allowed) {
+          logger.warn('Rate limit exceeded for saying creation', {
+            userId: session.user.id,
+            current: rateLimitCheck.current,
+            limit: rateLimitCheck.limit,
+          });
+          const redirectUrl = url
+            ? `${url.origin}/create?error=${encodeURIComponent(rateLimitCheck.reason || 'Rate limit exceeded. Please try again later.')}`
+            : '/create?error=RateLimitExceeded';
+          return Response.redirect(redirectUrl, 302);
+        }
+
+        logger.debug('Rate limit check passed', {
+          userId: session.user.id,
+          current: rateLimitCheck.current,
+          limit: rateLimitCheck.limit,
+        });
+
         // Moderate content before proceeding
         const { getContentModerator } = await import('../utils/moderation');
         const moderator = getContentModerator();
@@ -259,6 +286,12 @@ export const server = {
           const result = await db.insert(Sayings).values(values).returning();
 
           logger.info('Successfully created saying', { sayingId: result[0].id, userId: dbUserId });
+
+          // Record the action for rate limiting
+          await rateLimiter.recordAction({
+            identifier: session.user.id,
+            action: 'create_saying',
+          });
 
           // Return redirect with success
           const redirectUrl = url

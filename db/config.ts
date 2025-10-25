@@ -75,6 +75,23 @@ const Logs = defineTable({
   },
 });
 
+const RateLimits = defineTable({
+  columns: {
+    id: column.number({ primaryKey: true, autoIncrement: true }),
+    identifier: column.text(), // User ID, IP address, or other identifier
+    action: column.text(), // Action being rate limited (e.g., 'create_saying')
+    count: column.number({ default: 0 }), // Number of actions in current window
+    windowStart: column.date(), // When the current window started
+    expiresAt: column.date(), // When this record expires
+    createdAt: column.date(),
+    updatedAt: column.date(),
+  },
+  indexes: {
+    identifier_action_idx: { on: ['identifier', 'action'], unique: true },
+    expires_at_idx: { on: ['expiresAt'] },
+  },
+});
+
 export default defineDb({
   tables: {
     Users,
@@ -83,5 +100,6 @@ export default defineDb({
     Sayings,
     Likes,
     Logs,
+    RateLimits,
   },
 });
