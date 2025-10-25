@@ -35,22 +35,26 @@ const {
   class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col h-full group"
 >
   <div class="p-6 flex-grow overflow-hidden">
-    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3 line-clamp-2 transition-all">
-      {introText}
-    </h3>
+    <!-- Intro and type in one line -->
+    <div class="mb-4">
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+        {introText}{' '}
+        <span class="text-purple-600 dark:text-purple-400 font-semibold">
+          {typeName}
+        </span>
+      </h3>
+    </div>
 
-    <div class="space-y-2 relative">
-      <h4 class="text-blue-600 dark:text-blue-400 font-medium mb-2">{typeName}</h4>
-      <p class="text-gray-700 dark:text-gray-300">
-        <span class="text-blue-600 dark:text-blue-400 font-medium inline">Those {pronoun} </span>
-        <span class="break-words line-clamp-3 transition-all inline">{firstKind}</span>
+    <!-- The two kinds in a cohesive block -->
+    <div class="space-y-3 text-gray-700 dark:text-gray-300">
+      <p class="leading-relaxed">
+        <span class="text-blue-600 dark:text-blue-400 font-semibold">Those {pronoun} </span>
+        <span class="break-words">{firstKind}</span>
       </p>
-      <p class="text-gray-500 dark:text-gray-400 text-left text-sm font-medium">and</p>
-      <p class="text-gray-700 dark:text-gray-300">
-        <span class="text-blue-600 dark:text-blue-400 font-medium">Those {pronoun} </span>
-        <span class="break-words line-clamp-3 group-hover:line-clamp-none transition-all"
-          >{secondKind}</span
-        >
+      <p class="leading-relaxed">
+        <span class="text-gray-500 dark:text-gray-400 font-medium">and </span>
+        <span class="text-blue-600 dark:text-blue-400 font-semibold">those {pronoun} </span>
+        <span class="break-words">{secondKind}</span>
       </p>
     </div>
   </div>
