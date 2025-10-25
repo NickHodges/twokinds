@@ -99,6 +99,12 @@ export default defineConfig({
         access: 'secret',
         optional: false,
       }),
+      FACEBOOK_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
+      FACEBOOK_CLIENT_SECRET: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: false,
+      }),
 
       // Content Moderation
       OPENAI_API_KEY: envField.string({

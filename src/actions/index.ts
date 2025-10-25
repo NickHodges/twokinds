@@ -8,7 +8,7 @@ const logger = createLogger('Actions');
 
 // Define Zod schema for sign-in validation
 const SignInSchema = z.object({
-  provider: z.enum(['github', 'google']),
+  provider: z.enum(['github', 'google', 'facebook']),
   callbackUrl: z.string().optional(),
 });
 
