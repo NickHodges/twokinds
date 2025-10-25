@@ -1,0 +1,61 @@
+---
+import 'shareon/css';
+
+interface Props {
+  url: string;
+  title: string;
+}
+
+const { url, title }: Props = Astro.props;
+---
+
+<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+  <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center">
+    Share this saying
+  </h3>
+
+  <div class="shareon flex justify-center gap-2 flex-wrap" data-url={url} data-title={title}>
+    <a class="facebook"></a>
+    <a class="twitter"></a>
+    <a class="linkedin"></a>
+    <a class="reddit"></a>
+    <a class="whatsapp"></a>
+    <a class="telegram"></a>
+    <a class="messenger"></a>
+    <a class="email"></a>
+    <a class="copy-url"></a>
+  </div>
+</div>
+
+<style>
+  /* Custom styling to match our design */
+  :global(.shareon > a) {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    transition: transform 0.2s;
+  }
+
+  :global(.shareon > a:hover) {
+    transform: scale(1.1);
+  }
+
+  /* Dark mode support */
+  :global(.dark .shareon > a) {
+    filter: brightness(0.9);
+  }
+</style>
+
+<script>
+  import { init } from 'shareon';
+
+  // Initialize shareon after component loads
+  document.addEventListener('DOMContentLoaded', () => {
+    init();
+  });
+
+  // Re-initialize on Astro page transitions if using View Transitions
+  document.addEventListener('astro:page-load', () => {
+    init();
+  });
+</script>

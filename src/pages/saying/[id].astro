@@ -9,6 +9,7 @@ import EmptyState from '../../components/EmptyState.astro';
 import { db, Likes, eq, and, count } from 'astro:db';
 import type { ExtendedSession } from '../../env';
 import LikeButton from '../../components/LikeButton.astro';
+import ShareButtons from '../../components/ShareButtons.astro';
 
 // Get the saying ID from the URL
 const { id } = Astro.params;
@@ -49,6 +50,12 @@ if (saying) {
 // Handle case where saying doesn't exist
 const notFound = !saying;
 
+// Construct share URL and title
+const shareUrl = `${Astro.site}saying/${sayingId}`;
+const shareTitle = saying
+  ? `${saying.intro} — those ${saying.pronoun || 'who'} ${saying.firstKind} and those ${saying.pronoun || 'who'} ${saying.secondKind}`
+  : '';
+
 // Don't prerender so we always get fresh data
 export const prerender = false;
 ---
@@ -77,6 +84,7 @@ export const prerender = false;
                 isAuthenticated={isAuthenticated}
               />
             </div>
+            <ShareButtons url={shareUrl} title={shareTitle} />
           </div>
 
           <ActionButtons
