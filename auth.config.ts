@@ -2,6 +2,8 @@ import { defineConfig } from 'auth-astro';
 import GitHub from '@auth/core/providers/github';
 import Google from '@auth/core/providers/google';
 import Facebook from '@auth/core/providers/facebook';
+import Microsoft from '@auth/core/providers/microsoft';
+import Apple from '@auth/core/providers/apple';
 import { db, Users, eq } from 'astro:db';
 import {
   AUTH_SECRET,
@@ -12,6 +14,10 @@ import {
   GOOGLE_CLIENT_SECRET,
   FACEBOOK_CLIENT_ID,
   FACEBOOK_CLIENT_SECRET,
+  MICROSOFT_CLIENT_ID,
+  MICROSOFT_CLIENT_SECRET,
+  APPLE_CLIENT_ID,
+  APPLE_CLIENT_SECRET,
 } from 'astro:env/server';
 
 // Determine environment using vite's import.meta.env for consistency
@@ -30,6 +36,14 @@ export default defineConfig({
     Facebook({
       clientId: FACEBOOK_CLIENT_ID,
       clientSecret: FACEBOOK_CLIENT_SECRET,
+    }),
+    Microsoft({
+      clientId: MICROSOFT_CLIENT_ID,
+      clientSecret: MICROSOFT_CLIENT_SECRET,
+    }),
+    Apple({
+      clientId: APPLE_CLIENT_ID,
+      clientSecret: APPLE_CLIENT_SECRET,
     }),
   ],
   secret: AUTH_SECRET,
