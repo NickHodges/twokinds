@@ -2,7 +2,7 @@ import { defineConfig } from 'auth-astro';
 import GitHub from '@auth/core/providers/github';
 import Google from '@auth/core/providers/google';
 import Facebook from '@auth/core/providers/facebook';
-import Microsoft from '@auth/core/providers/microsoft';
+import MicrosoftEntraId from '@auth/core/providers/microsoft-entra-id';
 import Apple from '@auth/core/providers/apple';
 import { db, Users, eq } from 'astro:db';
 import {
@@ -16,6 +16,7 @@ import {
   FACEBOOK_CLIENT_SECRET,
   MICROSOFT_CLIENT_ID,
   MICROSOFT_CLIENT_SECRET,
+  MICROSOFT_TENANT_ID,
   APPLE_CLIENT_ID,
   APPLE_CLIENT_SECRET,
 } from 'astro:env/server';
@@ -23,29 +24,49 @@ import {
 // Determine environment using vite's import.meta.env for consistency
 const isDevelopment = import.meta.env.DEV;
 
-export default defineConfig({
-  providers: [
-    GitHub({
-      clientId: GITHUB_CLIENT_ID,
-      clientSecret: GITHUB_CLIENT_SECRET,
-    }),
-    Google({
-      clientId: GOOGLE_CLIENT_ID,
-      clientSecret: GOOGLE_CLIENT_SECRET,
-    }),
+// Build providers array conditionally based on available credentials
+const providers = [
+  GitHub({
+    clientId: GITHUB_CLIENT_ID,
+    clientSecret: GITHUB_CLIENT_SECRET,
+  }),
+  Google({
+    clientId: GOOGLE_CLIENT_ID,
+    clientSecret: GOOGLE_CLIENT_SECRET,
+  }),
+];
+
+// Add optional providers if credentials are configured
+if (FACEBOOK_CLIENT_ID && FACEBOOK_CLIENT_SECRET) {
+  providers.push(
     Facebook({
       clientId: FACEBOOK_CLIENT_ID,
       clientSecret: FACEBOOK_CLIENT_SECRET,
-    }),
-    Microsoft({
+    })
+  );
+}
+
+if (MICROSOFT_CLIENT_ID && MICROSOFT_CLIENT_SECRET && MICROSOFT_TENANT_ID) {
+  providers.push(
+    MicrosoftEntraId({
       clientId: MICROSOFT_CLIENT_ID,
       clientSecret: MICROSOFT_CLIENT_SECRET,
-    }),
+      tenantId: MICROSOFT_TENANT_ID,
+    })
+  );
+}
+
+if (APPLE_CLIENT_ID && APPLE_CLIENT_SECRET) {
+  providers.push(
     Apple({
       clientId: APPLE_CLIENT_ID,
       clientSecret: APPLE_CLIENT_SECRET,
-    }),
-  ],
+    })
+  );
+}
+
+export default defineConfig({
+  providers,
   secret: AUTH_SECRET,
   trustHost: AUTH_TRUST_HOST,
   debug: isDevelopment, // Only enable debug in development

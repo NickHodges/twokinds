@@ -99,27 +99,32 @@ export default defineConfig({
         access: 'secret',
         optional: false,
       }),
-      FACEBOOK_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
+      FACEBOOK_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: true }),
       FACEBOOK_CLIENT_SECRET: envField.string({
         context: 'server',
         access: 'secret',
-        optional: false,
+        optional: true,
       }),
       MICROSOFT_CLIENT_ID: envField.string({
         context: 'server',
         access: 'secret',
-        optional: false,
+        optional: true,
       }),
       MICROSOFT_CLIENT_SECRET: envField.string({
         context: 'server',
         access: 'secret',
-        optional: false,
+        optional: true,
       }),
-      APPLE_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: false }),
+      MICROSOFT_TENANT_ID: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
+      APPLE_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: true }),
       APPLE_CLIENT_SECRET: envField.string({
         context: 'server',
         access: 'secret',
-        optional: false,
+        optional: true,
       }),
 
       // Content Moderation
