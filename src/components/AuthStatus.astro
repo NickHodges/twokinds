@@ -1,101 +1,84 @@
 ---
-import { Auth, SignOut } from 'auth-astro/components';
-import type { ExtendedSession } from '../env';
-
-// Props interface is used by Astro's type system
-interface Props {
-  _?: never; // Placeholder prop to satisfy TypeScript
-}
-
-// Props are required by Astro but not used in this component
-Astro.props satisfies Props;
+const session = Astro.locals.session;
 ---
 
 <div class="flex items-center gap-2">
-  <Auth>
-    {
-      (session: ExtendedSession | null) => {
-        return session ? (
-          <div class="flex items-center gap-3">
-            <div class="relative group">
-              <button
-                class="flex items-center focus:outline-none"
-                aria-expanded="false"
-                aria-haspopup="true"
+  {
+    session?.user ? (
+      <div class="flex items-center gap-3">
+        <div class="relative group">
+          <button class="flex items-center focus:outline-none" aria-haspopup="true">
+            {session.user.image && (
+              <img
+                src={session.user.image}
+                alt={session.user.name || 'User avatar'}
+                class="w-8 h-8 rounded-full cursor-pointer"
+              />
+            )}
+          </button>
+          <div class="absolute right-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 w-48 border border-gray-200 dark:border-gray-700">
+              <a
+                href="/profile"
+                class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                {session.user?.image && (
-                  <img
-                    src={session.user.image}
-                    alt={session.user?.name || 'User avatar'}
-                    class="w-8 h-8 rounded-full cursor-pointer"
-                  />
-                )}
+                Your Profile
+              </a>
+              <a
+                href="/dashboard/"
+                class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                Dashboard
+              </a>
+              <div class="border-t border-gray-200 dark:border-gray-700 my-1" />
+              <button
+                type="button"
+                id="signout-btn"
+                class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-0 bg-transparent"
+              >
+                Sign out
               </button>
-              <div class="absolute right-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <div class="bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 w-48 border border-gray-200 dark:border-gray-700">
-                  <a
-                    href="/profile"
-                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    Your Profile
-                  </a>
-                  <a
-                    id="dashboard-link"
-                    href="/dashboard/"
-                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    Dashboard
-                  </a>
-                  <div class="border-t border-gray-200 dark:border-gray-700 my-1" />
-                  <SignOut class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                    Sign out
-                  </SignOut>
-                </div>
-              </div>
             </div>
-            <span class="text-gray-700 dark:text-gray-300">{session.user?.name}</span>
           </div>
-        ) : (
-          <div class="flex items-center gap-2">
-            <a
-              href="/auth/signin"
-              class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-            >
-              Sign in
-            </a>
-          </div>
-        );
-      }
-    }
-  </Auth>
+        </div>
+        <span class="text-gray-700 dark:text-gray-300">{session.user.name}</span>
+      </div>
+    ) : (
+      <a
+        href="/auth/signin"
+        class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+      >
+        Sign in
+      </a>
+    )
+  }
 </div>
 
 <script>
-  // Fix dashboard link to ensure it goes to the correct URL
   document.addEventListener('DOMContentLoaded', () => {
-    const dashboardLink = document.getElementById('dashboard-link');
-    if (dashboardLink) {
-      dashboardLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.location.href = '/dashboard/';
+    const signoutBtn = document.getElementById('signout-btn');
+    if (signoutBtn) {
+      signoutBtn.addEventListener('click', async () => {
+        try {
+          await fetch('/api/signout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          // Redirect to home page after sign out
+          window.location.href = '/';
+        } catch (error) {
+          console.error('Sign-out error:', error);
+          // Still redirect even if there's an error
+          window.location.href = '/';
+        }
       });
     }
   });
 </script>
 
 <style>
-  :global(.auth-astro-sign-in-button),
-  :global(.auth-astro-sign-out-button) {
-    background: none !important;
-    border: none !important;
-    padding: 0 !important;
-    font: inherit !important;
-    cursor: pointer !important;
-    outline: inherit !important;
-    color: inherit !important;
-    width: 100% !important;
-  }
-
   /* Add a small delay to the dropdown to make it more user-friendly */
   .group:hover > div {
     transition-delay: 100ms;

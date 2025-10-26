@@ -1,9 +1,7 @@
-import type { Session } from '@auth/core/types';
+import type { Session as BetterAuthSession, User as BetterAuthUser } from './lib/auth';
 
 /// <reference path="../.astro/types.d.ts" />
 /// <reference types="astro/client" />
-/// <reference types="auth-astro/client" />
-/// <reference types="@auth/core/types" />
 /// <reference path="./types/astro.d.ts" />
 
 interface ImportMetaEnv {
@@ -29,17 +27,15 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-// Extend Astro's session type
-export interface ExtendedSession extends Session {
-  user?: Session['user'] & {
-    id: number;
-  };
-}
+// Better Auth session type
+export type Session = BetterAuthSession;
+export type User = BetterAuthUser;
 
 // Add session to Astro locals
 declare namespace App {
   interface Locals {
-    session: ExtendedSession | null;
+    session: Session | null;
+    user: User | null;
     dbUser?: { id: number } | null; // Database user with numeric ID
   }
 }

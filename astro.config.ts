@@ -1,6 +1,5 @@
 import { defineConfig, envField } from 'astro/config';
 import db from '@astrojs/db';
-import auth from 'auth-astro';
 import tailwind from '@astrojs/tailwind';
 import vercel from '@astrojs/vercel';
 import { fileURLToPath } from 'url';
@@ -20,7 +19,6 @@ export default defineConfig({
             : true
           : false,
     }),
-    auth(),
   ],
   output: 'server',
   site: 'https://twokindsof.com',

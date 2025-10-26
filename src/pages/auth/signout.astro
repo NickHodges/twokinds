@@ -1,12 +1,5 @@
 ---
-import MainLayout from '../../layouts/MainLayout.astro';
-
-// Redirect to home page after signout
+// This page is now handled client-side through the AuthStatus component
+// Redirect to home
 return Astro.redirect('/');
 ---
-
-<MainLayout title="Signing out...">
-  <div class="flex items-center justify-center min-h-screen">
-    <p class="text-lg">Signing out...</p>
-  </div>
-</MainLayout>
