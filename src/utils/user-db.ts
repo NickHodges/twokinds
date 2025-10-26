@@ -1,5 +1,5 @@
 import { db, Users, eq } from 'astro:db';
-import type { User } from 'auth-astro/dist/types';
+import type { User } from '../lib/auth';
 import type { ExtendedSession, Session } from '../env';
 import { createLogger } from './logger';
 

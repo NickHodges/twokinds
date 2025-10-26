@@ -1,8 +1,5 @@
 import { db, Sayings, Likes } from 'astro:db';
 import { eq } from 'drizzle-orm';
-import { getSession } from 'auth-astro/server';
-import authConfig from '../../../auth.config';
-import type { ExtendedSession } from '../../env';
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { createLogger } from '../../utils/logger';
@@ -40,8 +37,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const { sayingId } = parseResult.data;
     logger.debug('Attempting to delete saying', { sayingId });
 
-    // Get user session
-    const session = (await getSession(request, authConfig)) as ExtendedSession | null;
+    // Get user session from locals (set by middleware)
+    const session = locals.session;
     if (!session?.user?.id) {
       logger.warn('Unauthenticated delete attempt', { sayingId });
       return new Response(

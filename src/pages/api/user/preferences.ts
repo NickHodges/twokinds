@@ -1,17 +1,16 @@
 import type { APIRoute } from 'astro';
-import { getSession } from 'auth-astro/server';
-import authConfig from '../../../../auth.config';
 import { getUserIdFromSession, updateUserPreferences } from '../../../utils/user-db';
 import type { UserPreferences } from '../../../utils/user-db';
 import { createLogger } from '../../../utils/logger';
 
 const logger = createLogger('User Preferences API');
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   logger.debug('User preferences API called');
 
   try {
-    const session = await getSession(request, authConfig);
+    // Get user session from locals (set by middleware)
+    const session = locals.session;
     if (!session?.user) {
       logger.warn('Unauthenticated preferences update attempt');
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
