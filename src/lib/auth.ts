@@ -29,6 +29,7 @@ export const auth = betterAuth({
   }),
   baseURL: AUTH_URL,
   secret: AUTH_SECRET,
+  trustedOrigins: [AUTH_URL, 'http://localhost:4321', 'http://localhost:4322'],
   socialProviders: {
     github: {
       clientId: GITHUB_CLIENT_ID,
