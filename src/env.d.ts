@@ -1,4 +1,4 @@
-import type { Session as BetterAuthSession, User as BetterAuthUser } from './lib/auth';
+import type { Session, User } from './lib/auth';
 
 /// <reference path="../.astro/types.d.ts" />
 /// <reference types="astro/client" />
@@ -27,15 +27,8 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-// Better Auth session type
-export type Session = BetterAuthSession;
-export type User = BetterAuthUser;
-
-// Add session to Astro locals
-declare namespace App {
-  interface Locals {
-    session: Session | null;
-    user: User | null;
-    dbUser?: { id: number } | null; // Database user with numeric ID
-  }
+// Better Auth session type - includes both session and user
+export interface ExtendedSession {
+  session: Session;
+  user: User;
 }

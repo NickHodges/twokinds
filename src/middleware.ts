@@ -10,7 +10,6 @@ const authMiddleware = defineMiddleware(async ({ locals, request }, next) => {
   try {
     const session = await auth.api.getSession({ headers: request.headers });
     locals.session = session;
-    locals.user = session?.user ?? null;
 
     // If user is logged in, sync their information to the app Users table
     if (session?.user?.email) {
@@ -86,7 +85,6 @@ const authMiddleware = defineMiddleware(async ({ locals, request }, next) => {
     logger.error('Critical middleware error:', error);
     // Continue without session if there's an error
     locals.session = null;
-    locals.user = null;
     return next();
   }
 });
