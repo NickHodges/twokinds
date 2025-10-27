@@ -1,42 +1,14 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
-import { getUserById } from '../utils/user-db';
 import type { ExtendedSession } from '../env';
-import { createLogger } from '../utils/logger';
 
-const logger = createLogger('Profile Page');
-
-// Get the user's session
+// Get the user's session and database user from locals (set by middleware)
 const session = Astro.locals.session as ExtendedSession | null;
-logger.info('Full session:', session);
+const dbUser = Astro.locals.dbUser;
 
-// Try to find the user ID from various possible locations
-const userId =
-  session?.user?.id || session?.user?.sub || session?.sub || session?.userId || session?.user?.sub;
-
-logger.debug('User ID candidates:', {
-  id: session?.user?.id,
-  userSub: session?.user?.sub,
-  sessionSub: session?.sub,
-  sessionUserId: session?.userId,
-  email: session?.user?.email,
-});
-
-// Redirect if not logged in
-if (!session?.user || !userId) {
-  logger.warn('No valid user identifier found, redirecting...');
+// Redirect if not logged in or no database user
+if (!session?.user || !dbUser) {
   return Astro.redirect('/?error=unauthorized');
-}
-
-// Get the user's database record
-logger.debug('Getting user from database with ID:', userId);
-const dbUser = await getUserById(userId);
-logger.debug('Database user found:', !!dbUser);
-
-// If no database user is found, redirect
-if (!dbUser) {
-  logger.warn('No database user found, redirecting...');
-  return Astro.redirect('/?error=user_not_found');
 }
 
 // Define the preferences type to fix linter errors
@@ -55,21 +27,18 @@ const preferences = (dbUser.preferences as UserPreferences) || {};
 
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
       <div class="flex items-center gap-4 mb-6">
-        {
-          session.user?.image && (
-            <img
-              src={session.user.image}
-              alt={session.user?.name || 'User avatar'}
-              class="w-16 h-16 rounded-full"
-            />
-          )
-        }
+        <img
+          src={dbUser.image || session.user?.image || ''}
+          alt={dbUser.name || 'User avatar'}
+          class="w-16 h-16 rounded-full"
+          referrerpolicy="no-referrer"
+        />
         <div>
-          <h2 class="text-xl font-semibold">{session.user?.name}</h2>
-          <p class="text-gray-600 dark:text-gray-400">{session.user?.email}</p>
+          <h2 class="text-xl font-semibold">{dbUser.name}</h2>
+          <p class="text-gray-600 dark:text-gray-400">{dbUser.email}</p>
           <p class="text-sm text-gray-500 dark:text-gray-500">
             Member since {
-              dbUser?.createdAt ? new Date(dbUser.createdAt).toLocaleDateString() : 'Unknown'
+              dbUser.createdAt ? new Date(dbUser.createdAt).toLocaleDateString() : 'Unknown'
             }
           </p>
         </div>
@@ -80,21 +49,21 @@ const preferences = (dbUser.preferences as UserPreferences) || {};
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p class="text-sm text-gray-500 dark:text-gray-400">User ID</p>
-            <p class="font-medium">{userId}</p>
+            <p class="font-medium">{dbUser.id}</p>
           </div>
           <div>
             <p class="text-sm text-gray-500 dark:text-gray-400">Provider</p>
-            <p class="font-medium capitalize">{dbUser?.provider || 'Unknown'}</p>
+            <p class="font-medium capitalize">{dbUser.provider || 'Unknown'}</p>
           </div>
           <div>
             <p class="text-sm text-gray-500 dark:text-gray-400">Last Login</p>
             <p class="font-medium">
-              {dbUser?.lastLogin ? new Date(dbUser.lastLogin).toLocaleString() : 'Unknown'}
+              {dbUser.lastLogin ? new Date(dbUser.lastLogin).toLocaleString() : 'Unknown'}
             </p>
           </div>
           <div>
             <p class="text-sm text-gray-500 dark:text-gray-400">Role</p>
-            <p class="font-medium capitalize">{dbUser?.role || 'User'}</p>
+            <p class="font-medium capitalize">{dbUser.role || 'User'}</p>
           </div>
         </div>
       </div>

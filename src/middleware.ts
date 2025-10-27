@@ -49,6 +49,7 @@ const authMiddleware = defineMiddleware(async ({ locals, request }, next) => {
         } else {
           // Create new app user
           const now = new Date();
+
           const newUser = await db
             .insert(Users)
             .values({
