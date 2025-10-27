@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { auth } from '../../lib/auth';
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   try {
     // Call Better Auth's sign out API
     await auth.api.signOut({
@@ -11,19 +11,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Clear any session cookies
     cookies.delete('better-auth.session_token', { path: '/' });
 
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    // Redirect to home page after successful sign-out
+    return redirect('/', 302);
   } catch (error) {
     console.error('Sign-out error:', error);
-    return new Response(JSON.stringify({ success: false, error: 'Sign-out failed' }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    // On error, redirect back with error message
+    return redirect('/?error=signout-failed', 302);
   }
 };

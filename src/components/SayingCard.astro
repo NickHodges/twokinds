@@ -80,13 +80,15 @@ const {
                 >
                   Edit saying →
                 </a>
-                <button
-                  type="button"
-                  class="delete-saying-btn text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium"
-                  data-saying-id={id}
-                >
-                  Delete
-                </button>
+                <form method="POST" action="/api/delete-saying" class="inline">
+                  <input type="hidden" name="sayingId" value={id} />
+                  <button
+                    type="submit"
+                    class="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium"
+                  >
+                    Delete
+                  </button>
+                </form>
               </>
             )}
             <LikeButton
@@ -110,57 +112,3 @@ const {
     </time>
   </div>
 </article>
-
-<script>
-  // Add event listeners to all delete buttons
-  document.addEventListener('DOMContentLoaded', () => {
-    const deleteButtons = document.querySelectorAll('.delete-saying-btn');
-
-    deleteButtons.forEach((button) => {
-      button.addEventListener('click', async (e) => {
-        const button = e.currentTarget as HTMLButtonElement;
-        const sayingId = button.dataset.sayingId;
-
-        if (!sayingId) return;
-
-        if (confirm('Are you sure you want to delete this saying? This cannot be undone.')) {
-          try {
-            const response = await fetch('/api/delete-saying', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ sayingId: parseInt(sayingId) }),
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-              // Find the closest article element (the card) and remove it
-              const card = button.closest('article');
-              card?.classList.add('opacity-0', 'scale-95');
-
-              // Add transition and then remove from DOM
-              setTimeout(() => {
-                card?.remove();
-              }, 300);
-            } else {
-              alert(`Error: ${result.error || 'Failed to delete saying'}`);
-            }
-          } catch (error) {
-            console.error('Error deleting saying:', error);
-            alert('An error occurred while deleting the saying');
-          }
-        }
-      });
-    });
-  });
-</script>
-
-<style>
-  article {
-    transition:
-      opacity 0.3s ease,
-      transform 0.3s ease;
-  }
-</style>

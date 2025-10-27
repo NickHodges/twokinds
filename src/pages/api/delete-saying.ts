@@ -11,27 +11,21 @@ const requestSchema = z.object({
   sayingId: z.coerce.number().int().positive('Valid saying ID is required'),
 });
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request, locals, redirect }) => {
   logger.debug('Delete saying API called');
 
   try {
-    // Get the request data
-    const data = await request.json();
+    // Get the request data from form
+    const formData = await request.formData();
+    const data = {
+      sayingId: formData.get('sayingId'),
+    };
 
     // Parse and validate using zod
     const parseResult = requestSchema.safeParse(data);
     if (!parseResult.success) {
       logger.warn('Validation error in delete saying', { error: parseResult.error.message });
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Validation error: ${parseResult.error.message}`,
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      return redirect(`/dashboard?error=${encodeURIComponent('Invalid saying ID')}`, 302);
     }
 
     const { sayingId } = parseResult.data;
@@ -41,16 +35,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const session = locals.session;
     if (!session?.user?.id) {
       logger.warn('Unauthenticated delete attempt', { sayingId });
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'You must be logged in to delete a saying',
-        }),
-        {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      return redirect('/auth/signin?error=login-required', 302);
     }
 
     // Check if the saying exists and belongs to the user
@@ -58,16 +43,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     if (!saying) {
       logger.warn('Saying not found', { sayingId });
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Saying not found',
-        }),
-        {
-          status: 404,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      return redirect('/dashboard?error=saying-not-found', 302);
     }
 
     // Get database user ID from locals (set by middleware)
@@ -78,16 +54,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         sessionUserId: session.user.id,
         sayingId,
       });
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Database user ID not found',
-        }),
-        {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      return redirect('/dashboard?error=user-not-found', 302);
     }
 
     if (saying.userId !== dbUserId) {
@@ -96,16 +63,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         userId: dbUserId,
         sayingUserId: saying.userId,
       });
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'You can only delete your own sayings',
-        }),
-        {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+      return redirect('/dashboard?error=unauthorized', 302);
     }
 
     logger.info('Deleting saying and associated likes', { sayingId, userId: dbUserId });
@@ -118,27 +76,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     logger.info('Successfully deleted saying', { sayingId, userId: dbUserId });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Saying deleted successfully',
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return redirect('/dashboard?success=saying-deleted', 302);
   } catch (error) {
     logger.error('Error deleting saying', { error });
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: 'Failed to delete saying',
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return redirect('/dashboard?error=delete-failed', 302);
   }
 };

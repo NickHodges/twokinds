@@ -106,7 +106,7 @@ const preferences = (dbUser.preferences as UserPreferences) || {};
         You can customize your experience by setting your preferences.
       </p>
 
-      <form id="preferences-form" class="space-y-4">
+      <form method="POST" action="/api/user/preferences" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Theme
@@ -114,11 +114,12 @@ const preferences = (dbUser.preferences as UserPreferences) || {};
           <select
             name="theme"
             class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            value={preferences.theme || 'system'}
           >
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-            <option value="system">System (Default)</option>
+            <option value="light" selected={preferences.theme === 'light'}>Light</option>
+            <option value="dark" selected={preferences.theme === 'dark'}>Dark</option>
+            <option value="system" selected={!preferences.theme || preferences.theme === 'system'}>
+              System (Default)
+            </option>
           </select>
         </div>
 
@@ -130,6 +131,7 @@ const preferences = (dbUser.preferences as UserPreferences) || {};
             <input
               type="checkbox"
               name="emailNotifications"
+              value="true"
               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
               checked={preferences.emailNotifications || false}
             />
@@ -149,42 +151,3 @@ const preferences = (dbUser.preferences as UserPreferences) || {};
     </div>
   </div>
 </MainLayout>
-
-<script>
-  // Client-side script to handle form submission
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('preferences-form');
-
-    form?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const formData = new FormData(e.target as HTMLFormElement);
-      const theme = formData.get('theme');
-      const emailNotifications = formData.has('emailNotifications');
-
-      try {
-        const response = await fetch('/api/user/preferences', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            preferences: {
-              theme,
-              emailNotifications,
-            },
-          }),
-        });
-
-        if (response.ok) {
-          alert('Preferences saved successfully!');
-        } else {
-          alert('Failed to save preferences. Please try again.');
-        }
-      } catch (error) {
-        console.error('Error saving preferences:', error);
-        alert('An error occurred while saving preferences.');
-      }
-    });
-  });
-</script>

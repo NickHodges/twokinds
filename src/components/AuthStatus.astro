@@ -31,13 +31,14 @@ const session = Astro.locals.session;
                 Dashboard
               </a>
               <div class="border-t border-gray-200 dark:border-gray-700 my-1" />
-              <button
-                type="button"
-                id="signout-btn"
-                class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-0 bg-transparent"
-              >
-                Sign out
-              </button>
+              <form method="post" action="/api/signout" class="w-full">
+                <button
+                  type="submit"
+                  class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-0 bg-transparent"
+                >
+                  Sign out
+                </button>
+              </form>
             </div>
           </div>
         </div>
@@ -53,30 +54,6 @@ const session = Astro.locals.session;
     )
   }
 </div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const signoutBtn = document.getElementById('signout-btn');
-    if (signoutBtn) {
-      signoutBtn.addEventListener('click', async () => {
-        try {
-          await fetch('/api/signout', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-          // Redirect to home page after sign out
-          window.location.href = '/';
-        } catch (error) {
-          console.error('Sign-out error:', error);
-          // Still redirect even if there's an error
-          window.location.href = '/';
-        }
-      });
-    }
-  });
-</script>
 
 <style>
   /* Add a small delay to the dropdown to make it more user-friendly */
