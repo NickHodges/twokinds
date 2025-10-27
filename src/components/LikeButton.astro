@@ -16,7 +16,7 @@ const {
 
 {
   isAuthenticated ? (
-    <form method="POST" action="/actions/toggleLike" data-astro-reload>
+    <form method="POST" action="/api/toggleLike">
       <input type="hidden" name="sayingId" value={sayingId} />
       <button
         type="submit"
