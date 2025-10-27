@@ -1,15 +1,13 @@
 ---
 import MainLayout from '../../layouts/MainLayout.astro';
-import { getSession } from 'auth-astro/server';
-import authConfig from '../../../auth.config';
 import { db, Sayings, Intros, Types, eq, and } from 'astro:db';
-import type { ExtendedSession } from '../../env';
 import { getSayingById } from '../../lib/db-service';
 import { createLogger } from '../../utils/logger';
 
 const logger = createLogger('Edit Saying Page');
 
-const session = (await getSession(Astro.request, authConfig)) as ExtendedSession | null;
+// Get user session from locals (set by middleware)
+const session = Astro.locals.session;
 
 // This should be a protected page
 if (!session?.user?.id) {

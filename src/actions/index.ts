@@ -1,16 +1,9 @@
 import { defineAction } from 'astro:actions';
 import { z } from 'zod';
 import { db, Sayings, Types, Likes, and, eq } from 'astro:db';
-import { getSession } from 'auth-astro/server';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('Actions');
-
-// Define Zod schema for sign-in validation
-const SignInSchema = z.object({
-  provider: z.enum(['github', 'google']),
-  callbackUrl: z.string().optional(),
-});
 
 // Define Zod schema for creating a new saying
 export const NewSayingSchema = z.discriminatedUnion('typeChoice', [
@@ -99,24 +92,12 @@ export const server = {
     accept: 'form',
 
     // Handle the form submission
-    async handler({ request, cookies, url, locals }) {
+    async handler({ request, url, locals }) {
       logger.debug('submitSaying action called');
 
       try {
-        // Use the request object from the context
-        let session;
-        try {
-          session = await getSession(request);
-        } catch (error) {
-          // Fallback to cookies if request doesn't work
-          logger.warn('Error getting session from request, falling back to cookies', { error });
-          const headers = new Headers();
-          for (const [name, value] of Object.entries(cookies || {})) {
-            headers.append('Cookie', `${name}=${value}`);
-          }
-
-          session = await getSession({ headers });
-        }
+        // Get session from locals (set by middleware)
+        const session = locals.session;
 
         if (!session?.user?.id) {
           logger.warn('Unauthenticated saying submission attempt');
@@ -319,36 +300,6 @@ export const server = {
           ? `${url.origin}/create?error=${encodeURIComponent(errorMessage)}`
           : `/create?error=${encodeURIComponent(errorMessage)}`;
         return Response.redirect(redirectUrl, 302);
-      }
-    },
-  }),
-
-  // Export action for sign-in
-  signIn: defineAction({
-    name: 'signIn',
-    accept: 'form',
-    input: SignInSchema,
-
-    handler: async (body) => {
-      logger.debug('signIn action called', { provider: body.provider });
-
-      try {
-        const { provider, callbackUrl = '/' } = body;
-
-        logger.info('Initiating sign-in', { provider, callbackUrl });
-
-        // Auth-astro will handle the redirect
-        return {
-          success: true,
-          redirect: `/api/auth/signin/${provider}?callbackUrl=${encodeURIComponent(callbackUrl)}`,
-        };
-      } catch (error) {
-        logger.error('Error during sign-in', { error, provider: body.provider });
-        return {
-          success: false,
-          error: 'Authentication failed',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        };
       }
     },
   }),

@@ -1,6 +1,5 @@
 import { defineConfig, envField } from 'astro/config';
 import db from '@astrojs/db';
-import auth from 'auth-astro';
 import tailwind from '@astrojs/tailwind';
 import vercel from '@astrojs/vercel';
 import { fileURLToPath } from 'url';
@@ -20,7 +19,6 @@ export default defineConfig({
             : true
           : false,
     }),
-    auth(),
   ],
   output: 'server',
   site: 'https://twokindsof.com',
@@ -98,6 +96,33 @@ export default defineConfig({
         context: 'server',
         access: 'secret',
         optional: false,
+      }),
+      FACEBOOK_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: true }),
+      FACEBOOK_CLIENT_SECRET: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
+      MICROSOFT_CLIENT_ID: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
+      MICROSOFT_CLIENT_SECRET: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
+      MICROSOFT_TENANT_ID: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
+      APPLE_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: true }),
+      APPLE_CLIENT_SECRET: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
       }),
 
       // Content Moderation

@@ -1,34 +1,82 @@
 import { sequence, defineMiddleware } from 'astro:middleware';
-import { getSession } from 'auth-astro/server';
-import authConfig from '../auth.config';
-import type { ExtendedSession } from '../env.d';
-import { upsertUser } from './utils/user-db';
+import { auth } from './lib/auth';
+import { db, Users, eq } from 'astro:db';
 import { createLogger } from './utils/logger';
 
 const logger = createLogger('Middleware');
 
 // Auth middleware to handle sessions
-const auth = defineMiddleware(async ({ locals, request }, next) => {
+const authMiddleware = defineMiddleware(async ({ locals, request }, next) => {
   try {
-    const session = (await getSession(request, authConfig)) as ExtendedSession | null;
+    const session = await auth.api.getSession({ headers: request.headers });
     locals.session = session;
+    locals.user = session?.user ?? null;
 
-    // If user is logged in, save their information to the database
+    // If user is logged in, sync their information to the app Users table
     if (session?.user?.email) {
       try {
-        const user = await upsertUser(session);
+        // Check if app user exists
+        const existingUser = await db
+          .select()
+          .from(Users)
+          .where(eq(Users.email, session.user.email))
+          .get()
+          .catch((err) => {
+            logger.error('Error finding user by email:', err);
+            return null;
+          });
 
-        if (user) {
-          // Store the database user in locals for easy access
-          locals.dbUser = user;
+        if (existingUser) {
+          // Update existing user
+          const updatedUser = await db
+            .update(Users)
+            .set({
+              authUserId: session.user.id,
+              name: session.user.name || existingUser.name,
+              image: session.user.image || existingUser.image,
+              lastLogin: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(Users.id, existingUser.id))
+            .returning()
+            .get()
+            .catch((err) => {
+              logger.error('Error updating user:', err);
+              return existingUser;
+            });
 
-          // Update session with numeric database ID
-          const extendedSession: ExtendedSession = locals.session;
-          extendedSession.user = { ...extendedSession.user, id: user.id };
+          locals.dbUser = updatedUser;
+        } else {
+          // Create new app user
+          const now = new Date();
+          const newUser = await db
+            .insert(Users)
+            .values({
+              authUserId: session.user.id,
+              name: session.user.name || '',
+              email: session.user.email,
+              image: session.user.image || '',
+              provider: 'oauth',
+              role: 'user',
+              lastLogin: now,
+              createdAt: now,
+              updatedAt: now,
+              preferences: {},
+            })
+            .returning()
+            .get()
+            .catch((err) => {
+              logger.error('Error creating user:', err);
+              return null;
+            });
+
+          if (newUser) {
+            locals.dbUser = newUser;
+          }
         }
       } catch (dbError) {
         // Log but continue - don't let database errors break authentication
-        logger.error('Database error during upsert:', dbError);
+        logger.error('Database error during user sync:', dbError);
       }
     }
 
@@ -37,6 +85,7 @@ const auth = defineMiddleware(async ({ locals, request }, next) => {
     logger.error('Critical middleware error:', error);
     // Continue without session if there's an error
     locals.session = null;
+    locals.user = null;
     return next();
   }
 });
@@ -64,4 +113,4 @@ const protectedRoutes = defineMiddleware(async (context, next) => {
 });
 
 // Apply middleware in sequence
-export const onRequest = sequence(auth, protectedRoutes);
+export const onRequest = sequence(authMiddleware, protectedRoutes);

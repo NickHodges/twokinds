@@ -68,38 +68,3 @@ const {
     </div>
   )
 }
-
-<script>
-  import { actions } from 'astro:actions';
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const forms = document.querySelectorAll<HTMLFormElement>('form[action="/actions/toggleLike"]');
-
-    forms.forEach((form) => {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const button = form.querySelector('button');
-        if (!button) return;
-
-        const formData = new FormData(form);
-        button.disabled = true;
-
-        try {
-          const { error } = await actions.toggleLike(formData);
-
-          if (error) {
-            console.error('Error toggling like:', error);
-            return;
-          }
-
-          // Let Astro handle the page reload to get fresh data
-          window.location.reload();
-        } catch (error) {
-          console.error('Error toggling like:', error);
-        } finally {
-          button.disabled = false;
-        }
-      });
-    });
-  });
-</script>

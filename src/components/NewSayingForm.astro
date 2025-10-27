@@ -88,7 +88,7 @@ const { intros = [], types = [], error, success, newSayingId } = Astro.props;
       </fieldset>
     </div>
 
-    <div id="existingTypeContainer">
+    <div id="existingTypeContainer" class="type-container-existing">
       <label for="type" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
         Select Type
       </label>
@@ -102,7 +102,7 @@ const { intros = [], types = [], error, success, newSayingId } = Astro.props;
       </select>
     </div>
 
-    <div id="newTypeContainer" class="hidden space-y-4">
+    <div id="newTypeContainer" class="type-container-new space-y-4">
       <div>
         <label
           for="newType"
@@ -212,34 +212,46 @@ const { intros = [], types = [], error, success, newSayingId } = Astro.props;
   </form>
 </div>
 
-<script>
-  // Handle type choice radio buttons
-  document.addEventListener('DOMContentLoaded', () => {
-    const typeExistingRadio = document.getElementById('typeExisting') as HTMLInputElement;
-    const typeNewRadio = document.getElementById('typeNew') as HTMLInputElement;
-    const existingTypeContainer = document.getElementById('existingTypeContainer');
-    const newTypeContainer = document.getElementById('newTypeContainer');
-    const typeSelect = document.getElementById('type') as HTMLSelectElement;
-    const newTypeInput = document.getElementById('newType') as HTMLInputElement;
+<style>
+  /* Pure CSS show/hide based on radio button state */
+  .type-container-new {
+    display: none;
+  }
 
-    function updateTypeFields() {
-      if (typeExistingRadio.checked) {
-        existingTypeContainer?.classList.remove('hidden');
-        newTypeContainer?.classList.add('hidden');
-        typeSelect.required = true;
-        newTypeInput.required = false;
-      } else {
-        existingTypeContainer?.classList.add('hidden');
-        newTypeContainer?.classList.remove('hidden');
-        typeSelect.required = false;
-        newTypeInput.required = true;
-      }
-    }
+  #typeExisting:checked ~ .type-container-existing,
+  #typeExisting:checked ~ * .type-container-existing {
+    display: block;
+  }
 
-    typeExistingRadio?.addEventListener('change', updateTypeFields);
-    typeNewRadio?.addEventListener('change', updateTypeFields);
+  #typeExisting:checked ~ .type-container-new,
+  #typeExisting:checked ~ * .type-container-new {
+    display: none;
+  }
 
-    // Initial update
-    updateTypeFields();
-  });
-</script>
+  #typeNew:checked ~ .type-container-existing,
+  #typeNew:checked ~ * .type-container-existing {
+    display: none;
+  }
+
+  #typeNew:checked ~ .type-container-new,
+  #typeNew:checked ~ * .type-container-new {
+    display: block;
+  }
+
+  /* Alternative approach using form :has() selector for better browser support */
+  form:has(#typeExisting:checked) .type-container-existing {
+    display: block;
+  }
+
+  form:has(#typeExisting:checked) .type-container-new {
+    display: none;
+  }
+
+  form:has(#typeNew:checked) .type-container-existing {
+    display: none;
+  }
+
+  form:has(#typeNew:checked) .type-container-new {
+    display: block;
+  }
+</style>
