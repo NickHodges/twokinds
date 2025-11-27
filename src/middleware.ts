@@ -1,6 +1,6 @@
 import { sequence, defineMiddleware } from 'astro:middleware';
 import { auth } from './lib/auth';
-import { db, Users, eq } from 'astro:db';
+import { db, Users } from 'astro:db';
 import { createLogger } from './utils/logger';
 
 const logger = createLogger('Middleware');
@@ -11,72 +11,42 @@ const authMiddleware = defineMiddleware(async ({ locals, request }, next) => {
     const session = await auth.api.getSession({ headers: request.headers });
     locals.session = session;
 
-    // If user is logged in, sync their information to the app Users table
-    if (session?.user?.email) {
+    // If user is logged in, upsert their information to the app Users table
+    if (session?.user?.id && session?.user?.email) {
       try {
-        // Check if app user exists
-        const existingUser = await db
-          .select()
-          .from(Users)
-          .where(eq(Users.email, session.user.email))
-          .get()
-          .catch((err) => {
-            logger.error('Error finding user by email:', err);
-            return null;
-          });
+        const now = new Date();
 
-        if (existingUser) {
-          // Update existing user
-          const updatedUser = await db
-            .update(Users)
-            .set({
-              authUserId: session.user.id,
-              name: session.user.name || existingUser.name,
-              image: session.user.image || existingUser.image,
-              lastLogin: new Date(),
-              updatedAt: new Date(),
-            })
-            .where(eq(Users.id, existingUser.id))
-            .returning()
-            .get()
-            .catch((err) => {
-              logger.error('Error updating user:', err);
-              return existingUser;
-            });
-
-          locals.dbUser = updatedUser;
-        } else {
-          // Create new app user
-          const now = new Date();
-
-          const newUser = await db
-            .insert(Users)
-            .values({
-              authUserId: session.user.id,
+        // Upsert user - create if doesn't exist, update if does
+        const dbUser = await db
+          .insert(Users)
+          .values({
+            id: session.user.id,
+            name: session.user.name || '',
+            email: session.user.email,
+            image: session.user.image || '',
+            provider: 'oauth',
+            role: 'user',
+            lastLogin: now,
+            createdAt: now,
+            updatedAt: now,
+            preferences: {},
+          })
+          .onConflictDoUpdate({
+            target: Users.id,
+            set: {
               name: session.user.name || '',
-              email: session.user.email,
               image: session.user.image || '',
-              provider: 'oauth',
-              role: 'user',
               lastLogin: now,
-              createdAt: now,
               updatedAt: now,
-              preferences: {},
-            })
-            .returning()
-            .get()
-            .catch((err) => {
-              logger.error('Error creating user:', err);
-              return null;
-            });
+            },
+          })
+          .returning()
+          .get();
 
-          if (newUser) {
-            locals.dbUser = newUser;
-          }
-        }
+        locals.dbUser = dbUser;
       } catch (dbError) {
         // Log but continue - don't let database errors break authentication
-        logger.error('Database error during user sync:', dbError);
+        logger.error('Database error during user upsert:', dbError);
       }
     }
 
@@ -100,7 +70,6 @@ const protectedRoutes = defineMiddleware(async (context, next) => {
     pathname === '/profile' ||
     pathname === '/create' ||
     pathname.startsWith('/edit-saying') ||
-    pathname.startsWith('/api/create-saying') ||
     pathname.startsWith('/api/delete-saying') ||
     pathname.startsWith('/api/user');
 

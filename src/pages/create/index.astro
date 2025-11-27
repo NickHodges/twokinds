@@ -5,6 +5,9 @@ import MainLayout from '../../layouts/MainLayout.astro';
 import NewSayingForm from '../../components/NewSayingForm.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import type { IntroType, SayingType } from '../../types/saying';
+import { createLogger } from '../../utils/logger';
+
+const logger = createLogger('CreatePage');
 
 // Get the current user's session from locals (set by middleware)
 const session = Astro.locals.session;
@@ -23,7 +26,7 @@ try {
   introsData = (await db.select().from(Intros)) as IntroType[];
   typesData = (await db.select().from(Types)) as SayingType[];
 } catch (dbError) {
-  console.error('Error fetching database data:', dbError);
+  logger.error('Error fetching database data', { error: dbError });
 
   // Provide fallback data if the database connection fails
   introsData = [
@@ -50,27 +53,8 @@ const types = typesData.map((type) => ({
   typeName: type.name,
 }));
 
-// Initialize success/error values
-let success = '';
-let error = '';
-let newSayingId: string | undefined = undefined;
-
-// Handle form submission result from action redirect
-if (Astro.url.searchParams.has('success')) {
-  success = Astro.url.searchParams.get('success') === 'true' ? 'true' : '';
-  if (success && Astro.url.searchParams.has('id')) {
-    newSayingId = Astro.url.searchParams.get('id') || undefined;
-  }
-}
-
-if (Astro.url.searchParams.has('error')) {
-  error = decodeURIComponent(Astro.url.searchParams.get('error') || '');
-}
-
 // Don't prerender so we always get fresh data
 export const prerender = false;
-
-// Action results will be processed in the NewSayingForm component
 ---
 
 <MainLayout>
@@ -113,13 +97,7 @@ export const prerender = false;
         }
       </style>
 
-      <NewSayingForm
-        intros={intros}
-        types={types}
-        success={success}
-        error={error}
-        newSayingId={newSayingId}
-      />
+      <NewSayingForm intros={intros} types={types} />
     </div>
   </div>
 </MainLayout>

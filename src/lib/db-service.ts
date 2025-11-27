@@ -1,4 +1,4 @@
-import { db, Sayings, Intros, Types, Likes, Users, eq, desc, and, count } from 'astro:db';
+import { db, Sayings, Intros, Types, Likes, Users, eq, desc, and, count, sql } from 'astro:db';
 import type { Saying } from '../types/saying';
 import { createLogger } from '../utils/logger';
 
@@ -85,77 +85,69 @@ export async function getAllSayings(): Promise<Saying[]> {
   logger.debug('Fetching all sayings');
 
   try {
-    // Try to fetch sayings from the database
+    // Fetch sayings from the database
     const rawSayings = await db.select().from(Sayings).orderBy(desc(Sayings.createdAt));
 
-    // Get the related data for each saying with error handling
-    const sayingsWithData = await Promise.all(
-      rawSayings.map(async (saying) => {
-        try {
-          const [intro, type] = await Promise.all([
-            db
-              .select()
-              .from(Intros)
-              .where(eq(Intros.id, saying.intro))
-              .get()
-              .catch(() => null), // Fallback to null if intro lookup fails
-            db
-              .select()
-              .from(Types)
-              .where(eq(Types.id, saying.type))
-              .get()
-              .catch(() => null), // Fallback to null if type lookup fails
-          ]);
+    if (rawSayings.length === 0) {
+      return [];
+    }
 
-          return {
-            id: saying.id,
-            intro: saying.intro,
-            type: saying.type,
-            firstKind: saying.firstKind,
-            secondKind: saying.secondKind,
-            userId: saying.userId,
-            createdAt: saying.createdAt,
-            updatedAt: saying.updatedAt || saying.createdAt, // Fallback for missing updatedAt
-            introText: intro?.introText || 'Unknown intro',
-            typeName: type?.name || 'Unknown type',
-            pronoun: type?.pronoun || 'who',
-            intro_data: intro
-              ? {
-                  id: intro.id,
-                  introText: intro.introText,
-                }
-              : undefined,
-            type_data: type
-              ? {
-                  id: type.id,
-                  name: type.name,
-                  pronoun: type.pronoun || 'who',
-                }
-              : undefined,
-          };
-        } catch (itemError) {
-          logger.error('Error processing saying in getAllSayings', {
-            sayingId: saying.id,
-            error: itemError,
-          });
+    // Get unique intro and type IDs
+    const introIds = [...new Set(rawSayings.map((s) => s.intro))];
+    const typeIds = [...new Set(rawSayings.map((s) => s.type))];
 
-          // Return a basic version of the saying to prevent entire query from failing
-          return {
-            id: saying.id,
-            intro: saying.intro,
-            type: saying.type,
-            firstKind: saying.firstKind,
-            secondKind: saying.secondKind,
-            userId: saying.userId,
-            createdAt: saying.createdAt,
-            updatedAt: saying.updatedAt || saying.createdAt,
-            introText: 'Error loading intro',
-            typeName: 'Error loading type',
-            pronoun: 'who',
-          };
-        }
-      })
-    );
+    // Batch fetch all intros and types
+    const [allIntros, allTypes] = await Promise.all([
+      db
+        .select()
+        .from(Intros)
+        .where(sql`${Intros.id} IN ${introIds}`)
+        .all()
+        .catch(() => []),
+      db
+        .select()
+        .from(Types)
+        .where(sql`${Types.id} IN ${typeIds}`)
+        .all()
+        .catch(() => []),
+    ]);
+
+    // Create lookup maps
+    const introMap = new Map(allIntros.map((i) => [i.id, i]));
+    const typeMap = new Map(allTypes.map((t) => [t.id, t]));
+
+    // Map sayings with related data
+    const sayingsWithData = rawSayings.map((saying) => {
+      const intro = introMap.get(saying.intro);
+      const type = typeMap.get(saying.type);
+
+      return {
+        id: saying.id,
+        intro: saying.intro,
+        type: saying.type,
+        firstKind: saying.firstKind,
+        secondKind: saying.secondKind,
+        userId: saying.userId,
+        createdAt: saying.createdAt,
+        updatedAt: saying.updatedAt || saying.createdAt,
+        introText: intro?.introText || 'Unknown intro',
+        typeName: type?.name || 'Unknown type',
+        pronoun: type?.pronoun || 'who',
+        intro_data: intro
+          ? {
+              id: intro.id,
+              introText: intro.introText,
+            }
+          : undefined,
+        type_data: type
+          ? {
+              id: type.id,
+              name: type.name,
+              pronoun: type.pronoun || 'who',
+            }
+          : undefined,
+      };
+    });
 
     logger.info('Successfully fetched all sayings', { count: sayingsWithData.length });
     return sayingsWithData;
@@ -172,7 +164,7 @@ export async function getAllSayings(): Promise<Saying[]> {
   }
 }
 
-export async function getUserSayings(userIdOrEmail: string | number): Promise<Saying[]> {
+export async function getUserSayings(userIdOrEmail: string): Promise<Saying[]> {
   logger.debug('getUserSayings called', { userIdOrEmail, type: typeof userIdOrEmail });
 
   try {
@@ -182,39 +174,30 @@ export async function getUserSayings(userIdOrEmail: string | number): Promise<Sa
     }
 
     // Find the right database user ID
-    let dbUserId: number | null = null;
+    let dbUserId: string | null = null;
 
-    if (typeof userIdOrEmail === 'number') {
-      // If it's already a number, use it directly
-      dbUserId = userIdOrEmail;
-    } else if (typeof userIdOrEmail === 'string') {
-      if (/^\d+$/.test(userIdOrEmail)) {
-        // If it's a numeric string (e.g., "1"), convert to number
-        dbUserId = parseInt(userIdOrEmail, 10);
-      } else if (userIdOrEmail.includes('@')) {
-        // If it's an email, look up the user
-        logger.debug('Looking up user by email', { email: userIdOrEmail });
-        const dbUser = await db
-          .select()
-          .from(Users)
-          .where(eq(Users.email, userIdOrEmail))
-          .get()
-          .catch((err) => {
-            logger.error('Error finding user by email', { email: userIdOrEmail, error: err });
-            return null;
-          });
+    if (userIdOrEmail.includes('@')) {
+      // If it's an email, look up the user
+      logger.debug('Looking up user by email', { email: userIdOrEmail });
+      const dbUser = await db
+        .select()
+        .from(Users)
+        .where(eq(Users.email, userIdOrEmail))
+        .get()
+        .catch((err) => {
+          logger.error('Error finding user by email', { email: userIdOrEmail, error: err });
+          return null;
+        });
 
-        if (dbUser) {
-          dbUserId = dbUser.id;
-          logger.info('Found user by email', { email: userIdOrEmail, userId: dbUserId });
-        } else {
-          logger.warn('User not found by email', { email: userIdOrEmail });
-        }
+      if (dbUser) {
+        dbUserId = dbUser.id;
+        logger.info('Found user by email', { email: userIdOrEmail, userId: dbUserId });
       } else {
-        // It's probably a UUID from OAuth, try to look up by session ID in Users table
-        logger.debug('Looking up user by session ID in provider ID', { userIdOrEmail });
-        // We don't have a provider ID column, so we'll need to use email from the session
+        logger.warn('User not found by email', { email: userIdOrEmail });
       }
+    } else {
+      // It's a user ID directly
+      dbUserId = userIdOrEmail;
     }
 
     if (dbUserId === null) {
@@ -230,48 +213,45 @@ export async function getUserSayings(userIdOrEmail: string | number): Promise<Sa
       .from(Sayings)
       .where(eq(Sayings.userId, dbUserId))
       .orderBy(desc(Sayings.createdAt))
-      .all() // Use all() instead of get() to get multiple results
+      .all()
       .catch((err) => {
         logger.error('Error fetching sayings for user', { dbUserId, error: err });
         return [];
       });
 
-    // Get liked status and total likes for each saying
-    const likedStatus = new Map<number, boolean>();
-    const totalLikes = new Map<number, number>();
-
-    for (const saying of rawSayings) {
-      try {
-        // Get total likes for this saying
-        const likesResult = await db
-          .select({ value: count() })
-          .from(Likes)
-          .where(eq(Likes.sayingId, saying.id))
-          .get();
-        totalLikes.set(saying.id, likesResult?.value || 0);
-
-        // Get liked status
-        const like = await db
-          .select()
-          .from(Likes)
-          .where(and(eq(Likes.userId, dbUserId), eq(Likes.sayingId, saying.id)))
-          .get()
-          .catch((err) => {
-            logger.error('Error getting like status for saying', {
-              sayingId: saying.id,
-              dbUserId,
-              error: err,
-            });
-            return null;
-          });
-
-        likedStatus.set(saying.id, !!like);
-      } catch (likeError) {
-        logger.error('Error getting likes for saying', { sayingId: saying.id, error: likeError });
-        totalLikes.set(saying.id, 0);
-        likedStatus.set(saying.id, false);
-      }
+    if (rawSayings.length === 0) {
+      return [];
     }
+
+    // Get all saying IDs
+    const sayingIds = rawSayings.map((s) => s.id);
+
+    // Batch query for like counts using SQL IN
+    const likeCounts = await db
+      .select({
+        sayingId: Likes.sayingId,
+        count: count(),
+      })
+      .from(Likes)
+      .where(sql`${Likes.sayingId} IN ${sayingIds}`)
+      .groupBy(Likes.sayingId)
+      .all()
+      .catch(() => []);
+
+    // Batch query for user's like statuses using SQL IN
+    const userLikes = await db
+      .select({ sayingId: Likes.sayingId })
+      .from(Likes)
+      .where(and(eq(Likes.userId, dbUserId), sql`${Likes.sayingId} IN ${sayingIds}`))
+      .all()
+      .catch(() => []);
+
+    // Create lookup maps
+    const totalLikes = new Map<number, number>();
+    likeCounts.forEach((lc) => totalLikes.set(lc.sayingId, lc.count));
+
+    const likedStatus = new Map<number, boolean>();
+    userLikes.forEach((ul) => likedStatus.set(ul.sayingId, true));
 
     // Then, get the related data for each saying
     const sayingsWithData = await Promise.all(

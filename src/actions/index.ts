@@ -88,219 +88,139 @@ export const server = {
 
   // Export action for submitting sayings
   submitSaying: defineAction({
-    name: 'submitSaying',
     accept: 'form',
+    input: NewSayingSchema,
+    handler: async (input, context) => {
+      logger.debug('submitSaying action called', { input });
 
-    // Handle the form submission
-    async handler({ request, url, locals }) {
-      logger.debug('submitSaying action called');
+      // Get session from locals (set by middleware)
+      const session = context.locals.session;
 
-      try {
-        // Get session from locals (set by middleware)
-        const session = locals.session;
+      if (!session?.user?.id) {
+        logger.warn('Unauthenticated saying submission attempt');
+        throw new Error('You must be logged in to create a saying');
+      }
 
-        if (!session?.user?.id) {
-          logger.warn('Unauthenticated saying submission attempt');
-          const redirectUrl = url
-            ? `${url.origin}/create?error=${encodeURIComponent('You must be logged in to create a saying')}`
-            : '/create?error=AuthRequired';
-          return Response.redirect(redirectUrl, 302);
-        }
+      // Get database user ID from locals (set by middleware)
+      const dbUserId = context.locals?.dbUser?.id;
 
-        // Get form data
-        const formData = await request.formData();
-        logger.debug('Form data received', { formData: Object.fromEntries(formData.entries()) });
-
-        // Process form data
-        const typeChoice = formData.get('typeChoice') as string;
-        const type = formData.get('type') as string;
-        const intro = formData.get('intro') as string;
-        const firstKind = formData.get('firstKind') as string;
-        const secondKind = formData.get('secondKind') as string;
-        const newType = formData.get('newType') as string;
-        const pronoun = (formData.get('pronoun') as string) || 'who';
-
-        // Basic validation
-        if (!intro || !firstKind || !secondKind) {
-          logger.warn('Validation failed: missing required fields', {
-            intro,
-            firstKind,
-            secondKind,
-          });
-          const redirectUrl = url
-            ? `${url.origin}/create?error=${encodeURIComponent('Missing required fields')}`
-            : '/create?error=MissingFields';
-          return Response.redirect(redirectUrl, 302);
-        }
-
-        if (typeChoice === 'existing' && !type) {
-          logger.warn('Validation failed: existing type not selected');
-          const redirectUrl = url
-            ? `${url.origin}/create?error=${encodeURIComponent('Please select a type')}`
-            : '/create?error=TypeRequired';
-          return Response.redirect(redirectUrl, 302);
-        }
-
-        if (typeChoice === 'new' && (!newType || newType.length < 2)) {
-          logger.warn('Validation failed: invalid new type name', { newType });
-          const redirectUrl = url
-            ? `${url.origin}/create?error=${encodeURIComponent('Please enter a valid new type name (at least 2 characters)')}`
-            : '/create?error=InvalidTypeLength';
-          return Response.redirect(redirectUrl, 302);
-        }
-
-        // Check rate limits
-        const { getRateLimiter } = await import('../utils/ratelimit');
-        const rateLimiter = getRateLimiter();
-
-        const rateLimitCheck = await rateLimiter.checkLimit({
-          identifier: session.user.id,
-          action: 'create_saying',
+      if (!dbUserId) {
+        logger.error('Database user ID not found in locals', {
+          sessionUserId: session?.user?.id,
         });
+        throw new Error('Database user ID not found');
+      }
 
-        if (!rateLimitCheck.allowed) {
-          logger.warn('Rate limit exceeded for saying creation', {
-            userId: session.user.id,
-            current: rateLimitCheck.current,
-            limit: rateLimitCheck.limit,
-          });
-          const redirectUrl = url
-            ? `${url.origin}/create?error=${encodeURIComponent(rateLimitCheck.reason || 'Rate limit exceeded. Please try again later.')}`
-            : '/create?error=RateLimitExceeded';
-          return Response.redirect(redirectUrl, 302);
-        }
+      // Check rate limits
+      const { getRateLimiter } = await import('../utils/ratelimit');
+      const rateLimiter = getRateLimiter();
 
-        logger.debug('Rate limit check passed', {
+      const rateLimitCheck = await rateLimiter.checkLimit({
+        identifier: session.user.id,
+        action: 'create_saying',
+      });
+
+      if (!rateLimitCheck.allowed) {
+        logger.warn('Rate limit exceeded for saying creation', {
           userId: session.user.id,
           current: rateLimitCheck.current,
           limit: rateLimitCheck.limit,
         });
-
-        // Moderate content before proceeding
-        const { getContentModerator } = await import('../utils/moderation');
-        const moderator = getContentModerator();
-
-        // Combine all text content for moderation
-        const contentToModerate = `${firstKind} ${secondKind}${typeChoice === 'new' ? ` ${newType}` : ''}`;
-
-        logger.debug('Moderating content', { contentLength: contentToModerate.length });
-
-        const moderationResult = await moderator.moderateContent({
-          text: contentToModerate,
-          context: {
-            userId: session.user.id,
-            contentType: 'saying',
-          },
-        });
-
-        if (!moderationResult.isSafe) {
-          logger.warn('Content flagged by moderation', {
-            userId: session.user.id,
-            reason: moderationResult.reason,
-          });
-          const redirectUrl = url
-            ? `${url.origin}/create?error=${encodeURIComponent(`Content flagged: ${moderationResult.reason || 'inappropriate content detected'}`)}`
-            : '/create?error=ContentFlagged';
-          return Response.redirect(redirectUrl, 302);
-        }
-
-        logger.info('Content passed moderation', { userId: session.user.id });
-
-        // Process type selection
-        let typeId;
-
-        if (typeChoice === 'new') {
-          // Create a new type
-          logger.info('Creating new type', { newType, pronoun });
-          const newTypeResult = await db
-            .insert(Types)
-            .values({
-              name: newType,
-              pronoun: pronoun,
-              createdAt: new Date(),
-            })
-            .returning();
-
-          if (!newTypeResult || newTypeResult.length === 0) {
-            logger.error('Failed to create new type', { newType, pronoun });
-            const redirectUrl = url
-              ? `${url.origin}/create?error=${encodeURIComponent('Failed to create new type')}`
-              : '/create?error=TypeCreationFailed';
-            return Response.redirect(redirectUrl, 302);
-          }
-
-          typeId = newTypeResult[0].id;
-          logger.info('Successfully created new type', { typeId, newType });
-        } else {
-          // Use existing type
-          typeId = type;
-          logger.debug('Using existing type', { typeId });
-        }
-
-        // Get database user ID from locals (set by middleware)
-        const dbUserId = locals?.dbUser?.id;
-
-        if (!dbUserId) {
-          logger.error('Database user ID not found in locals', {
-            sessionUserId: session?.user?.id,
-          });
-          const redirectUrl = url
-            ? `${url.origin}/create?error=${encodeURIComponent('Database user ID not found')}`
-            : '/create?error=NoDbUser';
-          return Response.redirect(redirectUrl, 302);
-        }
-
-        // Insert data into database
-        const values = {
-          intro: intro,
-          type: typeId,
-          firstKind: firstKind,
-          secondKind: secondKind,
-          userId: dbUserId,
-          createdAt: new Date(),
-          updatedAt: new Date(), // Ensure updatedAt is set
-        };
-
-        logger.debug('Inserting saying', { values });
-
-        try {
-          const result = await db.insert(Sayings).values(values).returning();
-
-          logger.info('Successfully created saying', { sayingId: result[0].id, userId: dbUserId });
-
-          // Record the action for rate limiting
-          await rateLimiter.recordAction({
-            identifier: session.user.id,
-            action: 'create_saying',
-          });
-
-          // Return redirect with success
-          const redirectUrl = url
-            ? `${url.origin}/create?success=true&id=${result[0].id}`
-            : `/create?success=true&id=${result[0].id}`;
-          return Response.redirect(redirectUrl, 302);
-        } catch (dbError) {
-          logger.error('Database error when inserting saying', { dbError, values });
-
-          // If we're in production and having database issues, provide a more user-friendly error
-          if (process.env.NODE_ENV === 'production') {
-            const redirectUrl = url
-              ? `${url.origin}/create?error=${encodeURIComponent('Unable to save your saying at this time. Please try again later.')}`
-              : `/create?error=${encodeURIComponent('Service temporarily unavailable')}`;
-            return Response.redirect(redirectUrl, 302);
-          }
-
-          // In development, show the actual error for debugging
-          throw dbError;
-        }
-      } catch (error) {
-        logger.error('Error saving saying', { error });
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        const redirectUrl = url
-          ? `${url.origin}/create?error=${encodeURIComponent(errorMessage)}`
-          : `/create?error=${encodeURIComponent(errorMessage)}`;
-        return Response.redirect(redirectUrl, 302);
+        throw new Error(rateLimitCheck.reason || 'Rate limit exceeded. Please try again later.');
       }
+
+      logger.debug('Rate limit check passed', {
+        userId: session.user.id,
+        current: rateLimitCheck.current,
+        limit: rateLimitCheck.limit,
+      });
+
+      // Moderate content before proceeding
+      const { getContentModerator } = await import('../utils/moderation');
+      const moderator = getContentModerator();
+
+      // Combine all text content for moderation
+      const contentToModerate =
+        input.typeChoice === 'new'
+          ? `${input.firstKind} ${input.secondKind} ${input.newType}`
+          : `${input.firstKind} ${input.secondKind}`;
+
+      logger.debug('Moderating content', { contentLength: contentToModerate.length });
+
+      const moderationResult = await moderator.moderateContent({
+        text: contentToModerate,
+        context: {
+          userId: session.user.id,
+          contentType: 'saying',
+        },
+      });
+
+      if (!moderationResult.isSafe) {
+        logger.warn('Content flagged by moderation', {
+          userId: session.user.id,
+          reason: moderationResult.reason,
+        });
+        throw new Error(
+          `Content flagged: ${moderationResult.reason || 'inappropriate content detected'}`
+        );
+      }
+
+      logger.info('Content passed moderation', { userId: session.user.id });
+
+      // Process type selection
+      let typeId: string;
+
+      if (input.typeChoice === 'new') {
+        // Create a new type
+        const pronoun = 'who'; // Default pronoun - could be added to form later
+        logger.info('Creating new type', { newType: input.newType, pronoun });
+        const newTypeResult = await db
+          .insert(Types)
+          .values({
+            name: input.newType,
+            pronoun: pronoun,
+            createdAt: new Date(),
+          })
+          .returning();
+
+        if (!newTypeResult || newTypeResult.length === 0) {
+          logger.error('Failed to create new type', { newType: input.newType, pronoun });
+          throw new Error('Failed to create new type');
+        }
+
+        typeId = newTypeResult[0].id.toString();
+        logger.info('Successfully created new type', { typeId, newType: input.newType });
+      } else {
+        // Use existing type
+        typeId = input.type;
+        logger.debug('Using existing type', { typeId });
+      }
+
+      // Insert data into database
+      const values = {
+        intro: input.intro,
+        type: typeId,
+        firstKind: input.firstKind,
+        secondKind: input.secondKind,
+        userId: dbUserId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      logger.debug('Inserting saying', { values });
+
+      const result = await db.insert(Sayings).values(values).returning();
+
+      logger.info('Successfully created saying', { sayingId: result[0].id, userId: dbUserId });
+
+      // Record the action for rate limiting
+      await rateLimiter.recordAction({
+        identifier: session.user.id,
+        action: 'create_saying',
+      });
+
+      // Return success with saying ID
+      return { success: true, sayingId: result[0].id };
     },
   }),
 };

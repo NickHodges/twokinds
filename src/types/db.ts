@@ -1,5 +1,5 @@
 export interface DBUser {
-  id: number;
+  id: string;
   name: string;
   email: string;
   image: string;
@@ -17,7 +17,7 @@ export interface DBSaying {
   type: number;
   firstKind: string;
   secondKind: string;
-  userId: number;
+  userId: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,7 +36,7 @@ export interface DBType {
 
 export interface DBLike {
   id: number;
-  userId: number;
+  userId: string;
   sayingId: number;
   createdAt: Date;
 }

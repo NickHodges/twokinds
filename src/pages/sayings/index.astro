@@ -9,6 +9,9 @@ import { config } from '../../lib/config';
 import { getAllSayings } from '../../lib/db-service';
 import type { ExtendedSession } from '../../env';
 import type { Saying } from '../../types/saying';
+import { createLogger } from '../../utils/logger';
+
+const logger = createLogger('SayingsPage');
 
 // Don't prerender so we always get fresh data
 export const prerender = false;
@@ -33,7 +36,7 @@ try {
   const endIndex = Math.min(startIndex + pageSize, allSayings.length);
   sayingsForCurrentPage = allSayings.slice(startIndex, endIndex);
 } catch (error) {
-  console.error('Error getting sayings:', error);
+  logger.error('Error getting sayings', { error });
 }
 
 // Create page object for pagination
@@ -57,19 +60,21 @@ const page = {
     <Hero session={session} />
 
     <div class="mt-4">
-      {page.data.length > 0 ? (
-        <>
-          <SayingList sayings={page.data} session={session} />
-          {page.lastPage > 1 && <Pagination page={page} basePath="/sayings" />}
-        </>
-      ) : (
-        <EmptyState
-          message="No sayings available"
-          callToAction={session ? { text: "Create a Saying", href: "/create" } : undefined}
-          isDatabaseError={true}
-          devMessage="No sayings found. Try creating one!"
-        />
-      )}
+      {
+        page.data.length > 0 ? (
+          <>
+            <SayingList sayings={page.data} session={session} />
+            {page.lastPage > 1 && <Pagination page={page} basePath="/sayings" />}
+          </>
+        ) : (
+          <EmptyState
+            message="No sayings available"
+            callToAction={session ? { text: 'Create a Saying', href: '/create' } : undefined}
+            isDatabaseError={true}
+            devMessage="No sayings found. Try creating one!"
+          />
+        )
+      }
     </div>
   </div>
 </MainLayout>

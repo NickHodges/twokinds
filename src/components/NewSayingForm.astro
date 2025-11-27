@@ -1,4 +1,5 @@
 ---
+import { actions } from 'astro:actions';
 import NotificationBanner from './NotificationBanner.astro';
 import ActionButtons from './ActionButtons.astro';
 
@@ -11,34 +12,34 @@ export interface Props {
     id: string;
     typeName: string;
   }[];
-  error?: string;
-  success?: string;
-  newSayingId?: string;
 }
 
-const { intros = [], types = [], error, success, newSayingId } = Astro.props;
+const { intros = [], types = [] } = Astro.props;
+
+// Get action result for displaying success/error messages
+const result = Astro.getActionResult(actions.submitSaying);
 ---
 
 <div class="w-full">
   {
-    success && (
+    result?.data && (
       <NotificationBanner type="success">
         <p>Your saying has been created successfully!</p>
-        <ActionButtons viewUrl={`/saying/${newSayingId}`} createAnotherUrl="/create" />
+        <ActionButtons viewUrl={`/saying/${result.data.sayingId}`} createAnotherUrl="/create" />
       </NotificationBanner>
     )
   }
 
   {
-    error && (
+    result?.error && (
       <NotificationBanner type="error">
-        <p>{error}</p>
+        <p>{result.error.message}</p>
       </NotificationBanner>
     )
   }
 
   <form
-    action="/api/create-saying"
+    action={actions.submitSaying}
     method="POST"
     class="space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
   >

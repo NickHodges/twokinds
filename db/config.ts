@@ -16,11 +16,10 @@ const AuthUsers = defineTable({
   },
 });
 
-// Application users table with numeric IDs (for app-specific data)
+// Application users table (merged with auth - using text IDs)
 const Users = defineTable({
   columns: {
-    id: column.number({ primaryKey: true, autoIncrement: true }), // Updated to auto-incrementing integer
-    authUserId: column.text({ optional: true }), // Link to Better Auth user
+    id: column.text({ primaryKey: true }), // Use auth user ID directly
     name: column.text(),
     email: column.text(),
     image: column.text({ optional: true }),
@@ -33,7 +32,6 @@ const Users = defineTable({
   },
   indexes: {
     email_idx: { on: ['email'], unique: true },
-    authUserId_idx: { on: ['authUserId'] },
   },
 });
 
@@ -61,15 +59,16 @@ const Sayings = defineTable({
     type: column.number({ references: () => Types.columns.id }),
     firstKind: column.text(),
     secondKind: column.text(),
-    userId: column.number({ references: () => Users.columns.id }), // Updated to match Users.id type
+    userId: column.text({ references: () => Users.columns.id }),
     createdAt: column.date(),
+    updatedAt: column.date(),
   },
 });
 
 const Likes = defineTable({
   columns: {
     id: column.number({ primaryKey: true, autoIncrement: true }),
-    userId: column.number({ references: () => Users.columns.id }), // Updated to match Users.id type
+    userId: column.text({ references: () => Users.columns.id }),
     sayingId: column.number({ references: () => Sayings.columns.id }),
     createdAt: column.date(),
   },
