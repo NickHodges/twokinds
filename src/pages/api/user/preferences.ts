@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getUserIdFromSession, updateUserPreferences } from '../../../utils/user-db';
-import type { UserPreferences } from '../../../utils/user-db';
+import { db, Users, eq } from 'astro:db';
 import { createLogger } from '../../../utils/logger';
 
 const logger = createLogger('User Preferences API');
@@ -16,7 +15,8 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
       return redirect('/auth/signin?error=login-required', 302);
     }
 
-    const userId = getUserIdFromSession(session);
+    // Get database user ID from locals (set by middleware)
+    const userId = locals.dbUser?.id;
     if (!userId) {
       logger.error('Invalid user ID in session', { sessionUserId: session.user.id });
       return redirect('/profile?error=invalid-user', 302);
@@ -24,14 +24,23 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
 
     // Get form data
     const formData = await request.formData();
-    const preferences: UserPreferences = {
+    const preferences = {
       theme: (formData.get('theme') as 'light' | 'dark' | 'system') || 'system',
       emailNotifications: formData.get('emailNotifications') === 'true',
     };
 
     logger.debug('Updating user preferences', { userId, preferences });
 
-    const updatedUser = await updateUserPreferences(userId, preferences);
+    // Update user preferences in database
+    const updatedUser = await db
+      .update(Users)
+      .set({
+        preferences,
+        updatedAt: new Date(),
+      })
+      .where(eq(Users.id, userId))
+      .returning()
+      .get();
 
     if (!updatedUser) {
       logger.error('User not found when updating preferences', { userId });
