@@ -56,11 +56,19 @@ const shareTitle = saying
   ? `${saying.intro} — those ${saying.pronoun || 'who'} ${saying.firstKind} and those ${saying.pronoun || 'who'} ${saying.secondKind}`
   : '';
 
+// Construct OG image URL
+const ogImageUrl = `/og/saying/${sayingId}.png`;
+
 // Don't prerender so we always get fresh data
 export const prerender = false;
 ---
 
-<MainLayout title={saying ? `${saying.intro}` : 'Saying Not Found'}>
+<MainLayout
+  title={saying ? `${saying.intro}` : 'Saying Not Found'}
+  ogImage={saying ? ogImageUrl : undefined}
+  ogTitle={shareTitle}
+  ogDescription={saying ? `Category: ${saying.typeName}` : undefined}
+>
   <div class="flex flex-col">
     <PageHeader title="" />
 
@@ -84,7 +92,7 @@ export const prerender = false;
                 isAuthenticated={isAuthenticated}
               />
             </div>
-            <ShareButtons url={shareUrl} title={shareTitle} />
+            <ShareButtons url={shareUrl} title={shareTitle} imageUrl={ogImageUrl} />
           </div>
 
           <ActionButtons

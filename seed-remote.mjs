@@ -16,22 +16,28 @@ async function getSeedData() {
 
 // Function to get or create system user
 async function getSystemUser() {
-  const systemUser = await db.select().from(Users)
+  const systemUser = await db
+    .select()
+    .from(Users)
     .where(eq(Users.email, 'system@twokindsof.com'))
     .get();
 
   if (!systemUser) {
     const now = new Date();
-    const newUser = await db.insert(Users).values({
-      name: 'System User',
-      email: 'system@twokindsof.com',
-      provider: 'system',
-      lastLogin: now,
-      createdAt: now,
-      updatedAt: now,
-      role: 'system',
-      preferences: {},
-    }).returning().get();
+    const newUser = await db
+      .insert(Users)
+      .values({
+        name: 'System User',
+        email: 'system@twokindsof.com',
+        provider: 'system',
+        lastLogin: now,
+        createdAt: now,
+        updatedAt: now,
+        role: 'system',
+        preferences: {},
+      })
+      .returning()
+      .get();
 
     return newUser;
   }
@@ -43,15 +49,20 @@ async function getSystemUser() {
 async function seedIntros(intros) {
   console.log('Seeding Intros...');
   for (const intro of intros) {
-    const existingIntro = await db.select().from(Intros)
+    const existingIntro = await db
+      .select()
+      .from(Intros)
       .where(eq(Intros.introText, intro.introText))
       .get();
 
     if (!existingIntro) {
-      await db.insert(Intros).values({
-        introText: intro.introText,
-        createdAt: new Date(),
-      }).run();
+      await db
+        .insert(Intros)
+        .values({
+          introText: intro.introText,
+          createdAt: new Date(),
+        })
+        .run();
     }
   }
 }
@@ -68,15 +79,16 @@ async function seedTypes() {
   ];
 
   for (const type of types) {
-    const existingType = await db.select().from(Types)
-      .where(eq(Types.name, type.name))
-      .get();
+    const existingType = await db.select().from(Types).where(eq(Types.name, type.name)).get();
 
     if (!existingType) {
-      await db.insert(Types).values({
-        name: type.name,
-        createdAt: new Date(),
-      }).run();
+      await db
+        .insert(Types)
+        .values({
+          name: type.name,
+          createdAt: new Date(),
+        })
+        .run();
     }
   }
 }
@@ -98,9 +110,7 @@ export default async function seedDatabase() {
     await seedTypes();
 
     // Get the Animals type ID
-    const animalsType = await db.select().from(Types)
-      .where(eq(Types.name, 'Animals'))
-      .get();
+    const animalsType = await db.select().from(Types).where(eq(Types.name, 'Animals')).get();
 
     if (!animalsType) {
       throw new Error('Animals type not found');
@@ -110,20 +120,25 @@ export default async function seedDatabase() {
     console.log('Seeding Sayings...');
     for (const saying of seedData.sayings) {
       // Check if saying already exists
-      const existingSaying = await db.select().from(Sayings)
+      const existingSaying = await db
+        .select()
+        .from(Sayings)
         .where(eq(Sayings.firstKind, saying.firstKind))
         .where(eq(Sayings.secondKind, saying.secondKind))
         .get();
 
       if (!existingSaying) {
-        await db.insert(Sayings).values({
-          intro: saying.intro,
-          type: animalsType.id,
-          firstKind: saying.firstKind,
-          secondKind: saying.secondKind,
-          userId: systemUser.id,
-          createdAt: new Date(),
-        }).run();
+        await db
+          .insert(Sayings)
+          .values({
+            intro: saying.intro,
+            type: animalsType.id,
+            firstKind: saying.firstKind,
+            secondKind: saying.secondKind,
+            userId: systemUser.id,
+            createdAt: new Date(),
+          })
+          .run();
       }
     }
 
@@ -137,4 +152,3 @@ export default async function seedDatabase() {
 
 // Execute the main function
 seedDatabase().catch(console.error);
-

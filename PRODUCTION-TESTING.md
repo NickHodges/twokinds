@@ -49,6 +49,7 @@ ASTRO_DATABASE_FILE=.astro/prod-db.sqlite npm run preview
 The production test database includes two seeded users:
 
 1. System User:
+
    - Email: system@twokindsof.com
    - Used primarily for system operations
 

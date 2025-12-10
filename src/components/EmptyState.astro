@@ -6,11 +6,11 @@
  * @property {boolean} [isDatabaseError] - Whether this is being shown due to a database error
  * @property {string} [devMessage] - Alternative message to show in development mode
  */
-const { 
-  message, 
-  callToAction, 
+const {
+  message,
+  callToAction,
   isDatabaseError = false,
-  devMessage = "No items found. Try creating one!"
+  devMessage = 'No items found. Try creating one!',
 } = Astro.props;
 
 // Determine the URL and text based on callToAction type
@@ -18,9 +18,12 @@ const callToActionUrl = typeof callToAction === 'string' ? callToAction : callTo
 const callToActionText = typeof callToAction === 'string' ? callToAction : callToAction?.text;
 
 // If this is a database error in production, show a different message
-const displayMessage = isDatabaseError && import.meta.env.PROD
-  ? "We're currently experiencing issues connecting to our database. Please try again later."
-  : isDatabaseError ? devMessage : message;
+const displayMessage =
+  isDatabaseError && import.meta.env.PROD
+    ? "We're currently experiencing issues connecting to our database. Please try again later."
+    : isDatabaseError
+      ? devMessage
+      : message;
 ---
 
 <div

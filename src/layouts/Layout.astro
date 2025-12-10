@@ -1,3 +1,19 @@
+---
+const {
+  title = 'Two Kinds of People',
+  ogImage,
+  ogTitle,
+  ogDescription,
+}: {
+  title?: string;
+  ogImage?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+} = Astro.props;
+
+const siteUrl = Astro.site || 'https://twokinds.vercel.app';
+---
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -5,7 +21,21 @@
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <title>Two Kinds of People</title>
+    <title>{title}</title>
+
+    <!-- Open Graph meta tags -->
+    <meta property="og:title" content={ogTitle || title} />
+    {ogDescription && <meta property="og:description" content={ogDescription} />}
+    {ogImage && <meta property="og:image" content={new URL(ogImage, siteUrl).toString()} />}
+    {ogImage && <meta property="og:image:width" content="1080" />}
+    {ogImage && <meta property="og:image:height" content="1080" />}
+    <meta property="og:type" content="website" />
+
+    <!-- Twitter Card meta tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={ogTitle || title} />
+    {ogDescription && <meta name="twitter:description" content={ogDescription} />}
+    {ogImage && <meta name="twitter:image" content={new URL(ogImage, siteUrl).toString()} />}
     <!-- Import CSS properly using Astro's import mechanism -->
     <style is:global>
       @import '../styles/layout.css';
@@ -14,16 +44,19 @@
       async
       src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9957327027530940"
       crossorigin="anonymous"></script>
-      
+
     <!-- Vercel Web Analytics (production only) -->
-    {import.meta.env.PROD && (
-      <>
-        <script is:inline>
-          window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-        </script>
-        <script defer src="/_vercel/insights/script.js"></script>
-      </>
-    )}
+    {
+      import.meta.env.PROD && (
+        <>
+          <script
+            is:inline
+            set:html="window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };"
+          />
+          <script defer src="/_vercel/insights/script.js" />
+        </>
+      )
+    }
 
     <!-- Theme script (must be in the head) -->
     <script is:inline>

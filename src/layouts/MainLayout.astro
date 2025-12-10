@@ -2,15 +2,28 @@
 /**
  * @typedef {object} Props
  * @property {string} [title="Two Kinds of People"] - Page title
+ * @property {string} [ogImage] - Open Graph image URL
+ * @property {string} [ogTitle] - Open Graph title
+ * @property {string} [ogDescription] - Open Graph description
  */
 import Layout from './Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 
-const { title = 'Two Kinds of People' } = Astro.props;
+const {
+  title = 'Two Kinds of People',
+  ogImage,
+  ogTitle,
+  ogDescription,
+}: {
+  title?: string;
+  ogImage?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+} = Astro.props;
 ---
 
-<Layout title={title}>
+<Layout title={title} ogImage={ogImage} ogTitle={ogTitle} ogDescription={ogDescription}>
   <Header />
   <div class="container mx-auto px-4 pt-0 pb-8">
     <main>

@@ -9,17 +9,23 @@ module.exports = {
         extraFileExtensions: ['.astro'],
       },
       rules: {
-        '@typescript-eslint/no-unused-vars': ['error', {
-          varsIgnorePattern: '^Props$',
-          argsIgnorePattern: '^_',
-        }],
+        '@typescript-eslint/no-unused-vars': [
+          'error',
+          {
+            varsIgnorePattern: '^Props$',
+            argsIgnorePattern: '^_',
+          },
+        ],
       },
     },
   ],
   rules: {
-    '@typescript-eslint/no-unused-vars': ['error', {
-      argsIgnorePattern: '^_',
-      varsIgnorePattern: '^_',
-    }],
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+      },
+    ],
   },
 };
