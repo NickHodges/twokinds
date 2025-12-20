@@ -102,10 +102,31 @@ export class OpenAIContentModerator implements IContentModerator {
           status: response.status,
           statusText: response.statusText,
         });
-        // Fail open - allow content if moderation service is down
+
+        // Fail closed for rate limits and auth errors - reject content
+        if (response.status === 429) {
+          return {
+            isSafe: false,
+            reason: 'Moderation service rate limit exceeded. Please try again in a moment.',
+          };
+        }
+
+        if (response.status === 401 || response.status === 403) {
+          return {
+            isSafe: false,
+            reason:
+              'Moderation service configuration error. Content cannot be posted at this time.',
+          };
+        }
+
+        // For other errors (500, network issues), fail open to not break the site
+        // but log it prominently
+        logger.warn('Moderation service error - allowing content by default', {
+          status: response.status,
+        });
         return {
           isSafe: true,
-          reason: 'Moderation service unavailable',
+          reason: 'Moderation service temporarily unavailable',
         };
       }
 
