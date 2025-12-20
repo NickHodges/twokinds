@@ -7,11 +7,11 @@ lastUpdated: January 2025
 
 ## 1. Acceptance of Terms
 
-By accessing and using Two Kinds of People ("the Service"), you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to these Terms of Service, please do not use the Service.
+By accessing and using Two Kinds Of ("the Service"), you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to these Terms of Service, please do not use the Service.
 
 ## 2. Description of Service
 
-Two Kinds of People is a platform that allows users to create and share humorous observations about different types of people and things. Users can create "sayings" that follow the format "There are two kinds of [type]..." and share them with the community.
+Two Kinds Of is a platform that allows users to create and share humorous observations about different types of people and things. Users can create "sayings" that follow the format "There are two kinds of [type]..." and share them with the community.
 
 ## 3. User Accounts
 
@@ -44,7 +44,7 @@ We reserve the right, but have no obligation, to monitor, review, and remove any
 
 ## 6. Intellectual Property
 
-The Service, including its original content, features, and functionality, is owned by Two Kinds of People and is protected by international copyright, trademark, and other intellectual property laws.
+The Service, including its original content, features, and functionality, is owned by Two Kinds Of and is protected by international copyright, trademark, and other intellectual property laws.
 
 ## 7. Disclaimer of Warranties
 
@@ -52,11 +52,11 @@ THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIN
 
 ## 8. Limitation of Liability
 
-IN NO EVENT SHALL TWO KINDS OF PEOPLE, ITS DIRECTORS, EMPLOYEES, OR AGENTS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF OR RELATED TO YOUR USE OF THE SERVICE.
+IN NO EVENT SHALL TWO KINDS OF, ITS DIRECTORS, EMPLOYEES, OR AGENTS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF OR RELATED TO YOUR USE OF THE SERVICE.
 
 ## 9. Indemnification
 
-You agree to indemnify and hold harmless Two Kinds of People from any claims, damages, losses, or expenses (including legal fees) arising from your use of the Service or violation of these Terms of Service.
+You agree to indemnify and hold harmless Two Kinds Of from any claims, damages, losses, or expenses (including legal fees) arising from your use of the Service or violation of these Terms of Service.
 
 ## 10. Termination
 
@@ -68,7 +68,7 @@ We reserve the right to modify these Terms of Service at any time. We will notif
 
 ## 12. Governing Law
 
-These Terms of Service shall be governed by and construed in accordance with the laws of the jurisdiction in which Two Kinds of People operates, without regard to its conflict of law provisions.
+These Terms of Service shall be governed by and construed in accordance with the laws of the jurisdiction in which Two Kinds Of operates, without regard to its conflict of law provisions.
 
 ## 13. Contact Information
 

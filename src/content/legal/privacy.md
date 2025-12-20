@@ -17,7 +17,7 @@ We do not send marketing emails, newsletters, or promotional content without you
 
 ## 1. Introduction
 
-Welcome to Two Kinds of People ("we," "our," or "us"). We respect your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Service.
+Welcome to Two Kinds Of ("we," "our," or "us"). We respect your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Service.
 
 ## 2. Information We Collect
 
