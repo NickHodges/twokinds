@@ -12,5 +12,5 @@ export const ADS = {
 
 export const SITE = {
   NAME: 'Two Kinds Of',
-  DESCRIPTION: "Exploring humanity's endless dualities, one saying at a time",
+  DESCRIPTION: "Exploring the world's endless dualities, one saying at a time",
 };

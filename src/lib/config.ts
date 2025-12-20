@@ -23,6 +23,6 @@ export const config = {
     /**
      * Site description
      */
-    description: "Exploring humanity's endless dualities, one saying at a time",
+    description: "Exploring the world's endless dualities, one saying at a time",
   },
 };
