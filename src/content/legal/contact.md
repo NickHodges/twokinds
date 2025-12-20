@@ -61,12 +61,12 @@ Go to your dashboard, find the saying you want to modify, and click the "Edit" o
 **Why was my content removed?**
 Content may be removed if it violates our Terms of Service. You should receive an email notification if this occurs.
 
-**Can I use Two Kinds of for commercial purposes?**
+**Can I use Two Kinds Of for commercial purposes?**
 Please contact us at the email above to discuss commercial use cases.
 
 **I found a bug! How do I report it?**
-We appreciate bug reports! Please email us with detailed steps to reproduce the issue, or file an issue on our GitHub repository if you're technically inclined.
+We appreciate bug reports! Please email us at **[support@twokindsof.com](mailto:support@twokindsof.com)** with detailed steps to reproduce the issue, including any screenshots or error messages.
 
 ---
 
-**Thank you for using Two Kinds of!**
+**Thank you for using Two Kinds Of!**
