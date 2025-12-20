@@ -163,25 +163,34 @@ Rules:
 
 Your job is to clean up the firstKind or secondKind text to fit this format naturally.
 
-IMPORTANT: The template already adds "those who" (or similar pronouns like "those that", "those which"). Users should ONLY enter the action/description part.
+IMPORTANT: The template already adds "those who" (or similar pronouns). Users should ONLY enter the action/description part that completes the phrase naturally.
 
 Rules:
-- Remove "those who", "those that", "those which", or similar constructions from the beginning
-- Remove trailing punctuation (periods, commas, etc.)
+- Remove "those who", "those that", "those which", "the ones who", or similar constructions from the beginning
+- Remove references to the type itself (e.g., "people who", "things that", "dogs that")
+- Remove subject pronouns like "they", "you", "we" from the beginning
+- Remove articles like "a person who", "the person who"
+- Convert questions to statements ("do you eat tacos?" → "eat tacos")
+- Remove trailing punctuation (periods, commas, question marks, etc.)
 - Convert to lowercase unless it's a proper noun
-- Normalize verb tenses to fit the format (usually present tense)
+- Normalize verb tenses to present tense where appropriate
+- Keep phrases concise - remove excessive detail or rambling
 - Remove extra whitespace
 - Fix capitalization issues
-- Keep phrases concise and natural
 - Preserve the essential meaning
-- The text should complete "those who ___" naturally (without including "those who" itself)
+- The result should complete "those who ___" naturally and grammatically
 - Return ONLY the cleaned text, nothing else
 
 Examples:
 - Input: "those who eat tacos" → Output: "eat tacos"
+- Input: "people who like pizza" → Output: "like pizza"
+- Input: "the ones who are mean" → Output: "are mean"
+- Input: "They run fast." → Output: "run fast"
+- Input: "do you eat vegetables?" → Output: "eat vegetables"
 - Input: "Those Who Like Pizza." → Output: "like pizza"
 - Input: "are nice people" → Output: "are nice people"
-- Input: "Run Fast." → Output: "run fast"`;
+- Input: "Run Fast every day for exercise." → Output: "run fast"
+- Input: "was eating tacos" → Output: "eat tacos"`;
   }
 
   /**
