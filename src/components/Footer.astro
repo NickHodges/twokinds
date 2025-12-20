@@ -1,11 +1,10 @@
 ---
-import AdBanner from './AdBanner.astro';
-import PlaceholderAd from './PlaceholderAd.astro';
+import AdUnit from './AdUnit.astro';
 import { ADS } from '../lib/constants';
 ---
 
 <footer class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
-  {ADS.USE_PLACEHOLDER ? <PlaceholderAd /> : <AdBanner />}
+  <AdUnit />
 
   <div class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
     <p>© {new Date().getFullYear()} Two Kinds Of. All rights reserved.</p>

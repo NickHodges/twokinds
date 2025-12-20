@@ -1,0 +1,7 @@
+---
+import AdBanner from './AdBanner.astro';
+import PlaceholderAd from './PlaceholderAd.astro';
+import { ADS } from '../lib/constants';
+---
+
+{ADS.USE_PLACEHOLDER ? <PlaceholderAd /> : <AdBanner />}
