@@ -167,17 +167,66 @@ export const server = {
 
       logger.info('Content passed moderation', { userId: session.user.id });
 
+      // Clean up text using AI
+      const { getTextCleanup } = await import('../utils/cleanup');
+      const textCleanup = getTextCleanup();
+
+      let cleanedFirstKind = input.firstKind;
+      let cleanedSecondKind = input.secondKind;
+      let cleanedNewType = input.typeChoice === 'new' ? input.newType : undefined;
+
+      if (textCleanup.isConfigured()) {
+        logger.debug('Cleaning up saying text');
+
+        // Clean up firstKind
+        const firstKindResult = await textCleanup.cleanupText({
+          text: input.firstKind,
+          context: { type: 'firstKind', pronoun: 'who' },
+        });
+        cleanedFirstKind = firstKindResult.cleanedText;
+
+        // Clean up secondKind
+        const secondKindResult = await textCleanup.cleanupText({
+          text: input.secondKind,
+          context: { type: 'secondKind', pronoun: 'who' },
+        });
+        cleanedSecondKind = secondKindResult.cleanedText;
+
+        // Clean up newType if creating a new type
+        if (input.typeChoice === 'new') {
+          const newTypeResult = await textCleanup.cleanupText({
+            text: input.newType,
+            context: { type: 'typeName' },
+          });
+          cleanedNewType = newTypeResult.cleanedText;
+        }
+
+        logger.info('Text cleanup completed', {
+          firstKindModified: firstKindResult.wasModified,
+          secondKindModified: secondKindResult.wasModified,
+          newTypeModified: input.typeChoice === 'new' && cleanedNewType !== input.newType,
+        });
+      } else {
+        logger.debug('Text cleanup not configured, skipping');
+      }
+
       // Process type selection
       let typeId: string;
 
       if (input.typeChoice === 'new') {
         // Create a new type
         const pronoun = 'who'; // Default pronoun - could be added to form later
-        logger.info('Creating new type', { newType: input.newType, pronoun });
+        const typeNameToUse = cleanedNewType || input.newType;
+        logger.info('Creating new type', {
+          newType: typeNameToUse,
+          original: input.newType,
+          wasModified: typeNameToUse !== input.newType,
+          pronoun,
+        });
         const newTypeResult = await db
           .insert(Types)
           .values({
-            name: input.newType,
+            name: typeNameToUse,
             pronoun: pronoun,
             createdAt: new Date(),
           })
@@ -200,8 +249,8 @@ export const server = {
       const values = {
         intro: input.intro,
         type: typeId,
-        firstKind: input.firstKind,
-        secondKind: input.secondKind,
+        firstKind: cleanedFirstKind,
+        secondKind: cleanedSecondKind,
         userId: dbUserId,
         createdAt: new Date(),
         updatedAt: new Date(),
