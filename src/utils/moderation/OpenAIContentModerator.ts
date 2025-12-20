@@ -98,16 +98,30 @@ export class OpenAIContentModerator implements IContentModerator {
       });
 
       if (!response.ok) {
+        // Log rate limit headers if available
+        const rateLimitHeaders = {
+          limit: response.headers.get('x-ratelimit-limit'),
+          remaining: response.headers.get('x-ratelimit-remaining'),
+          reset: response.headers.get('x-ratelimit-reset'),
+          retryAfter: response.headers.get('retry-after'),
+        };
+
         logger.error('OpenAI Moderation API error', {
           status: response.status,
           statusText: response.statusText,
+          rateLimitHeaders,
         });
 
         // Fail closed for rate limits and auth errors - reject content
         if (response.status === 429) {
+          const retryAfter = response.headers.get('retry-after');
+          const waitMessage = retryAfter
+            ? `Please wait ${retryAfter} seconds before trying again.`
+            : 'Please try again in a moment.';
+
           return {
             isSafe: false,
-            reason: 'Moderation service rate limit exceeded. Please try again in a moment.',
+            reason: `Moderation service rate limit exceeded. ${waitMessage}`,
           };
         }
 
