@@ -39,6 +39,7 @@
     "@radix-ui/react-select": "^2.1.6",
     "@radix-ui/react-slot": "^1.1.2",
     "@tailwindcss/postcss": "^4.0.12",
+    "@tailwindcss/typography": "^0.5.19",
     "@vercel/og": "^0.8.5",
     "astro": "^5.13.5",
     "autoprefixer": "^10.4.21",
