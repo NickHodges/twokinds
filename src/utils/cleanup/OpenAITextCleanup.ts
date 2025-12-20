@@ -163,7 +163,10 @@ Rules:
 
 Your job is to clean up the firstKind or secondKind text to fit this format naturally.
 
+IMPORTANT: The template already adds "those who" (or similar pronouns like "those that", "those which"). Users should ONLY enter the action/description part.
+
 Rules:
+- Remove "those who", "those that", "those which", or similar constructions from the beginning
 - Remove trailing punctuation (periods, commas, etc.)
 - Convert to lowercase unless it's a proper noun
 - Normalize verb tenses to fit the format (usually present tense)
@@ -171,8 +174,14 @@ Rules:
 - Fix capitalization issues
 - Keep phrases concise and natural
 - Preserve the essential meaning
-- The text should complete "those who ___" naturally
-- Return ONLY the cleaned text, nothing else`;
+- The text should complete "those who ___" naturally (without including "those who" itself)
+- Return ONLY the cleaned text, nothing else
+
+Examples:
+- Input: "those who eat tacos" → Output: "eat tacos"
+- Input: "Those Who Like Pizza." → Output: "like pizza"
+- Input: "are nice people" → Output: "are nice people"
+- Input: "Run Fast." → Output: "run fast"`;
   }
 
   /**
