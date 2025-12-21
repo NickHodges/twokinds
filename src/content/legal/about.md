@@ -1,3 +1,8 @@
+---
+title: About
+lastUpdated: December 2025
+---
+
 # About Two Kinds
 
 ## Our Purpose
