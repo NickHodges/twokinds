@@ -24,6 +24,7 @@
     "lint:fix": "eslint . --ext .ts,.astro --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "check-env": "node scripts/check-env.mjs",
     "prepare": "husky"
   },
   "dependencies": {
