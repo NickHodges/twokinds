@@ -5,9 +5,9 @@ lastUpdated: December 2025
 
 # About Two Kinds
 
-## Our Purpose
+## A Little Background
 
-I built TwoKindsOf as kind of an experiment. I'd long had the idea for the website, but knew that it would take a lot of time to do things the right way. I was still learning Astro when the notion of "Vibe Coding" hit. I decided to give it a try in late 2024. I got the basics of the site up and running in a few days—it was pretty cool. But Claude Code was still fairly new, and it would go off on tangents, try "experiments", and generally not do what I wanted. So I shelved the project for a while.
+TwoKindsOf is built by me, [https://nickhodges.com](Nick Hodges). I built all this as kind of an experiment. I'd long had the idea for the website, but knew that it would take a lot of time to do things the right way. I was still learning Astro when the notion of "Vibe Coding" hit. I decided to give it a try in late 2024. I got the basics of the site up and running in a few days—it was pretty cool. But Claude Code was still fairly new, and it would go off on tangents, try "experiments", and generally not do what I wanted. So I shelved the project for a while.
 
 Then, in late 2025, I picked it up again and discovered that Claude had improved dramatically. It was now much better at following instructions, and I could get it to help me build the site the way I wanted. So I dove back in, and over the next few weeks, I built out the site using Claude Code. In the end, Claude wrote all the code. All I did was tell it what I wanted, and Claude Code did the rest. I made almost zero code changes myself. Claude did it all.
 
