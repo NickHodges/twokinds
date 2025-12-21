@@ -25,6 +25,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check-env": "node scripts/check-env.mjs",
+    "check-env:vercel": "node scripts/check-vercel-env.mjs",
     "prepare": "husky"
   },
   "dependencies": {
