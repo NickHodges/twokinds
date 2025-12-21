@@ -2,9 +2,11 @@
 
 ## Our Purpose
 
-"Two Kinds" is a fun exploration of the countless dualities that exist in our world. From contrasting approaches to everyday tasks to opposing philosophies about life, technology, or nature—these simple dichotomies often reveal fascinating patterns in how things work, how we think, and how we interact with our environment.
+I build TwoKindsOf as kindn of an experiment. I'd long had the idea for the website, but knew that it would take a lot of time to do things the right way. I was still learning Astro when the notion of "Vibe Coding" hit. I decided to give it a try in late 2024. I got the basics of the site up and running in a few days -- it was pretty cool. But Claude Code was still fairly new, and it would go off on tangents, try "experiments", and generally not do what I wanted. So I shelved the project for a while.
 
-This project collects and showcases these dualities, inviting visitors to reflect on which patterns they recognize and perhaps discover something new about the world around them.
+Then, in late 2025, I picked it up again and discovered that Claude had improved dramatically. It was now much better at following instructions, and I could get it to help me build the site the way I wanted. So I dove back in, and over the next few weeks, I built out the site using Claude Code. In the end, Claude wrote all the code. All I did was tell it what I wanted, and Claude code did the rest. I made almost zero code changes myself. Claude did it all.
+
+I used the Astro platform (or rather, Claude Code did), and I used BetterAuth for authentication. I also used a variety of other tools and libraries to help me build the site. The end result is a fully functional website that allows users to browse, create, and share "sayings" about the two kinds of anything in the world.
 
 ## How It Works
 
@@ -30,9 +32,5 @@ Contributing your own observation is easy:
 6. Submit your creation to share it with the world
 
 The best sayings are those that highlight interesting contrasts we all recognize but rarely discuss. They should be relatable, thoughtful, and ideally make people smile with recognition—whether they're about people, animals, objects, or abstract concepts.
-
-## Our Community
-
-Two Kinds is more than just a collection of observations—it's a growing community of people who enjoy thinking about the patterns and contrasts that shape our world. We encourage respectful, good-humored contributions that celebrate these dualities rather than judging them.
 
 _Join us in exploring these lighthearted divisions and maybe even contribute your own observation about the two kinds of anything in this world!_
