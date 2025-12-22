@@ -57,11 +57,16 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
       return redirect('/dashboard?error=user-not-found', 302);
     }
 
-    if (saying.userId !== dbUserId) {
+    // Check if user is admin or owns the saying
+    const isAdmin = locals.dbUser?.role === 'admin';
+    const isOwner = saying.userId === dbUserId;
+
+    if (!isAdmin && !isOwner) {
       logger.warn('Unauthorized delete attempt', {
         sayingId,
         userId: dbUserId,
         sayingUserId: saying.userId,
+        isAdmin,
       });
       return redirect('/dashboard?error=unauthorized', 302);
     }

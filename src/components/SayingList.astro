@@ -15,6 +15,7 @@ const {
 } = Astro.props;
 
 const isAuthenticated = !!session?.user;
+const isAdmin = Astro.locals.dbUser?.role === 'admin';
 
 // Get liked status and total likes for each saying
 const likedStatus = new Map<string, boolean>();
@@ -74,7 +75,7 @@ for (const saying of sayings) {
           isLiked={likedStatus.get(saying.id) || false}
           totalLikes={totalLikes.get(saying.id) || 0}
           isAuthenticated={isAuthenticated}
-          canEdit={session?.user?.id === saying.userId}
+          canEdit={isAdmin || session?.user?.id === saying.userId}
         />
       ))
     ) : (

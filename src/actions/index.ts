@@ -318,19 +318,32 @@ export const server = {
         throw new Error('Database user ID not found');
       }
 
-      // Verify the user owns this saying
+      // Check if saying exists and user is admin or owner
       const existingSaying = await db
         .select()
         .from(Sayings)
-        .where(and(eq(Sayings.id, input.sayingId), eq(Sayings.userId, dbUserId)))
+        .where(eq(Sayings.id, input.sayingId))
         .get();
 
       if (!existingSaying) {
-        logger.warn('Unauthorized saying update attempt or saying not found', {
+        logger.warn('Saying not found for update', {
           sayingId: input.sayingId,
           userId: dbUserId,
         });
-        throw new Error('Saying not found or you do not have permission to edit it');
+        throw new Error('Saying not found');
+      }
+
+      // Check if user is admin or owns the saying
+      const isAdmin = context.locals.dbUser?.role === 'admin';
+      const isOwner = existingSaying.userId === dbUserId;
+
+      if (!isAdmin && !isOwner) {
+        logger.warn('Unauthorized saying update attempt', {
+          sayingId: input.sayingId,
+          userId: dbUserId,
+          isAdmin,
+        });
+        throw new Error('You do not have permission to edit this saying');
       }
 
       // Moderate content before proceeding
@@ -456,12 +469,9 @@ export const server = {
         updatedAt: new Date(),
       };
 
-      logger.debug('Updating saying', { sayingId: input.sayingId, updateValues });
+      logger.debug('Updating saying', { sayingId: input.sayingId, updateValues, isAdmin });
 
-      await db
-        .update(Sayings)
-        .set(updateValues)
-        .where(and(eq(Sayings.id, input.sayingId), eq(Sayings.userId, dbUserId)));
+      await db.update(Sayings).set(updateValues).where(eq(Sayings.id, input.sayingId));
 
       logger.info('Successfully updated saying', { sayingId: input.sayingId, userId: dbUserId });
 

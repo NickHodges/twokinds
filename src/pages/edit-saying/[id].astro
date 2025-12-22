@@ -44,12 +44,17 @@ logger.debug('Saying fetched for edit', {
   requestUserId: dbUserId,
 });
 
-// If no saying found or user is not the owner, redirect
-if (!saying || saying.userId !== dbUserId) {
+// Check if user is admin or owns the saying
+const isAdmin = Astro.locals.dbUser?.role === 'admin';
+const isOwner = saying?.userId === dbUserId;
+
+// If no saying found or user is not the owner/admin, redirect
+if (!saying || (!isAdmin && !isOwner)) {
   logger.warn('Unauthorized edit attempt or saying not found', {
     sayingId,
     sayingUserId: saying?.userId,
     requestUserId: dbUserId,
+    isAdmin,
   });
   return Astro.redirect('/dashboard?error=not-found-or-unauthorized');
 }
