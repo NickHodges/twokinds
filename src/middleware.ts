@@ -17,6 +17,7 @@ const authMiddleware = defineMiddleware(async ({ locals, request }, next) => {
         const now = new Date();
 
         // Upsert user - create if doesn't exist, update if does
+        // Note: role is only set on initial insert, never updated to preserve admin status
         const dbUser = await db
           .insert(Users)
           .values({
@@ -25,7 +26,7 @@ const authMiddleware = defineMiddleware(async ({ locals, request }, next) => {
             email: session.user.email,
             image: session.user.image || '',
             provider: 'oauth',
-            role: 'user',
+            role: 'user', // Only used on first insert
             lastLogin: now,
             createdAt: now,
             updatedAt: now,
@@ -38,6 +39,7 @@ const authMiddleware = defineMiddleware(async ({ locals, request }, next) => {
               image: session.user.image || '',
               lastLogin: now,
               updatedAt: now,
+              // Note: role is intentionally NOT updated here to preserve admin/system roles
             },
           })
           .returning()
