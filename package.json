@@ -22,6 +22,7 @@
     "migrate:userid": "astro db execute db/migrate-user-id.ts",
     "seed:future": "astro db execute scripts/seed-future-sayings.mjs",
     "seed:future:prod": "cross-env NODE_ENV=production astro db execute scripts/seed-future-sayings.mjs --remote",
+    "make-admin": "cross-env NODE_ENV=production astro db execute scripts/make-admin.mjs --remote",
     "lint": "eslint . --ext .ts,.astro",
     "lint:fix": "eslint . --ext .ts,.astro --fix",
     "format": "prettier --write .",
