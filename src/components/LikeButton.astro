@@ -1,5 +1,5 @@
 ---
-import LikeButtonClient from './LikeButton.tsx';
+import { actions } from 'astro:actions';
 
 const {
   sayingId,
@@ -16,11 +16,183 @@ const {
 } = Astro.props;
 ---
 
-<LikeButtonClient
-  client:load
-  sayingId={sayingId}
-  initialLiked={initialLiked}
-  totalLikes={totalLikes}
-  isAuthenticated={isAuthenticated}
-  className={className}
-/>
+{
+  !isAuthenticated ? (
+    <div class="flex items-center gap-1 rounded-full px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="h-4 w-4"
+        aria-hidden="true"
+      >
+        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+      </svg>
+      <span class="ml-1">{totalLikes}</span>
+    </div>
+  ) : (
+    <form
+      method="POST"
+      action={actions.toggleLike}
+      data-like-form
+      data-saying-id={sayingId}
+      data-initial-liked={initialLiked}
+      data-total-likes={totalLikes}
+    >
+      <input type="hidden" name="sayingId" value={sayingId} />
+      <button
+        type="submit"
+        data-like-button
+        class:list={[
+          'flex items-center gap-1 rounded-full px-3 py-1.5 text-sm transition-all',
+          initialLiked
+            ? 'bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+          className,
+        ]}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill={initialLiked ? 'currentColor' : 'none'}
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class:list={['h-4 w-4 transition-transform', initialLiked ? 'scale-110' : 'scale-100']}
+          aria-hidden="true"
+          data-like-icon
+        >
+          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+        </svg>
+        <span data-like-text>{initialLiked ? 'Liked' : 'Like'}</span>
+        <span class="ml-1" data-like-count>
+          ({totalLikes})
+        </span>
+      </button>
+    </form>
+  )
+}
+
+<script>
+  import { actions } from 'astro:actions';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const forms = document.querySelectorAll('[data-like-form]');
+
+    forms.forEach((form) => {
+      if (!(form instanceof HTMLFormElement)) return;
+
+      const button = form.querySelector('[data-like-button]');
+      const icon = form.querySelector('[data-like-icon]');
+      const text = form.querySelector('[data-like-text]');
+      const count = form.querySelector('[data-like-count]');
+
+      if (!button || !icon || !text || !count) return;
+
+      let isLiked = form.dataset.initialLiked === 'true';
+      let likeCount = parseInt(form.dataset.totalLikes || '0', 10);
+      let isLoading = false;
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (isLoading) return;
+
+        // Optimistic update
+        const wasLiked = isLiked;
+        const previousCount = likeCount;
+
+        isLiked = !wasLiked;
+        likeCount = wasLiked ? previousCount - 1 : previousCount + 1;
+
+        // Update UI
+        updateUI();
+        isLoading = true;
+        button.classList.add('opacity-50', 'cursor-wait');
+
+        try {
+          const formData = new FormData(form);
+          const result = await actions.toggleLike(formData);
+
+          if (result.error) {
+            throw new Error(result.error.message);
+          }
+
+          // Update to actual server state
+          if (result.data) {
+            isLiked = result.data.liked;
+            updateUI();
+          }
+        } catch (error) {
+          console.error('Failed to toggle like:', error);
+          // Rollback on error
+          isLiked = wasLiked;
+          likeCount = previousCount;
+          updateUI();
+        } finally {
+          isLoading = false;
+          button.classList.remove('opacity-50', 'cursor-wait');
+        }
+      });
+
+      function updateUI() {
+        // Update button classes
+        if (isLiked) {
+          button.classList.remove(
+            'bg-gray-100',
+            'text-gray-600',
+            'hover:bg-gray-200',
+            'dark:bg-gray-800',
+            'dark:text-gray-400',
+            'dark:hover:bg-gray-700'
+          );
+          button.classList.add(
+            'bg-red-100',
+            'text-red-600',
+            'hover:bg-red-200',
+            'dark:bg-red-900/30',
+            'dark:text-red-400',
+            'dark:hover:bg-red-900/50'
+          );
+        } else {
+          button.classList.remove(
+            'bg-red-100',
+            'text-red-600',
+            'hover:bg-red-200',
+            'dark:bg-red-900/30',
+            'dark:text-red-400',
+            'dark:hover:bg-red-900/50'
+          );
+          button.classList.add(
+            'bg-gray-100',
+            'text-gray-600',
+            'hover:bg-gray-200',
+            'dark:bg-gray-800',
+            'dark:text-gray-400',
+            'dark:hover:bg-gray-700'
+          );
+        }
+
+        // Update icon
+        icon.setAttribute('fill', isLiked ? 'currentColor' : 'none');
+        icon.classList.toggle('scale-110', isLiked);
+        icon.classList.toggle('scale-100', !isLiked);
+
+        // Update text
+        text.textContent = isLiked ? 'Liked' : 'Like';
+
+        // Update count
+        count.textContent = `(${likeCount})`;
+      }
+    });
+  });
+</script>
