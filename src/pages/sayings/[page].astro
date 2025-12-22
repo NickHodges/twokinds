@@ -6,6 +6,7 @@ import SayingList from '../../components/SayingList.astro';
 import Pagination from '../../components/Pagination.astro';
 import { config } from '../../lib/config';
 import { getAllSayings } from '../../lib/db-service';
+import type { ExtendedSession } from '../../env';
 
 // Get page number from URL
 const { page: pageParam } = Astro.params;
@@ -46,6 +47,10 @@ const startIndex = (currentPage - 1) * pageSize;
 const endIndex = Math.min(startIndex + pageSize, allSayings.length);
 const sayingsForCurrentPage = allSayings.slice(startIndex, endIndex);
 
+// Get current user's session
+const session = Astro.locals.session as ExtendedSession | null;
+const isAdmin = Astro.locals.dbUser?.role === 'admin';
+
 // Create page object
 const page = {
   data: sayingsForCurrentPage,
@@ -66,7 +71,7 @@ export const prerender = false;
 ---
 
 <MainLayout>
-  <SayingList sayings={page.data} />
+  <SayingList sayings={page.data} session={session} isAdmin={isAdmin} />
 
   {page.lastPage > 1 && <Pagination page={page} basePath="/sayings" />}
 </MainLayout>

@@ -12,10 +12,10 @@ const {
     href: '/create',
   },
   session,
+  isAdmin = false,
 } = Astro.props;
 
 const isAuthenticated = !!session?.user;
-const isAdmin = Astro.locals.dbUser?.role === 'admin';
 
 // Get liked status and total likes for each saying
 const likedStatus = new Map<string, boolean>();

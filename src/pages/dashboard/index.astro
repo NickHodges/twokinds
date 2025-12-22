@@ -17,6 +17,7 @@ export const prerender = false;
 
 // Get current user's session
 const session = Astro.locals.session as ExtendedSession | null;
+const isAdmin = Astro.locals.dbUser?.role === 'admin';
 
 // Redirect if not logged in
 if (!session?.user) {
@@ -84,7 +85,7 @@ const page = {
       {
         page.data.length > 0 ? (
           <>
-            <SayingList sayings={page.data} session={session} />
+            <SayingList sayings={page.data} session={session} isAdmin={isAdmin} />
             {page.lastPage > 1 && <Pagination page={page} basePath="/dashboard" />}
           </>
         ) : (
