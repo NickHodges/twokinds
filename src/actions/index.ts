@@ -29,6 +29,26 @@ const ToggleLikeSchema = z.object({
   action: z.enum(['like', 'unlike']).optional(),
 });
 
+// Define Zod schema for updating a saying
+export const UpdateSayingSchema = z.discriminatedUnion('typeChoice', [
+  z.object({
+    sayingId: z.coerce.number().int().positive('Valid saying ID is required'),
+    typeChoice: z.literal('existing'),
+    type: z.string().min(1, 'Please select a type'),
+    intro: z.string().min(1, 'Please select an introduction'),
+    firstKind: z.string().min(3).max(100),
+    secondKind: z.string().min(3).max(100),
+  }),
+  z.object({
+    sayingId: z.coerce.number().int().positive('Valid saying ID is required'),
+    typeChoice: z.literal('new'),
+    newType: z.string().min(2).max(50, 'Type name must be between 2 and 50 characters'),
+    intro: z.string().min(1, 'Please select an introduction'),
+    firstKind: z.string().min(3).max(100),
+    secondKind: z.string().min(3).max(100),
+  }),
+]);
+
 // Export server object with actions as required by Astro 4.15+
 export const server = {
   // Export action for toggling likes
@@ -270,6 +290,183 @@ export const server = {
 
       // Return success with saying ID
       return { success: true, sayingId: result[0].id };
+    },
+  }),
+
+  // Export action for updating sayings
+  updateSaying: defineAction({
+    accept: 'form',
+    input: UpdateSayingSchema,
+    handler: async (input, context) => {
+      logger.debug('updateSaying action called', { sayingId: input.sayingId });
+
+      // Get session from locals (set by middleware)
+      const session = context.locals.session;
+
+      if (!session?.user?.id) {
+        logger.warn('Unauthenticated saying update attempt');
+        throw new Error('You must be logged in to update a saying');
+      }
+
+      // Get database user ID from locals (set by middleware)
+      const dbUserId = context.locals?.dbUser?.id;
+
+      if (!dbUserId) {
+        logger.error('Database user ID not found in locals', {
+          sessionUserId: session?.user?.id,
+        });
+        throw new Error('Database user ID not found');
+      }
+
+      // Verify the user owns this saying
+      const existingSaying = await db
+        .select()
+        .from(Sayings)
+        .where(and(eq(Sayings.id, input.sayingId), eq(Sayings.userId, dbUserId)))
+        .get();
+
+      if (!existingSaying) {
+        logger.warn('Unauthorized saying update attempt or saying not found', {
+          sayingId: input.sayingId,
+          userId: dbUserId,
+        });
+        throw new Error('Saying not found or you do not have permission to edit it');
+      }
+
+      // Moderate content before proceeding
+      const { getContentModerator } = await import('../utils/moderation');
+      const moderator = getContentModerator();
+
+      // Combine all text content for moderation
+      const contentToModerate =
+        input.typeChoice === 'new'
+          ? `${input.firstKind} ${input.secondKind} ${input.newType}`
+          : `${input.firstKind} ${input.secondKind}`;
+
+      logger.debug('Moderating updated content', { contentLength: contentToModerate.length });
+
+      const moderationResult = await moderator.moderateContent({
+        text: contentToModerate,
+        context: {
+          userId: session.user.id,
+          contentType: 'saying_update',
+        },
+      });
+
+      if (!moderationResult.isSafe) {
+        logger.warn('Updated content flagged by moderation', {
+          userId: session.user.id,
+          sayingId: input.sayingId,
+          reason: moderationResult.reason,
+        });
+        throw new Error(
+          `Content flagged: ${moderationResult.reason || 'inappropriate content detected'}`
+        );
+      }
+
+      logger.info('Updated content passed moderation', {
+        userId: session.user.id,
+        sayingId: input.sayingId,
+      });
+
+      // Clean up text using AI
+      const { getTextCleanup } = await import('../utils/cleanup');
+      const textCleanup = getTextCleanup();
+
+      let cleanedFirstKind = input.firstKind;
+      let cleanedSecondKind = input.secondKind;
+      let cleanedNewType = input.typeChoice === 'new' ? input.newType : undefined;
+
+      if (textCleanup.isConfigured()) {
+        logger.debug('Cleaning up updated saying text');
+
+        // Clean up firstKind
+        const firstKindResult = await textCleanup.cleanupText({
+          text: input.firstKind,
+          context: { type: 'firstKind', pronoun: 'who' },
+        });
+        cleanedFirstKind = firstKindResult.cleanedText;
+
+        // Clean up secondKind
+        const secondKindResult = await textCleanup.cleanupText({
+          text: input.secondKind,
+          context: { type: 'secondKind', pronoun: 'who' },
+        });
+        cleanedSecondKind = secondKindResult.cleanedText;
+
+        // Clean up newType if creating a new type
+        if (input.typeChoice === 'new') {
+          const newTypeResult = await textCleanup.cleanupText({
+            text: input.newType,
+            context: { type: 'typeName' },
+          });
+          cleanedNewType = newTypeResult.cleanedText;
+        }
+
+        logger.info('Text cleanup completed for update', {
+          firstKindModified: firstKindResult.wasModified,
+          secondKindModified: secondKindResult.wasModified,
+          newTypeModified: input.typeChoice === 'new' && cleanedNewType !== input.newType,
+        });
+      } else {
+        logger.debug('Text cleanup not configured, skipping');
+      }
+
+      // Process type selection
+      let typeId: string;
+
+      if (input.typeChoice === 'new') {
+        // Create a new type
+        const pronoun = 'who'; // Default pronoun - could be added to form later
+        const typeNameToUse = cleanedNewType || input.newType;
+        logger.info('Creating new type for update', {
+          newType: typeNameToUse,
+          original: input.newType,
+          wasModified: typeNameToUse !== input.newType,
+          pronoun,
+        });
+        const newTypeResult = await db
+          .insert(Types)
+          .values({
+            name: typeNameToUse,
+            pronoun: pronoun,
+            createdAt: new Date(),
+          })
+          .returning();
+
+        if (!newTypeResult || newTypeResult.length === 0) {
+          logger.error('Failed to create new type', { newType: input.newType, pronoun });
+          throw new Error('Failed to create new type');
+        }
+
+        typeId = newTypeResult[0].id.toString();
+        logger.info('Successfully created new type', { typeId, newType: input.newType });
+      } else {
+        // Use existing type
+        typeId = input.type;
+        logger.debug('Using existing type', { typeId });
+      }
+
+      // Update the saying in database
+      const updateValues = {
+        intro: input.intro,
+        type: typeId,
+        firstKind: cleanedFirstKind,
+        secondKind: cleanedSecondKind,
+        updatedAt: new Date(),
+      };
+
+      logger.debug('Updating saying', { sayingId: input.sayingId, updateValues });
+
+      await db
+        .update(Sayings)
+        .set(updateValues)
+        .where(and(eq(Sayings.id, input.sayingId), eq(Sayings.userId, dbUserId)));
+
+      logger.info('Successfully updated saying', { sayingId: input.sayingId, userId: dbUserId });
+
+      // Return success with saying ID
+      return { success: true, sayingId: input.sayingId };
     },
   }),
 };

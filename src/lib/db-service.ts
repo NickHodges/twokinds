@@ -1,4 +1,4 @@
-import { db, Sayings, Intros, Types, Likes, Users, eq, desc, and, count, sql } from 'astro:db';
+import { db, Sayings, Intros, Types, Likes, Users, eq, desc, and, count, sql, lte } from 'astro:db';
 import type { Saying } from '../types/saying';
 import { createLogger } from '../utils/logger';
 
@@ -85,8 +85,13 @@ export async function getAllSayings(): Promise<Saying[]> {
   logger.debug('Fetching all sayings');
 
   try {
-    // Fetch sayings from the database
-    const rawSayings = await db.select().from(Sayings).orderBy(desc(Sayings.createdAt));
+    // Fetch sayings from the database - only show sayings that have already been posted
+    const now = new Date();
+    const rawSayings = await db
+      .select()
+      .from(Sayings)
+      .where(lte(Sayings.createdAt, now))
+      .orderBy(desc(Sayings.createdAt));
 
     if (rawSayings.length === 0) {
       return [];
