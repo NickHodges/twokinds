@@ -71,6 +71,17 @@ const siteUrl = Astro.site || 'https://twokinds.vercel.app';
         document.documentElement.classList.remove('dark');
       }
     </script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-994270092"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        window.dataLayer.push(arguments);
+      }
+      gtag('js', new Date());
+
+      gtag('config', 'AW-994270092');
+    </script>
   </head>
   <body
     class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 min-h-screen"
